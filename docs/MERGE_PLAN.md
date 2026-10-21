@@ -38,7 +38,7 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 ## Preview decisions (step 3, round 1)
 | # | Decision |
 |---|---|
-| V1 | Procedures inside an episode: one collapsible card per procedure under "Diagnoses & procedures". |
+| V1 | Procedures inside an episode: one row per procedure in the PROCEDURES group (opens its sheet), plus "Add Procedure" (updated by V5). |
 | V2 | Procedure state on the card reads "Procedure: <status>" (neutral pill) so it is never confused with the case's data-collection status In progress / Completed. No code changes. |
 | V3 | CHA₂DS₂-VASc: no number until every risk item (and age, sex) is Yes/No/known; until then "CHA₂DS₂-VASc: incomplete". |
 | V4 | General look (owner, round 2): **closer to EP Log** — iOS grouped-list style (large titles, inset grouped rows, uppercase section headers, segmented controls, bottom tab bar; light sidebar on desktop). Own icons and wording; no EP Log assets, logo or name. |

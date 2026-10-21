@@ -34,3 +34,15 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.
 - Fake data only in tests; never copy secrets; ask before anything that could change or lose real data.
 - Replies to the owner in Egyptian Arabic; code and technical terms in English.
+
+## Preview decisions (step 3, round 1)
+| # | Decision |
+|---|---|
+| V1 | Procedures inside an episode: one collapsible card per procedure under "Diagnoses & procedures". |
+| V2 | Procedure state on the card reads "Procedure: <status>" (neutral pill) so it is never confused with the case's data-collection status In progress / Completed. No code changes. |
+| V3 | CHA₂DS₂-VASc: no number until every risk item (and age, sex) is Yes/No/known; until then "CHA₂DS₂-VASc: incomplete". |
+| V4 | General look (owner, round 2): **closer to EP Log** — iOS grouped-list style (large titles, inset grouped rows, uppercase section headers, segmented controls, bottom tab bar; light sidebar on desktop). Own icons and wording; no EP Log assets, logo or name. |
+| V5 | Case page as EP Log: header card, then grouped rows (Procedures, Patient & history, Complications, Studies & follow-up, Additional clinical information); each row opens its form in a sheet (Cancel / Done), like EP Log's procedure sheet. This replaces EP Workspace's all-fields-inline page (its F-12) — **confirmed by the owner** on phone and desktop. |
+| V6 | Cases grouped by month (EP Log) with group segmented control above; row = date · MRN · age/sex, procedure chips, labelled CHA₂DS₂-VASc chip, No. · status · core progress. |
+
+**Step 3 approved (owner):** EP Log-style look (preview2, 5 screens: sign-in, cases list, case, procedure sheet, desktop) is the build target.

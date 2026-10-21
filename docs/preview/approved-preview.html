@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EP Case Log — preview (EP Log style)</title>
+<style>
+:root {
+  --bg: #f2f2f7; --card: #ffffff; --text: #000000; --sec: #8a8a8e; --sep: #c6c6c8; --fill: #e9e9eb;
+  --blue: #007aff; --blue-soft: #e5f0ff; --red: #c9342c; --red-soft: #fde4e2; --green: #248a3d; --green-soft: #e3f5e8;
+  --yellow: #ffcc00; --orange-text: #8a5a00; --orange-soft: #fff3cc; --teal: #0a7d74; --teal-soft: #ddf3f1; --purple: #7a3fc4; --purple-soft: #efe6fb;
+  --nav: rgba(249,249,249,.94);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px; line-height: 1.3; -webkit-text-size-adjust: 100%;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+svg { flex-shrink: 0; }
+.ribbon { background: #fff4d6; color: #7a5200; font-size: 12px; text-align: center; padding: 4px 8px; font-weight: 600; }
+.wrap { padding: 0 16px 96px; }
+/* nav bar */
+.navbar { display: flex; align-items: center; gap: 4px; height: 44px; color: var(--blue); }
+.navbar .grow { flex: 1; }
+.navbar .title { flex: 1; text-align: center; font-weight: 600; color: var(--text); }
+.navbar .back { display: inline-flex; align-items: center; gap: 2px; min-width: 90px; }
+.navbar .right { display: inline-flex; align-items: center; gap: 16px; min-width: 90px; justify-content: flex-end; }
+.iconbtn { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; }
+.badge { position: absolute; top: 0; right: -2px; background: #ff3b30; color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; min-width: 17px; height: 17px; display: grid; place-items: center; padding: 0 4px; }
+h1.large { font-size: 34px; font-weight: 700; letter-spacing: .37px; margin: 2px 0 10px; }
+.search { display: flex; align-items: center; gap: 6px; background: var(--fill); border-radius: 10px; padding: 8px 10px; color: var(--sec); font-size: 17px; }
+.seg { display: flex; background: var(--fill); border-radius: 9px; padding: 2px; margin: 12px 0 4px; }
+.seg span { flex: 1; text-align: center; padding: 6px 4px; font-size: 13px; font-weight: 500; border-radius: 7px; white-space: nowrap; }
+.seg span.on { background: var(--card); box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04); font-weight: 600; }
+.seg span small { color: var(--sec); font-weight: 500; }
+.sechead { font-size: 13px; text-transform: uppercase; color: var(--sec); margin: 22px 16px 7px; letter-spacing: -.08px; }
+.monthhead { font-size: 20px; font-weight: 700; margin: 20px 4px 8px; }
+.group { background: var(--card); border-radius: 10px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; min-height: 44px; position: relative; }
+.row + .row::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.row.ind + .row.ind::before { left: 54px; }
+.row .main { flex: 1; min-width: 0; }
+.row .chev { color: #c4c4c7; }
+.line1 { font-size: 17px; }
+.line1 b { font-weight: 600; }
+.line1 .dim { color: var(--sec); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.chip { font-size: 13px; font-weight: 500; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.c-abl { background: var(--red-soft); color: var(--red); }
+.c-dev { background: var(--blue-soft); color: #1a5fb4; }
+.c-eps { background: var(--teal-soft); color: var(--teal); }
+.c-neutral { background: var(--fill); color: #3c3c43; }
+.sub { font-size: 13px; color: var(--sec); margin-top: 4px; }
+.status { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 6px; }
+.s-prog { background: var(--blue-soft); color: var(--blue); }
+.s-done { background: var(--green-soft); color: var(--green); }
+.cha { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cha { padding: 2px 8px 2px 2px; background: #fff8d6; border-radius: 999px; }
+.cha.inc { background: var(--fill); }
+.cha .dot { min-width: 20px; height: 20px; border-radius: 999px; background: var(--yellow); color: #000; display: grid; place-items: center; font-weight: 700; font-size: 13px; padding: 0 5px; }
+.cha.inc .dot { background: var(--fill); color: var(--sec); }
+.side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.link { color: var(--blue); }
+.add { color: var(--blue); }
+.hcard { background: var(--card); border-radius: 10px; padding: 16px; }
+.hcard .top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.hcard .date { font-size: 22px; font-weight: 700; }
+.hcard .mrn { margin-top: 10px; font-size: 16px; }
+.hcard .mrn b { font-weight: 600; }
+.small { font-size: 13px; }
+.dim { color: var(--sec); }
+.progress { height: 4px; background: var(--fill); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.progress span { display: block; height: 100%; background: var(--blue); }
+.formrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.formrow .lab { flex: 1; min-width: 0; }
+.formrow .val { color: var(--sec); text-align: right; }
+.formrow .val.blue { color: var(--blue); }
+.req { color: #ff3b30; }
+.stack { display: block; }
+.stack .lab { margin-bottom: 8px; display: block; }
+.mini-seg { display: flex; background: var(--fill); border-radius: 8px; padding: 2px; }
+.mini-seg span { flex: 1; text-align: center; padding: 5px 2px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
+.mini-seg span.on { background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); font-weight: 600; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { padding: 6px 14px; border-radius: 999px; background: var(--fill); font-size: 15px; }
+.pill.on { background: var(--blue); color: #fff; }
+.procic { width: 30px; height: 30px; display: grid; place-items: center; color: var(--blue); }
+.note { font-size: 13px; color: var(--sec); margin: 7px 16px 0; }
+.newtag { font-size: 11px; font-weight: 700; color: var(--purple); background: var(--purple-soft); padding: 1px 6px; border-radius: 5px; text-transform: none; margin-left: 6px; }
+/* tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-around; background: var(--nav); backdrop-filter: blur(20px); border-top: .5px solid var(--sep); padding: 6px 0 22px; z-index: 5; }
+.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 500; color: #999; min-width: 70px; }
+.tabbar a.on { color: var(--blue); }
+.bottomact { position: fixed; left: 0; right: 0; bottom: 74px; display: flex; gap: 10px; align-items: center; padding: 10px 16px; background: var(--nav); backdrop-filter: blur(20px); border-top: .5px solid var(--sep); z-index: 4; }
+.bottomact .grow { flex: 1; font-size: 13px; color: var(--sec); }
+.btn { border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-size: 15px; font-weight: 600; background: var(--fill); color: var(--blue); }
+.btn.primary { background: var(--blue); color: #fff; }
+/* sheet */
+.sheet-bg { background: #000; min-height: 100vh; padding-top: 12px; }
+.sheet { background: var(--bg); border-radius: 12px 12px 0 0; min-height: calc(100vh - 12px); }
+.sheet .navbar { padding: 0 16px; height: 56px; }
+.sheet .title { font-size: 17px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { background: var(--card); border-radius: 10px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--blue); font-size: 15px; text-align: center; }
+/* sign in */
+.signin { max-width: 400px; margin: 0 auto; padding: 60px 16px; }
+.appicon { width: 64px; height: 64px; border-radius: 15px; background: linear-gradient(160deg,#1c3f8f,#0a1f4f); display: grid; place-items: center; color: #fff; }
+.field { background: var(--card); padding: 12px 16px; font-size: 17px; }
+.field + .field { border-top: .5px solid var(--sep); }
+.field .ph { color: var(--sec); }
+/* desktop */
+.desk { display: grid; grid-template-columns: 240px minmax(380px, 440px) 1fr; min-height: 100vh; }
+.sidebar { background: #ebebf0; border-right: .5px solid var(--sep); padding: 20px 12px; }
+.sidebar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; padding: 0 8px 18px; }
+.sidebar .brand .appicon { width: 32px; height: 32px; border-radius: 8px; }
+.sidebar a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--text); font-size: 15px; }
+.sidebar a.on { background: var(--blue); color: #fff; }
+.sidebar .foot { position: absolute; bottom: 20px; font-size: 12px; color: var(--sec); padding: 0 10px; }
+.col { padding: 0 16px 120px; overflow: hidden; }
+.col.listcol { border-right: .5px solid var(--sep); }
+.desk .bottomact { position: sticky; bottom: 0; left: auto; right: auto; margin: 16px -16px 0; }
+.sel { background: #d8e6ff; }
+body.capture .tabbar, body.capture .bottomact { position: static; }
+body.capture .bottomact { margin: 20px -16px 0; }
+.wrap.case { padding-bottom: 170px; }
+body.capture .wrap { padding-bottom: 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const P = {
+  filter:'M4 6h16M7 12h10M10 18h4', inbox:'M3 13h5l1.5 3h5L16 13h5M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z', plus:'M12 5v14M5 12h14',
+  list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5', chev:'M9 6l6 6-6 6', back:'M15 5l-7 7 7 7',
+  doc:'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6', refresh:'M20 11a8 8 0 0 0-14.8-4M4 4v4h4M4 13a8 8 0 0 0 14.8 4M20 20v-4h-4',
+  wave:'M3 5h18v14H3zM5 12h3l1.5-3 2 6 2-8 1.5 5H19', nodes:'M6 7a2 2 0 1 0 0-.01M18 7a2 2 0 1 0 0-.01M12 18a2 2 0 1 0 0-.01M8 7h8M7 9l4 7M17 9l-4 7',
+  bolt:'M12 20s-7-4.4-8.5-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 20.5 11C19 15.6 12 20 12 20zM12.5 9l-2 3.5h3L11.5 16', chip:'M7 7h10v10H7zM10 10h4v4h-4zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4',
+  spike:'M2 12h5l2-6 3 12 2-9 1.5 3H22', heart:'M12 20s-7-4.4-8.5-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 20.5 11C19 15.6 12 20 12 20zM12 10v5', heartDown:'M12 20s-7-4.4-8.5-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 20.5 11C19 15.6 12 20 12 20zM12 9v5M9.5 11.5L12 14l2.5-2.5',
+  bars:'M4 9v6M7 6v12M10 9v6M13 4v16M16 8v8M19 11v2', extract:'M4 5h16v4H4zM6 9v10h12V9M12 17v-6M9.5 13.5L12 11l2.5 2.5', ilr:'M5 9h14v6H5zM8 12h2l1-2 2 4 1-2h2',
+  cases:'M8 3h8v3H8zM6 5H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-1M8 11h8M8 15h6', patients:'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.4 3.5 5.2',
+  stats:'M4 20V12M10 20V8M16 20V4M2 20h20', gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12h2M3 12h2M12 3v2M12 19v2M17 7l1.5-1.5M5.5 18.5L7 17M17 17l1.5 1.5M5.5 5.5L7 7',
+  user:'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.8-4 4-6 8-6s7.2 2 8 6', clip:'M9 3h6v3H9zM7 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-1M9 12h6M9 16h4', ecg:'M2 12h4l2-4 3 8 2-6 1.5 2H22',
+  flask:'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3', pill:'M10.5 4.5a5 5 0 0 1 7 7l-6 6a5 5 0 0 1-7-7zM8 8l7 7', echo:'M4 5h16v14H4zM8 15c1-4 3-6 4-6s3 2 4 6', cal:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  alert:'M12 4l9 16H3zM12 10v4M12 17.5v.01', sparkle:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z', lock:'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'
+};
+const ic = (n, s = 22, sw = 1.8) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="${P[n]}"/></svg>`;
+const s = new URLSearchParams(location.search).get('s') || 'list';
+const ribbon = `<div class="ribbon">PREVIEW ONLY — synthetic data, nothing is saved</div>`;
+const tabbar = (on) => `<nav class="tabbar">${[['cases','Cases','cases'],['patients','Patients','patients'],['stats','Dashboard','stats'],['settings','Settings','gear']].map(([k,l,i])=>`<a class="${k===on?'on':''}">${ic(i,26,1.7)}<span>${l}</span></a>`).join('')}</nav>`;
+const chev = `<span class="chev">${ic('chev',16,2.4)}</span>`;
+const cha = (v) => v === null ? `<span class="cha inc"><span class="dot">?</span>CHA₂DS₂-VASc incomplete</span>` : v === undefined ? '' : `<span class="cha"><span class="dot">${v}</span>CHA₂DS₂-VASc</span>`;
+
+const CASES = [
+  ['March 2026', [
+    { d:'Mar 13, 2026', mrn:'9990123', as:'58M', chips:[['EPS','c-eps'],['AF + Flutter Ablation','c-abl']], n:7, st:'prog', core:'18/27', cha:null },
+    { d:'Mar 9, 2026', mrn:'9990118', as:'71F', chips:[['CIED Implant','c-dev']], n:6, st:'done', core:'27/27' },
+    { d:'Mar 2, 2026', mrn:'9990102', as:'44M', chips:[['AVNRT Ablation','c-abl']], n:5, st:'prog', core:'9/25' },
+  ]],
+  ['February 2026', [
+    { d:'Feb 21, 2026', mrn:'9990097', as:'66F', chips:[['AF Ablation','c-abl'],['AF Ablation · Redo','c-abl']], n:4, st:'prog', core:'21/30', cha:3 },
+    { d:'Feb 14, 2026', mrn:'9990088', as:'', chips:[], n:3, st:'prog', core:'1/25' },
+  ]],
+];
+function listView(selected) {
+  return `<div class="navbar"><span class="iconbtn">${ic('filter')}</span><span class="iconbtn">${ic('list')}</span><span class="grow"></span><span class="iconbtn">${ic('plus',26)}</span></div>
+  <h1 class="large">Cases</h1>
+  <div class="search">${ic('search',18)} Search MRN, procedure, notes</div>
+  <div class="seg"><span class="on">Group 1 <small>7</small></span><span>Group 2 <small>4</small></span><span>Group 3 <small>2</small></span><span>All</span></div>
+  ${CASES.map(([m, rows]) => `<div class="monthhead">${m}</div><div class="group">${rows.map(c => `<div class="row${selected && c.n===7?' sel':''}">
+    <div class="main"><div class="line1"><b>${c.d}</b> <span class="dim">· ${c.mrn}${c.as?` · ${c.as}`:''}</span></div>
+      <div class="chips">${c.chips.length?c.chips.map(([l,k])=>`<span class="chip ${k}">${l}</span>`).join(''):'<span class="chip c-neutral">MRN only</span>'}${cha(c.cha)}</div>
+      <div class="sub">No. ${c.n} · <span class="status ${c.st==='done'?'s-done':'s-prog'}">${c.st==='done'?'Completed':'In progress'}</span> · Core ${c.core}</div></div>
+    ${chev}</div>`).join('')}</div>`).join('')}`;
+}
+
+function caseView(desk) {
+  return `<div class="navbar"><span class="back">${desk?'':`${ic('back',22,2.4)} Cases`}</span><span class="title">Case</span><span class="right"><span>${ic('sparkle',22)}</span><span>${ic('doc',22)}</span><span>Edit</span></span></div>
+  <div class="hcard"><div class="date">Mar 13, 2026</div><div class="small dim">Episode Mar 12 → Mar 14, 2026 · Group 1 · No. 7</div>
+    <div class="mrn"><b>MRN: 9990123</b> <span class="dim">58M</span></div>
+    <div class="small" style="margin-top:8px">${cha(null)} <span class="dim">· at time of procedure</span></div>
+    <div class="small" style="margin-top:8px"><span class="status s-prog">In progress</span> <span class="dim">· Core fields 18 of 27</span></div>
+    <div class="progress"><span style="width:67%"></span></div></div>
+
+  <div class="sechead">Procedures <span class="newtag">several per case</span></div>
+  <div class="group">
+    <div class="row ind"><span class="procic">${ic('nodes',24)}</span><div class="main"><div class="line1">Procedure 1 · EPS</div><div class="sub">Mar 12 · Clinical arrhythmia induced: No · Procedure: Completed</div></div>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('wave',24)}</span><div class="main"><div class="line1">Procedure 2 · Ablation</div><div class="sub">Mar 13 · AF + Flutter · PFA · All target PVs isolated · Procedure: Completed</div></div>${chev}</div>
+    <div class="row ind add"><span class="procic">${ic('plus',22)}</span><div class="main">Add Procedure</div></div>
+  </div>
+
+  <div class="sechead">Patient &amp; history</div>
+  <div class="group">
+    <div class="row ind"><span class="procic">${ic('user')}</span><div class="main">Patient</div><span class="dim small">5 of 5</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('clip')}</span><div class="main">Episode &amp; pilgrimage</div><span class="dim small">3 of 4</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('heart')}</span><div class="main">Diagnosis &amp; indication</div><span class="dim small">3 of 3</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('alert')}</span><div class="main">Baseline risk profile<div class="sub">1 item empty · CHA₂DS₂-VASc shown when complete</div></div><span class="dim small">5 of 6</span>${chev}</div>
+  </div>
+
+  <div class="sechead">Complications</div>
+  <div class="group"><div class="row ind"><span class="procic">${ic('alert')}</span><div class="main">Procedure 2: complications reviewed</div><span class="val dim">—</span>${chev}</div></div>
+
+  <div class="sechead">Studies &amp; follow-up</div>
+  <div class="group">
+    <div class="row ind"><span class="procic">${ic('ecg')}</span><div class="main">ECG</div><span class="dim small">0</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('flask')}</span><div class="main">Labs</div><span class="dim small">2</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('pill')}</span><div class="main">Medications</div><span class="dim small">1</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('echo')}</span><div class="main">Echo, Holter &amp; imaging</div><span class="dim small">1</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('chip')}</span><div class="main">Devices</div><span class="dim small">—</span>${chev}</div>
+    <div class="row ind"><span class="procic">${ic('cal')}</span><div class="main">Timeline &amp; follow-up</div><span class="dim small">—</span>${chev}</div>
+  </div>
+
+  <div class="sechead">Additional clinical information</div>
+  <div class="group"><div class="row ind add"><span class="procic">${ic('plus',22)}</span><div class="main">Add Information</div></div></div>
+
+  <div class="bottomact"><span class="grow">✓ Saved</span><button class="btn">Ready to complete?</button><button class="btn primary">Mark completed</button></div>`;
+}
+
+function seg(opts, on) { return `<div class="mini-seg">${opts.map(o=>`<span class="${o===on?'on':''}">${o}</span>`).join('')}</div>`; }
+function procSheet() {
+  return `<div class="sheet-bg"><div class="sheet"><div class="navbar"><span class="back">Cancel</span><span class="title">Procedure 2 · Ablation</span><span class="right"><b>Done</b></span></div>
+  <div style="padding:0 16px 40px">
+  <div class="group">
+    <div class="row formrow"><span class="lab">Procedure start datetime <span class="req">*</span></span><span class="val blue">13 Mar 2026, 09:10</span></div>
+    <div class="row formrow"><span class="lab">Primary procedure type <span class="req">*</span></span><span class="val blue">Ablation ⌃</span></div>
+    <div class="row stack"><span class="lab">Urgency <span class="req">*</span></span>${seg(['Elective','Urgent','Emergency'],'Elective')}</div>
+    <div class="row stack"><span class="lab">First or redo <span class="req">*</span></span>${seg(['First','Redo','Not applicable'],'First')}</div>
+    <div class="row formrow"><span class="lab">Procedure status <span class="req">*</span></span><span class="val blue">Completed ⌃</span></div>
+  </div>
+  <div class="sechead">Procedure components</div>
+  <div class="group"><div class="row stack"><div class="pills"><span class="pill on">AF</span><span class="pill on">Flutter</span><span class="pill">Diagnostic EPS</span><span class="pill">AVNRT</span><span class="pill">AVRT WPW</span><span class="pill">AT SVT</span><span class="pill">PVC</span><span class="pill">VT VF</span><span class="pill">AVJ ablation</span><span class="pill">Device implant</span><span class="pill">CRT CSP</span><span class="pill">Lead management</span><span class="pill">ILR</span><span class="pill">Other</span></div></div></div>
+  <div class="sechead">AF ablation</div>
+  <div class="group">
+    <div class="row stack"><span class="lab">AF energy source <span class="req">*</span></span><div class="pills">${['RF','Cryoballoon','PFA','Laser','Multiple','Other'].map(o=>`<span class="pill${o==='PFA'?' on':''}">${o}</span>`).join('')}</div></div>
+    <div class="row formrow"><span class="lab">PVI or reisolation attempted <span class="req">*</span></span><span class="val blue">Yes ⌃</span></div>
+    <div class="row formrow"><span class="lab">PV status at case end <span class="req">*</span></span><span class="val blue">All target PVs isolated ⌃</span></div>
+    <div class="row stack"><span class="lab">PVI block confirmation</span><div class="pills">${['Entrance','Entrance and exit','Other','Not documented'].map(o=>`<span class="pill${o==='Entrance and exit'?' on':''}">${o}</span>`).join('')}</div></div>
+    <div class="row formrow"><span class="lab">Acute AF endpoint <span class="req">*</span></span><span class="val blue">Complete PVI or reisolation ⌃</span></div>
+  </div>
+  <div class="sechead">Flutter ablation</div>
+  <div class="group">
+    <div class="row formrow"><span class="lab">Flutter type</span><span class="val blue">Typical CTI ⌃</span></div>
+    <div class="row formrow"><span class="lab">CTI ablation performed <span class="req">*</span></span><span class="val blue">Yes ⌃</span></div>
+    <div class="row stack"><span class="lab">Bidirectional CTI block</span><div class="pills">${['Yes','No','Not tested','Not applicable'].map(o=>`<span class="pill${o==='Yes'?' on':''}">${o}</span>`).join('')}</div></div>
+    <div class="row formrow"><span class="lab">Acute flutter endpoint <span class="req">*</span></span><span class="val">Select ⌃</span></div>
+  </div>
+  <div class="sechead">Complications</div>
+  <div class="group"><div class="row stack"><span class="lab">Complications reviewed <span class="req">*</span></span>${seg(['None documented','Present'],'')}</div></div>
+  <p class="note">All fields and choices come from the registry dictionary. Fields not shown here stay on the full procedure page.</p>
+  </div></div></div>`;
+}
+
+function signin() {
+  return `${ribbon}<div class="signin"><div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px"><div class="appicon">${ic('spike',34,2.2)}</div><div style="font-size:28px;font-weight:700">EP Case Log</div><div class="dim">Electrophysiology registry</div></div>
+  <div class="group"><div class="field">tarek</div><div class="field ph">Password</div></div>
+  <div class="group" style="margin-top:20px"><div class="row formrow"><span class="lab">Keep me signed in (30 days)</span><span style="width:51px;height:31px;border-radius:99px;background:#34c759;position:relative;display:inline-block"><span style="position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2)"></span></span></div></div>
+  <button class="btn primary" style="width:100%;margin-top:24px;padding:14px;font-size:17px">Sign In</button>
+  <p class="note" style="text-align:center;margin-top:14px">Accounts are created by the Admin.<br>Forgot your password? Ask the Admin to set a new one.</p></div>`;
+}
+
+const root = document.getElementById('app');
+if (s === 'signin') root.innerHTML = signin();
+else if (s === 'sheet') root.innerHTML = procSheet();
+else if (s === 'desk') root.innerHTML = `<div class="desk"><aside class="sidebar" style="position:relative"><div class="brand"><div class="appicon">${ic('spike',18,2.2)}</div>EP Case Log</div>
+  ${[['cases','Cases',1],['patients','Patients'],['stats','Dashboard'],['gear','Settings']].map(([i,l,on])=>`<a class="${on?'on':''}">${ic(i,20)}${l}</a>`).join('')}
+  <div class="foot">✓ Saved · Dr. Tarek (Admin)</div></aside>
+  <div class="col listcol">${ribbon}${listView(true)}</div><div class="col">${caseView(true)}</div></div>`;
+else root.innerHTML = `${ribbon}<div class="wrap${s==='case'?' case':''}">${s==='case'?caseView(false):listView(false)}</div>${tabbar('cases')}`;
+</script>
+</body>
+</html>

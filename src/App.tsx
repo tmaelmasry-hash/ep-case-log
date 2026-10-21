@@ -66,6 +66,12 @@ export function App() {
   else main = <CasesView nav={nav} inboxCount={inboxCount} />;
 
   const activeTab = tab === 'inbox' ? 'cases' : tab;
+  let embedded = false;
+  try {
+    embedded = window.self !== window.top;
+  } catch {
+    embedded = true;
+  }
 
   return (
     <div className={`app ${wide ? 'is-wide' : 'is-narrow'}`}>
@@ -90,6 +96,11 @@ export function App() {
           </div>
         )}
       </nav>
+      {embedded && (
+        <div className="preview-banner" role="note">
+          Preview: data stays in this browser only. PDF export, file downloads, camera capture and offline install need the self-hosted version.
+        </div>
+      )}
       <main className="main">{main}</main>
       <Toasts />
     </div>

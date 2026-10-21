@@ -47,6 +47,9 @@ Conflict rule: the most recently edited version of each case/image wins (device 
 - **Backup**: Settings → "Download full backup" (`ep-caselog-backup-YYYY-MM-DD.json`). Restore: Settings → "Restore / merge from backup".
 - Data is unencrypted on disk and on the server. Follow your institution's policy on patient identifiers; prefer de-identified study numbers over real MRNs.
 
+## Working on this code with Claude Code or Codex
+See `AGENTS.md` (architecture, invariants, integration and feature-removal recipes). `CLAUDE.md` imports it.
+
 ## Tests
 ```bash
 npm test               # unit tests (scoring, stats, merge, validation, backup/CSV, scan filters)

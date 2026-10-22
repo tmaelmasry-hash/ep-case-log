@@ -4,17 +4,20 @@ Offline-first personal logbook for cardiac electrophysiology procedures. React 1
 
 This file is the single source of truth for agents. `CLAUDE.md` imports it.
 
+> **Merge in progress (EP Workspace features into this app).** Read `docs/MERGE_PLAN.md` first: owner decisions, build order and phase status. Where this file and MERGE_PLAN differ, MERGE_PLAN wins. Phase 1 is done: `server/` is now the registry server (sign-in, Admin/Member, users); the old sync server and `lib/sync.ts` were removed. Cases are still in browser IndexedDB until phase 2.
+
 ## Commands
 
 ```bash
 npm install
 npm run dev        # Vite dev server :5173 (proxies /api → :8787)
 npm run build      # tsc --noEmit + vite build → dist/
-npm run serve      # node server/sync-server.mjs → app + sync API on :8787
+npm run setup      # once: .env SESSION_SECRET, Groups 1–3, first Admin (one-time password)
+npm start          # node server/main.ts → app + /api on 127.0.0.1:8787 (Node ≥ 22.18 runs the TypeScript directly)
 npm test           # Vitest unit tests (tests/unit) — pure logic, no browser
 npm run e2e        # Playwright E2E (needs `npm run build` first; desktop + Pixel 7 profiles)
 ```
-Run `npm run build && npm test && npm run e2e` before declaring a change done. The E2E suite starts its own server on :8790 with token `test-token`.
+Run `npm run build && npm test && npm run e2e` before declaring a change done. The E2E suite starts `node server/main.ts --e2e` on :8790 (in-memory store, synthetic accounts admin / sara / newbie, password from `E2E_PASSWORD`).
 
 ## Architecture (3 layers, dependencies point downward only)
 
@@ -25,7 +28,7 @@ views/*  components/*        React UI (no direct IndexedDB access)
         │
      lib/*                    Pure TS logic + IndexedDB + sync client. No React imports.
         │
-server/sync-server.mjs        Optional. Separate process; talks to lib/sync.ts over HTTP.
+server/                       Registry server: handleApi(Request) → Response (api.ts), auth/, routes/, store/ (RegistryStore: memory, file; Sheet in phase 4). WebCrypto only.
 ```
 
 ### `src/lib/` — reusable logic (lift these first when integrating)
@@ -65,7 +68,7 @@ server/sync-server.mjs        Optional. Separate process; talks to lib/sync.ts o
 
 ### Other
 - `public/sw.js` — service worker (network-first navigation, cache-first assets, never caches `/api`). `vite.config.ts` plugin `precache-sw` injects the built file list and a cache version at build time.
-- `server/sync-server.mjs` — Node ≥18, no deps. Env: `PORT` (8787), `HOST`, `SYNC_TOKEN` (Bearer; strongly recommended), `DATA_DIR` (`./data`). Persists `sync-db.json` atomically. Endpoints: `GET /api/status`, `POST /api/push {records:[{store,rec}]}`, `GET /api/pull?since=&limit=`. Also serves `dist/`.
+- `server/` — ported from EP Workspace: `auth/auth.ts` (PBKDF2, signed cookie, epoch, lockout), `auth/capabilities.ts` (Admin/Member rights), `api.ts` guard (session, Origin, CSRF, forced password change), `routes/auth.ts`, `routes/admin.ts`, `node.ts` (serves dist/ + /api), `main.ts`. Env in `.env` (see `.env.example`).
 
 ## Data model invariants (do not break when merging)
 1. Every synced record has `id` (UUID), `createdAt`, `updatedAt` (ms). Any edit **must** bump `updatedAt` (store does `max(Date.now(), prev+1)`).

@@ -1,8 +1,9 @@
-// Cases: list (user's groups), create (= one episode), read, edit (field-level), delete (to the recycle bin).
+// Cases: list (user's groups), create (= one episode), read, edit (field-level), complete / reopen, history,
+// delete (to the recycle bin) and restore (Admin).
 import { checkMrn } from '../../shared/mrn.ts';
 import type { CaseRecord, EditBatch } from '../../shared/caseTypes.ts';
 import { loadConfig, siteLocalDate } from '../dictionary.ts';
-import { applyEdits, newCaseRecord, summarize, toDetail } from '../domain/cases.ts';
+import { addHistory, applyEdits, completeCase, historyItems, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { AppContext } from '../context.ts';
 import { newId } from '../util.ts';
@@ -22,22 +23,31 @@ export function caseRoutes(app: Router) {
     return rec;
   }
 
+  async function nameLookup(c: AppContext) {
+    const users = await c.store.listUsers();
+    const names = new Map(users.map((u) => [u.user_id, u.display_name]));
+    return { users, nameOf: (id: string) => names.get(id) ?? 'Unknown' };
+  }
+
   async function detail(c: AppContext, rec: CaseRecord) {
-    const [groups, users] = await Promise.all([c.store.listGroups(), c.store.listUsers()]);
+    const [groups, { users, nameOf }] = await Promise.all([c.store.listGroups(), nameLookup(c)]);
     return toDetail(
       dict,
       rec,
       groups.find((g) => g.group_id === rec.meta.group_id)?.name ?? '',
       users.filter((u) => u.status === 'ACTIVE').map((u) => ({ id: u.user_id, name: u.display_name })),
+      nameOf,
     );
   }
+
+  const actor = (userId: string) => ({ userId, now: ctx.now().toISOString() });
 
   app.get('/api/cases', async (req) => {
     requireCap(req, 'case.read');
     const groups = await groupIdsFor(ctx, req.user!);
     const want = req.query.group && req.query.group !== 'ALL' ? [req.query.group] : groups;
     const cases = (await store.listCases()).filter((c) => !c.meta.is_deleted && groups.includes(c.meta.group_id) && want.includes(c.meta.group_id));
-    return { cases: cases.map(summarize) };
+    return { cases: cases.map((c) => summarize(dict, c)) };
   });
 
   app.post('/api/cases', async (req) => {
@@ -69,6 +79,8 @@ export function caseRoutes(app: Router) {
       },
       { userId: u.userId, now },
     );
+    const gname = (await store.listGroups()).find((g) => g.group_id === b.group_id)?.name ?? '';
+    addHistory(rec, { kind: 'create', text: `Case created in ${gname} as No. ${seq}` }, { userId: u.userId, now });
     await store.putCase(rec);
     await store.appendActivity([{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq } }]);
     return { case_id: caseId, group_seq: seq, warning: mrn.warning ?? null };
@@ -88,22 +100,99 @@ export function caseRoutes(app: Router) {
     const results = applyEdits(dict, rec, batch, { userId: u.userId, now: ctx.now().toISOString() }, users);
     if (results.some((r) => r.ok)) {
       await store.putCase(rec);
-      // Field names only, never values (EP Workspace F-17).
-      const fields = (batch.changes ?? []).filter((_, i) => results.find((r) => r.kind === 'change' && r.i === i)?.ok).map((c) => `${c.entity}.${c.field}`);
-      await store.appendActivity([{ actor: u.userId, action: 'case.edit', detail: { case_id: rec.meta.case_id, fields: [...new Set(fields)].slice(0, 50) } }]);
+      // Field and section names only, never values (EP Workspace F-17).
+      const ok = (kind: string, i: number) => !!results.find((r) => r.kind === kind && r.i === i)?.ok;
+      const uniq = (xs: string[]) => [...new Set(xs)].slice(0, 50);
+      const fields = uniq([
+        ...(batch.changes ?? []).filter((_, i) => ok('change', i)).map((c) => `${c.entity}.${c.field === 'other_specify_json' ? c.key : c.field}`),
+        ...(batch.not_available ?? []).filter((_, i) => ok('na', i)).map((n) => `${n.entity}.${n.field}`),
+      ]);
+      const added = uniq((batch.creates ?? []).filter((c, i) => ok('create', i) && dict.entities[c.entity]?.cardinality === 'multi').map((c) => c.entity));
+      const removed = uniq((batch.removes ?? []).filter((_, i) => ok('remove', i)).map((c) => c.entity));
+      const info = (batch.additional ?? []).some((_, i) => ok('additional', i));
+      await store.appendActivity([{ actor: u.userId, action: 'case.edit', detail: { case_id: rec.meta.case_id, fields, added, removed, additional: info } }]);
     }
     return { results, case: await detail(ctx, rec) };
   });
 
-  /** Moves a case to the recycle bin (restore and the recycle-bin screen come in phase 3). */
+  /** Mark completed (Admin and Member): only when every core field has a value or "Not available" + reason. */
+  app.post('/api/cases/:id/complete', async (req) => {
+    const u = requireCap(req, 'case.complete');
+    const rec = await requireCase(req, req.params.id);
+    if (rec.meta.collection_status === 'COMPLETED') return { ok: true, case: await detail(ctx, rec) };
+    const expected = (req.body ?? {}).row_version;
+    if (typeof expected === 'number' && expected !== rec.meta.row_version) throw new HttpError(409, 'STALE_CASE', 'The case changed since you checked it. Check again.');
+    const r = completeCase(dict, rec, actor(u.userId));
+    if (!r.canComplete) throw new HttpError(409, 'NOT_READY', `Not ready to complete: ${r.blockers.length} core field${r.blockers.length === 1 ? '' : 's'} missing.`);
+    await store.putCase(rec);
+    await store.appendActivity([{ actor: u.userId, action: 'case.complete', detail: { case_id: rec.meta.case_id, core: `${r.done}/${r.total}` } }]);
+    return { ok: true, case: await detail(ctx, rec) };
+  });
+
+  /** Reopen (Admin and Member, owner decision phase 3) with a reason kept in the case history. */
+  app.post('/api/cases/:id/reopen', async (req) => {
+    const u = requireCap(req, 'case.reopen');
+    const rec = await requireCase(req, req.params.id);
+    const reason = String((req.body ?? {}).reason ?? '').trim().slice(0, 300);
+    if (!reason) throw badRequest('Say briefly why the case is reopened.', { field: 'reason' });
+    if (rec.meta.collection_status !== 'COMPLETED') return { ok: true, case: await detail(ctx, rec) };
+    reopenCase(rec, reason, actor(u.userId));
+    await store.putCase(rec);
+    await store.appendActivity([{ actor: u.userId, action: 'case.reopen', detail: { case_id: rec.meta.case_id } }]);
+    return { ok: true, case: await detail(ctx, rec) };
+  });
+
+  /** The case's own history: values before → after. Shown only inside the case (never in the activity log). */
+  app.get('/api/cases/:id/history', async (req) => {
+    requireCap(req, 'case.read');
+    const rec = await requireCase(req, req.params.id);
+    const { nameOf } = await nameLookup(ctx);
+    return { items: historyItems(dict, rec, nameOf) };
+  });
+
+  /** Moves a case to the recycle bin. */
   app.post('/api/cases/:id/delete', async (req) => {
     const u = requireCap(req, 'case.delete');
     const rec = await requireCase(req, req.params.id);
     rec.meta.is_deleted = true;
     rec.meta.deleted_at = ctx.now().toISOString();
     rec.meta.deleted_by = u.userId;
+    addHistory(rec, { kind: 'delete', text: 'Moved to the recycle bin' }, actor(u.userId));
     await store.putCase(rec);
     await store.appendActivity([{ actor: u.userId, action: 'case.delete', detail: { case_id: rec.meta.case_id } }]);
+    return { ok: true };
+  });
+
+  /** Recycle bin (Admin): deleted cases, newest first. */
+  app.get('/api/recycle-bin', async (req) => {
+    const u = requireCap(req, 'case.restore');
+    const groups = await groupIdsFor(ctx, u);
+    const [all, gl, { nameOf }] = await Promise.all([store.listCases(), store.listGroups(), nameLookup(ctx)]);
+    return {
+      cases: all
+        .filter((c) => c.meta.is_deleted && groups.includes(c.meta.group_id))
+        .sort((x, y) => String(y.meta.deleted_at).localeCompare(String(x.meta.deleted_at)))
+        .map((c) => ({
+          case_id: c.meta.case_id,
+          mrn: c.meta.mrn,
+          group_name: gl.find((g) => g.group_id === c.meta.group_id)?.name ?? '',
+          group_seq: c.meta.group_seq,
+          deleted_at: c.meta.deleted_at,
+          deleted_by: c.meta.deleted_by ? nameOf(c.meta.deleted_by) : null,
+        })),
+    };
+  });
+
+  /** Restore (Admin): back in its group with its old number. */
+  app.post('/api/cases/:id/restore', async (req) => {
+    const u = requireCap(req, 'case.restore');
+    const rec = await store.getCase(req.params.id);
+    const groups = await groupIdsFor(ctx, u);
+    if (!rec || !rec.meta.is_deleted || !groups.includes(rec.meta.group_id)) throw notFound('Case not found in the recycle bin.');
+    Object.assign(rec.meta, { is_deleted: false, deleted_at: null, deleted_by: null });
+    addHistory(rec, { kind: 'restore', text: 'Restored from the recycle bin' }, actor(u.userId));
+    await store.putCase(rec);
+    await store.appendActivity([{ actor: u.userId, action: 'case.restore', detail: { case_id: rec.meta.case_id } }]);
     return { ok: true };
   });
 }

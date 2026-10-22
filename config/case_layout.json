@@ -357,5 +357,34 @@
     }
    ]
   }
- ]
+ ],
+ "core_categories": {
+  "_note": "Which core_dataset categories a procedure needs, from its PROCEDURE_COMPONENTS component types. Copied from EP Workspace config/categories.json (component_type match rules). Owner decision (phase 3): core fields are checked for each procedure.",
+  "AF_ABLATION": [
+   "AF"
+  ],
+  "SVT_ABLATION": [
+   "AVNRT",
+   "AVRT_WPW",
+   "AT_SVT"
+  ],
+  "DEVICES": [
+   "DEVICE_IMPLANT",
+   "CRT_CSP",
+   "ILR",
+   "LEAD_MANAGEMENT"
+  ],
+  "FLUTTER_ABLATION": [
+   "FLUTTER"
+  ],
+  "VENTRICULAR_ABLATION": [
+   "PVC",
+   "VT_VF"
+  ],
+  "OTHER_EP": [
+   "DIAGNOSTIC_EPS",
+   "AVJ_ABLATION",
+   "OTHER"
+  ]
+ }
 }

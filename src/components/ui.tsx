@@ -7,6 +7,7 @@ export function Sheet({
   onClose,
   onDone,
   doneLabel = 'Done',
+  closeLabel = 'Cancel',
   doneDisabled,
   children,
   wide,
@@ -15,6 +16,7 @@ export function Sheet({
   title: string;
   onClose: () => void;
   onDone?: () => void;
+  closeLabel?: string;
   doneLabel?: string;
   doneDisabled?: boolean;
   children: ReactNode;
@@ -39,7 +41,7 @@ export function Sheet({
       <div className={`sheet${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref} data-testid={testId}>
         <header className="sheet-head">
           <button className="link" onClick={onClose}>
-            Cancel
+            {closeLabel}
           </button>
           <h2>{title}</h2>
           {onDone ? (

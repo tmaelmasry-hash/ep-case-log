@@ -55,6 +55,24 @@ export interface LayoutRow {
 export interface CaseLayout {
   entities: Record<string, LayoutEntity>;
   groups: { id: string; label: string; rows: LayoutRow[] }[];
+  /** core_dataset category → the component types that put a procedure in it (keys starting with _ are notes). */
+  core_categories: Record<string, string[] | string>;
+}
+
+/** One item of config/dictionary/core_dataset.json (EP Workspace "Ready to complete?"). */
+export interface CoreItem {
+  entity: string;
+  field: string;
+  when?: string | Record<string, string[]>;
+  complete_if?: string[];
+  then?: Record<string, string>;
+  not_available_is_warning?: boolean;
+}
+
+export interface CoreSpec {
+  common: CoreItem[];
+  /** A list of items, or a note such as "common_only_until_R2". */
+  categories: Record<string, CoreItem[] | string>;
 }
 
 export interface EntityDef extends LayoutEntity {
@@ -68,8 +86,9 @@ export interface EntityDef extends LayoutEntity {
 export interface Dictionary {
   entities: Record<string, EntityDef>;
   layout: CaseLayout;
-  /** "ENTITY.field" of the core dataset (★ marks; readiness in phase 3). */
+  /** "ENTITY.field" of the core dataset, common and category items (★ marks). */
   core: Set<string>;
+  coreSpec: CoreSpec;
 }
 
 export interface RawDictionary {
@@ -77,7 +96,7 @@ export interface RawDictionary {
   extension: Record<string, unknown>;
   labels: { fields: Record<string, string>; codes: Record<string, string> };
   layout: CaseLayout;
-  core: { common: { entity: string; field: string }[] };
+  core: CoreSpec;
 }
 
 export function buildDictionary(raw: RawDictionary): Dictionary {
@@ -104,8 +123,15 @@ export function buildDictionary(raw: RawDictionary): Dictionary {
       if (!ok) throw new Error(`${ent.entity}: module component type ${t} is not a dictionary code`);
     }
   }
-  const core = new Set(raw.core.common.map((c) => `${c.entity}.${c.field}`));
-  return { entities, layout: raw.layout, core };
+  const items = [...raw.core.common, ...Object.values(raw.core.categories).flatMap((x) => (Array.isArray(x) ? x : []))];
+  for (const it of items) if (!entities[it.entity]?.fields.some((f) => f.name === it.field)) throw new Error(`core_dataset names unknown field ${it.entity}.${it.field}`);
+  for (const [cat, types] of Object.entries(raw.layout.core_categories ?? {})) {
+    if (cat.startsWith('_')) continue;
+    if (!(cat in raw.core.categories)) throw new Error(`case_layout core_categories names unknown category ${cat}`);
+    for (const t of types as string[]) if (!entities.PROCEDURE_COMPONENTS?.fields.find((f) => f.name === 'component_type')?.codes?.some((c) => c.code === t)) throw new Error(`core category ${cat}: ${t} is not a component type`);
+  }
+  const core = new Set(items.map((c) => `${c.entity}.${c.field}`));
+  return { entities, layout: raw.layout, core, coreSpec: raw.core };
 }
 
 /** Fields that never appear on a form: links filled by the app, polymorphic keys, the "Other — specify" store. */

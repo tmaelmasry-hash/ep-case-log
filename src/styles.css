@@ -1764,3 +1764,220 @@ select {
 .frow .ios-value::placeholder {
   color: var(--muted);
 }
+
+/* ---------- Phase 3: readiness, Not available, Completed, history, admin lists ---------- */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.progress {
+  flex: 1;
+  height: 4px;
+  background: var(--fill);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.core-ok {
+  color: var(--ok);
+}
+.core-miss {
+  color: var(--danger);
+}
+.banner {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.banner.done {
+  background: color-mix(in srgb, var(--ok) 13%, transparent);
+  color: var(--ok);
+}
+.banner .grow {
+  flex: 1;
+}
+.bottomact {
+  position: sticky;
+  bottom: calc(68px + env(safe-area-inset-bottom));
+  z-index: 15;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 18px -16px 0;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--nav) 92%, transparent);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+}
+.is-wide .bottomact {
+  bottom: 0;
+}
+.bottomact .grow {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.summary {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 2px;
+}
+.summary > div {
+  flex: 1;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.summary b {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--text);
+}
+.summary b.bad {
+  color: var(--danger);
+}
+.check-item {
+  align-items: flex-start;
+}
+.check-item .ic {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ic.miss {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.ic.ok {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+.ic.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 8px 16px 0;
+}
+.na-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.na-tag {
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: var(--fill);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.reason-list button {
+  text-align: left;
+  border: 0;
+  border-radius: 99px;
+  padding: 9px 14px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+}
+.reason-list button.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+textarea.box {
+  width: 100%;
+  border-radius: 10px;
+  background: var(--fill);
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+.hist {
+  align-items: flex-start;
+}
+.hist-when {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.hist-what {
+  display: block;
+  font-size: 0.95rem;
+}
+.hist-what .old {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.kind {
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: var(--fill);
+  color: var(--text);
+}
+.kind.add {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+.kind.del {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.kind.comp {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.flash {
+  animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+  0%,
+  40% {
+    background: var(--accent-soft);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.seg button.plus {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: 700;
+}
+.core-norows {
+  margin-top: 10px;
+}
+.admin-row-btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}

@@ -33,6 +33,7 @@ const PATHS: Record<string, string> = {
   pill: 'M10.5 4.5a5 5 0 0 1 7 7l-6 6a5 5 0 0 1-7-7zM8 8l7 7',
   echo: 'M4 5h16v14H4zM8 15c1-4 3-6 4-6s3 2 4 6',
   cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
   // Procedure icons
   wave: 'M3 5h18v14H3zM5 12h3l1.5-3 2 6 2-8 1.5 5H19',
   bolt: 'M12 20s-7-4.4-8.5-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 20.5 11C19 15.6 12 20 12 20zM12.5 9l-2 3.5h3L11.5 16',

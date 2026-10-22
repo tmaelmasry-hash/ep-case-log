@@ -1,7 +1,7 @@
 // Field controls built from the dictionary type of each field (ported from EP Workspace public/js/components/fields.js,
 // drawn in the approved EP Log style): short choices as a segmented control or pills, long lists as a dropdown.
 import { useEffect, useRef, useState } from 'react';
-import { codeLabel, editable, formFields, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
+import { codeLabel, editable, formFields, hasValue, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
 import { dict } from '../lib/dict';
 import type { DecodedRow } from '../../shared/caseTypes.ts';
 
@@ -94,6 +94,33 @@ export interface FkOption {
   label: string;
 }
 
+/** A core field's state for "Not available": offered while empty; once recorded it shows its reason. */
+export interface NaInfo {
+  state: 'missing' | 'not_available';
+  reason?: string;
+}
+
+function NaLine({ na, onNa, label }: { na: NaInfo; onNa: () => void; label: string }) {
+  if (na.state === 'not_available')
+    return (
+      <span className="na-line">
+        <span className="na-tag" data-testid="na-tag">
+          Not available · {na.reason}
+        </span>
+        <button type="button" className="link small" onClick={onNa} data-testid="na-change" title={`Change "not available" for ${label}`}>
+          Change
+        </button>
+      </span>
+    );
+  return (
+    <span className="na-line">
+      <button type="button" className="link small" onClick={onNa} data-testid="na-open" title={`${label}: not available`}>
+        Not available…
+      </button>
+    </span>
+  );
+}
+
 export function FieldRow({
   def,
   f,
@@ -104,6 +131,8 @@ export function FieldRow({
   otherError,
   fkOptions,
   readOnly,
+  na,
+  onNa,
 }: {
   def: EntityDef;
   f: FormField;
@@ -114,6 +143,8 @@ export function FieldRow({
   otherError?: string;
   fkOptions?: FkOption[];
   readOnly?: boolean;
+  na?: NaInfo;
+  onNa?: () => void;
 }) {
   const value = row?.[f.name] ?? null;
   const kind = controlKind(f, row);
@@ -138,13 +169,14 @@ export function FieldRow({
       {error}
     </span>
   );
+  const naLine = na && onNa && !ro && !hasValue(value) && <NaLine na={na} onNa={onNa} label={f.label} />;
 
   if (ro) {
     const shown = f.codes ? (Array.isArray(value) ? value.map((c) => codeLabel(f, c)).join(', ') : codeLabel(f, value)) : f.type === 'boolean' && value !== null ? (value ? 'Yes' : 'No') : value === null ? '' : String(value);
     return (
       <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
         {lab}
-        <span className="val">{shown || '—'}</span>
+        <span className="val">{shown || (na?.state === 'not_available' ? `Not available · ${na.reason}` : '—')}</span>
       </div>
     );
   }
@@ -180,6 +212,7 @@ export function FieldRow({
         </div>
         {err}
         {other}
+        {naLine}
       </div>
     );
   }
@@ -207,6 +240,7 @@ export function FieldRow({
         {lab}
         <TypedInput id={id} kind="longtext" f={f} value={value} onCommit={(t) => onChange(f.name, t)} />
         {err}
+        {naLine}
       </div>
     );
   } else {
@@ -220,6 +254,7 @@ export function FieldRow({
       {control}
       {err && <div className="frow-err">{err}</div>}
       {other && <div className="frow-err">{other}</div>}
+      {naLine && <div className="frow-err">{naLine}</div>}
     </div>
   );
 }
@@ -233,6 +268,8 @@ export function EntityFields({
   errorOf,
   fkOptions,
   readOnly,
+  naOf,
+  onNa,
 }: {
   entity: string;
   row: DecodedRow | null;
@@ -241,12 +278,27 @@ export function EntityFields({
   errorOf: (field: string) => string | undefined;
   fkOptions: (f: FormField) => FkOption[];
   readOnly?: boolean;
+  naOf?: (field: string) => NaInfo | undefined;
+  onNa?: (field: string) => void;
 }) {
   const def = dict.entities[entity];
   return (
     <div className="group">
       {formFields(def).map((f) => (
-        <FieldRow key={f.name} def={def} f={f} row={row} rowId={rowId} onChange={onChange} error={errorOf(f.name)} otherError={errorOf(`other_specify_json:${f.name}`)} fkOptions={f.type === 'fk' ? fkOptions(f) : undefined} readOnly={readOnly} />
+        <FieldRow
+          key={f.name}
+          def={def}
+          f={f}
+          row={row}
+          rowId={rowId}
+          onChange={onChange}
+          error={errorOf(f.name)}
+          otherError={errorOf(`other_specify_json:${f.name}`)}
+          fkOptions={f.type === 'fk' ? fkOptions(f) : undefined}
+          readOnly={readOnly}
+          na={naOf?.(f.name)}
+          onNa={onNa ? () => onNa(f.name) : undefined}
+        />
       ))}
     </div>
   );

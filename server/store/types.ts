@@ -49,6 +49,7 @@ export interface RegistryStore {
   updateUser(id: string, patch: Partial<User>): Promise<User | null>;
   listGroups(): Promise<Group[]>;
   createGroup(g: Group): Promise<void>;
+  updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'sort_order'>>): Promise<Group | null>;
   appendActivity(entries: ActivityInput[]): Promise<void>;
   listActivity(): Promise<Activity[]>;
   /** Next case number in a group (never reused). */

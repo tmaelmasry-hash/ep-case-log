@@ -14,6 +14,8 @@ export interface Toast {
 export interface GroupRow {
   group_id: string;
   name: string;
+  cases?: number;
+  next_seq?: number;
 }
 
 interface Ctx {
@@ -21,6 +23,7 @@ interface Ctx {
   loadError: string | null;
   groups: GroupRow[];
   cases: CaseSummary[];
+  /** Reloads the case list and the groups (their case counts). */
   refreshCases: () => Promise<void>;
   saveStatus: SaveStatus;
   setSaveStatus: (s: SaveStatus) => void;
@@ -67,8 +70,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const refreshCases = useCallback(async () => {
     try {
-      const r = await api<{ cases: CaseSummary[] }>('GET', '/api/cases');
+      const [r, g] = await Promise.all([api<{ cases: CaseSummary[] }>('GET', '/api/cases'), api<{ groups: GroupRow[] }>('GET', '/api/groups')]);
       setCases(r.cases);
+      setGroups(g.groups);
       setLoadError(null);
     } catch (e) {
       setLoadError((e as ApiError).message);
@@ -78,12 +82,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     removeOldLocalDatabase();
     (async () => {
-      try {
-        const g = await api<{ groups: GroupRow[] }>('GET', '/api/groups');
-        setGroups(g.groups);
-      } catch (e) {
-        setLoadError((e as ApiError).message);
-      }
       await refreshCases();
       setLoaded(true);
     })();

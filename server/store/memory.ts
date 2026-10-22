@@ -64,6 +64,14 @@ export class MemoryStore implements RegistryStore {
     await this.persist();
   }
 
+  async updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'sort_order'>>) {
+    const g = this.data.groups.find((x) => x.group_id === id);
+    if (!g) return null;
+    Object.assign(g, this.clone(patch));
+    await this.persist();
+    return this.clone(g);
+  }
+
   async appendActivity(entries: ActivityInput[]) {
     let id = this.data.activity.length ? this.data.activity[this.data.activity.length - 1].activity_id : 0;
     const at = new Date().toISOString();

@@ -1,7 +1,8 @@
 // Case rules (pure; work on a CaseRecord in memory): build a new case, apply a batch of edits with dictionary
 // validation, decode for the browser, summarise for lists. Field-level last save wins (EP Workspace P3-4).
-import { editable, type Dictionary, type EntityDef } from '../../shared/dictionary.ts';
+import { codeLabel, displayValue, editable, hasValue, type Dictionary, type EntityDef } from '../../shared/dictionary.ts';
 import { FieldError, decodeValue, encodeValue, mergeOtherSpecify } from '../../shared/validate.ts';
+import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../../shared/readiness.ts';
 import {
   ID_RE,
   ageOn,
@@ -14,6 +15,9 @@ import {
   type DecodedRow,
   type EditBatch,
   type EditResult,
+  type HistoryEntry,
+  type HistoryItem,
+  type NaEdit,
   type StoredRow,
 } from '../../shared/caseTypes.ts';
 
@@ -82,12 +86,60 @@ export function newCaseRecord(dict: Dictionary, input: NewCaseInput, a: Actor): 
     },
     rows: {},
     additional: [],
+    not_available: {},
+    history: [],
   };
   insert(rec, 'PATIENT_IDENTIFIERS', input.patientId, { patient_id: input.patientId, mrn: input.mrn }, a);
   insert(rec, 'PATIENTS', input.patientId, { patient_id: input.patientId, enrollment_date: input.enrollmentDate, registry_basis: input.registryBasis }, a);
   insert(rec, 'EP_EPISODES', episodeId, { episode_id: episodeId, patient_id: input.patientId, episode_start_date: input.episodeStart, episode_status: 'OPEN' }, a);
   return rec;
 }
+
+// ── case history (EP Workspace F-16: who, when, value before → after; shown only inside the case) ──
+
+const MERGE_MS = 2 * 60_000;
+
+export function addHistory(rec: CaseRecord, e: Omit<HistoryEntry, 'at' | 'by'>, a: Actor) {
+  const list = (rec.history ??= []);
+  const last = list[list.length - 1];
+  // Typing in one field (saved every pause) is one change: keep the first "before" and the last "after".
+  if (e.kind === 'edit' && last?.kind === 'edit' && last.by === a.userId && last.row_id === e.row_id && last.field === e.field && last.text === e.text && Date.parse(a.now) - Date.parse(last.at) <= MERGE_MS) {
+    last.new = e.new;
+    last.at = a.now;
+    if (JSON.stringify(last.old ?? null) === JSON.stringify(last.new ?? null)) list.pop();
+    return;
+  }
+  list.push({ at: a.now, by: a.userId, ...e });
+}
+
+/** The procedure a row belongs to (null for case-level rows). */
+function procedureOf(dict: Dictionary, entity: string, row: Record<string, unknown>): string | null {
+  if (entity === 'EP_PROCEDURES') return String(row._id ?? row.procedure_id);
+  if (dict.entities[entity]?.scope === 'procedure') return (row.procedure_id as string) ?? null;
+  return null;
+}
+
+/** Where a row is, as the case page names it: "Procedure 2", "Complication 1", "ECG 3". */
+function placeOf(dict: Dictionary, rec: CaseRecord, entity: string, row: StoredRow): { proc: string | null; own: string | null } {
+  const def = dict.entities[entity];
+  if (def.nest_under) {
+    const parent = (rec.rows[def.nest_under.entity] ?? []).find((r) => r._id === row[def.nest_under!.fk]);
+    const up = parent ? placeOf(dict, rec, def.nest_under.entity, parent) : { proc: null, own: null };
+    const sibs = liveRows(rec, entity).filter((r) => r[def.nest_under!.fk] === row[def.nest_under!.fk]);
+    const k = sibs.findIndex((r) => r._id === row._id);
+    return { proc: up.proc, own: [up.own ?? dict.entities[def.nest_under.entity].label, `${def.label} ${k >= 0 ? k + 1 : ''}`.trim()].join(' · ') };
+  }
+  const pid = procedureOf(dict, entity, row);
+  const n = pid ? liveRows(rec, 'EP_PROCEDURES').findIndex((p) => p._id === pid) : -1;
+  const proc = pid ? (n >= 0 ? `Procedure ${n + 1}` : 'Removed procedure') : null;
+  if (entity === 'EP_PROCEDURES' || def.cardinality === 'single') return { proc, own: null };
+  if (entity === 'PROCEDURE_COMPONENTS') return { proc, own: `Component ${codeLabel(def.fields.find((f) => f.name === 'component_type')!, row.component_type)}` };
+  const sibs = liveRows(rec, entity).filter((r) => !pid || r.procedure_id === pid);
+  const k = sibs.findIndex((r) => r._id === row._id);
+  return { proc, own: `${def.label}${k >= 0 ? ` ${k + 1}` : ''}` };
+}
+
+const whereText = (p: { proc: string | null; own: string | null }) => [p.proc, p.own].filter(Boolean).join(' · ') || undefined;
 
 class EditError extends Error {}
 
@@ -125,6 +177,8 @@ function placeRow(dict: Dictionary, rec: CaseRecord, def: EntityDef, id: string,
       v[f.name] = slot;
     }
   }
+  // Every procedure section keeps its procedure, also the extension that has no procedure_id field of its own.
+  if (procedureId) v.procedure_id = procedureId;
   if (def.entity === 'EP_PROCEDURES') v.episode_id = rec.meta.episode_id;
   if (def.entity === 'PROCEDURE_COMPONENTS') {
     const seqs = liveRows(rec, 'PROCEDURE_COMPONENTS').filter((r) => r.procedure_id === procedureId).map((r) => Number(r.component_sequence) || 0);
@@ -222,7 +276,12 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
         const values = placeRow(dict, rec, def, c.id, c.parent_id, a);
         const row = { ...values } as Record<string, unknown>;
         for (const [k, v] of Object.entries(c.values ?? {}).slice(0, 20)) row[k] = encodeFor(dict, rec, def, row, k, v, userIds, true);
-        insert(rec, def.entity, c.id, row, a);
+        const stored = insert(rec, def.entity, c.id, row, a);
+        // One-per-scope sections appear on their first value; only added rows and procedures are worth a line.
+        if (def.cardinality === 'multi') {
+          const p = placeOf(dict, rec, def.entity, stored);
+          addHistory(rec, { kind: 'add', entity: def.entity, row_id: c.id, text: def.entity === 'EP_PROCEDURES' ? `${p.proc} added` : `${p.own} added${p.proc ? ` to ${p.proc}` : ''}` }, a);
+        }
       } catch (e) {
         failedCreates.add(c.id);
         throw e;
@@ -237,11 +296,22 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
       if (failedCreates.has(ch.id)) throw new EditError(`${def.label}: the row could not be added.`);
       const row = findLive(rec, def.entity, String(ch.id));
       if (!row) throw new EditError(`${def.label}: this row was removed.`);
+      const where = whereText(placeOf(dict, rec, def.entity, row));
       if (ch.field === 'other_specify_json') {
-        row.other_specify_json = mergeOtherSpecify(def, row, String(ch.key ?? ''), ch.value);
+        const key = String(ch.key ?? '');
+        const before = (decodeValue(def.fields.find((f) => f.name === 'other_specify_json')!, row.other_specify_json) as Record<string, string> | null)?.[key] ?? null;
+        row.other_specify_json = mergeOtherSpecify(def, row, key, ch.value);
+        const after = (decodeValue(def.fields.find((f) => f.name === 'other_specify_json')!, row.other_specify_json) as Record<string, string> | null)?.[key] ?? null;
+        if (before !== after) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: key, text: 'other', where, old: before, new: after }, a);
       } else {
+        const f = def.fields.find((x) => x.name === ch.field);
+        const before = f ? decodeValue(f, row[ch.field]) : null;
         row[ch.field] = encodeFor(dict, rec, def, row, ch.field, ch.value, userIds);
         afterChange(def, row, ch.field);
+        const after = decodeValue(f!, row[ch.field]);
+        if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where, old: before, new: after }, a);
+        // A value replaces "Not available" (EP Workspace: entering a value later replaces it).
+        if (hasValue(after) && rec.not_available) delete rec.not_available[naKey(def.entity, ch.field, procedureOf(dict, def.entity, row))];
       }
       row._updated_at = a.now;
       row._updated_by = a.userId;
@@ -253,11 +323,29 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
       const def = dict.entities[r?.entity];
       if (!def) throw new EditError('Unknown section.');
       if (PERMANENT.has(def.entity)) throw new EditError(`${def.label} cannot be removed.`);
-      removeRow(dict, rec, def.entity, String(r.id), a);
+      const row = findLive(rec, def.entity, String(r.id));
+      if (!row) return;
+      const p = placeOf(dict, rec, def.entity, row);
+      removeRow(dict, rec, def.entity, row._id, a);
+      if (def.entity === 'EP_PROCEDURES') for (const k of Object.keys(rec.not_available ?? {})) if (k.endsWith(`@${row._id}`)) delete rec.not_available![k];
+      const what = def.entity === 'EP_PROCEDURES' ? `${p.proc} removed` : def.cardinality === 'single' ? `${def.label} section cleared${p.proc ? ` in ${p.proc}` : ''}` : `${p.own} removed${p.proc ? ` from ${p.proc}` : ''}`;
+      addHistory(rec, { kind: 'remove', entity: def.entity, row_id: row._id, text: what }, a);
     }),
   );
 
-  (batch.additional ?? []).slice(0, 20).forEach((e, i) => run('additional', i, () => applyAdditional(rec, e, a)));
+  (batch.additional ?? []).slice(0, 20).forEach((e, i) =>
+    run('additional', i, () => {
+      const cur = rec.additional.find((x) => x.info_id === e.id && !x.is_deleted);
+      const before = cur ? { text: cur.text, fact_date: cur.fact_date } : null;
+      applyAdditional(rec, e, a);
+      const after = rec.additional.find((x) => x.info_id === e.id && !x.is_deleted);
+      if (!before && after) addHistory(rec, { kind: 'add', text: 'Additional information added', new: after.text }, a);
+      else if (before && !after) addHistory(rec, { kind: 'remove', text: 'Additional information removed', old: before.text }, a);
+      else if (before && after && (before.text !== after.text || before.fact_date !== after.fact_date)) addHistory(rec, { kind: 'edit', row_id: e.id, field: 'text', text: 'Additional information', old: before.text, new: after.text }, a);
+    }),
+  );
+
+  (batch.not_available ?? []).slice(0, 50).forEach((n, i) => run('na', i, () => applyNotAvailable(dict, rec, n, a)));
 
   if (results.some((r) => r.ok)) {
     rec.meta.updated_at = a.now;
@@ -265,6 +353,74 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
     rec.meta.row_version++;
   }
   return results;
+}
+
+/** "Not available" + reason on an empty core field, or clear it (reason null). */
+function applyNotAvailable(dict: Dictionary, rec: CaseRecord, n: NaEdit, a: Actor) {
+  const def = dict.entities[n?.entity];
+  const f = def?.fields.find((x) => x.name === n.field);
+  if (!def || !f) throw new EditError('Unknown field.');
+  const pid = isProcedureLevel(dict, def.entity) ? (n.procedure_id ?? null) : null;
+  if (isProcedureLevel(dict, def.entity) && (!pid || !findLive(rec, 'EP_PROCEDURES', pid))) throw new EditError(`${f.label}: choose the procedure first.`);
+  const key = naKey(def.entity, f.name, pid);
+  const na = (rec.not_available ??= {});
+  const where = pid ? whereText(placeOf(dict, rec, 'EP_PROCEDURES', findLive(rec, 'EP_PROCEDURES', pid)!)) : undefined;
+  if (n.reason === null) {
+    if (!na[key]) return;
+    delete na[key];
+    addHistory(rec, { kind: 'na', entity: def.entity, field: f.name, where, old: true, new: null }, a);
+    return;
+  }
+  const reason = String(n.reason ?? '').trim().slice(0, 200);
+  if (!reason) throw new EditError(`${f.label}: give a reason.`);
+  const check = readinessOf(dict, rec).checks.find((c) => c.key === key);
+  if (!check || check.state === 'not_applicable') throw new EditError(`${f.label}: "Not available" is only for core fields that apply to this case.`);
+  if (!check.na_allowed) throw new EditError(`${f.label}: choose one of its answers.`);
+  if (check.state === 'ok') throw new EditError(`${f.label} has a value. Clear it first.`);
+  if (na[key]?.reason === reason) return;
+  na[key] = { reason, at: a.now, by: a.userId };
+  addHistory(rec, { kind: 'na', entity: def.entity, field: f.name, where, new: reason }, a);
+}
+
+export function readinessOf(dict: Dictionary, rec: CaseRecord): Readiness {
+  return evaluateReadiness(dict, decodeRows(dict, rec), rec.not_available ?? {});
+}
+
+/** Mark completed: only when every core field has a value or "Not available". Never changes clinical values. */
+export function completeCase(dict: Dictionary, rec: CaseRecord, a: Actor): Readiness {
+  const r = readinessOf(dict, rec);
+  if (rec.meta.collection_status === 'COMPLETED' || !r.canComplete) return r;
+  Object.assign(rec.meta, { collection_status: 'COMPLETED', completed_at: a.now, completed_by: a.userId, updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
+  addHistory(rec, { kind: 'complete', text: `Marked completed (core ${r.done} of ${r.total})` }, a);
+  return r;
+}
+
+export function reopenCase(rec: CaseRecord, reason: string, a: Actor) {
+  Object.assign(rec.meta, { collection_status: 'IN_PROGRESS', completed_at: null, completed_by: null, reopen_reason: reason, updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
+  addHistory(rec, { kind: 'reopen', text: `Reopened — ${reason}` }, a);
+}
+
+/** History lines for the case page, newest first, with labels and values as shown on the forms. */
+export function historyItems(dict: Dictionary, rec: CaseRecord, nameOf: (id: string) => string): HistoryItem[] {
+  const show = (entity: string | undefined, field: string | undefined, v: unknown): string => {
+    if (v === null || v === undefined || v === '') return '—';
+    const f = entity ? dict.entities[entity]?.fields.find((x) => x.name === field) : undefined;
+    return f ? displayValue(f, v) || '—' : String(v);
+  };
+  return (rec.history ?? [])
+    .slice()
+    .reverse()
+    .map((h) => {
+      const base = { at: h.at, by: nameOf(h.by), kind: h.kind };
+      const def = h.entity ? dict.entities[h.entity] : undefined;
+      const flabel = def?.fields.find((x) => x.name === h.field)?.label ?? h.field ?? '';
+      const prefix = h.where ? `${h.where} · ` : '';
+      if (h.kind === 'edit' && h.text === 'other') return { ...base, text: `${prefix}${flabel}: Other — specify`, old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };
+      if (h.kind === 'edit' && def) return { ...base, text: `${prefix}${flabel}`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
+      if (h.kind === 'edit') return { ...base, text: h.text ?? 'Changed', old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };
+      if (h.kind === 'na') return { ...base, text: h.new ? `${prefix}${flabel}: Not available (${h.new})` : `${prefix}${flabel}: "Not available" cleared` };
+      return { ...base, text: h.text ?? h.kind };
+    });
 }
 
 export function decodeRows(dict: Dictionary, rec: CaseRecord): Record<string, DecodedRow[]> {
@@ -277,17 +433,25 @@ export function decodeRows(dict: Dictionary, rec: CaseRecord): Record<string, De
       .map((r) => {
         const d: DecodedRow = { _id: r._id };
         for (const f of def.fields) d[f.name] = decodeValue(f, r[f.name]);
+        if (def.scope === 'procedure' && r.procedure_id) d.procedure_id = r.procedure_id;
         return d;
       });
   }
   return out;
 }
 
-export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, users: { id: string; name: string }[]): CaseDetail {
-  return { meta: { ...rec.meta, group_name: groupName }, rows: decodeRows(dict, rec), additional: rec.additional.filter((x) => !x.is_deleted), users };
+export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, users: { id: string; name: string }[], nameOf: (id: string) => string): CaseDetail {
+  return {
+    meta: { ...rec.meta, group_name: groupName, completed_by_name: rec.meta.completed_by ? nameOf(rec.meta.completed_by) : null },
+    rows: decodeRows(dict, rec),
+    additional: rec.additional.filter((x) => !x.is_deleted),
+    not_available: rec.not_available ?? {},
+    history_count: rec.history?.length ?? 0,
+    users,
+  };
 }
 
-export function summarize(rec: CaseRecord): CaseSummary {
+export function summarize(dict: Dictionary, rec: CaseRecord): CaseSummary {
   const ep = liveRows(rec, 'EP_EPISODES')[0];
   const ident = liveRows(rec, 'PATIENT_IDENTIFIERS')[0];
   const pat = liveRows(rec, 'PATIENTS')[0];
@@ -316,6 +480,7 @@ export function summarize(rec: CaseRecord): CaseSummary {
     sex: (pat?.sex_at_birth as string) ?? null,
     age: ageOn(ident?.date_of_birth, start),
     procedures,
+    core: (({ done, total }) => ({ done, total }))(readinessOf(dict, rec)),
     updated_at: rec.meta.updated_at,
   };
 }

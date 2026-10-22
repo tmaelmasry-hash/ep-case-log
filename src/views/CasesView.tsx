@@ -10,6 +10,7 @@ import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { Empty, SaveIndicator, Sheet } from '../components/ui';
+import { GroupNameDialog } from './AdminSheets';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
@@ -49,6 +50,7 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
         <span className="sub">
           {showGroup ? `${showGroup} · ` : ''}No. {c.group_seq} · <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
           {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
+          {c.core?.total ? ` · core ${c.core.done}/${c.core.total}` : ''}
         </span>
       </span>
       <Icon name="chevron" size={16} className="muted" />
@@ -136,6 +138,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   });
   const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
+  const [addGroup, setAddGroup] = useState(false);
   const activeGroup = group === 'ALL' || groups.some((g) => g.group_id === group) ? group : 'ALL';
   const pickGroup = (g: string) => {
     setGroup(g);
@@ -183,7 +186,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         <Icon name="search" size={18} />
         <input type="search" inputMode="numeric" placeholder="Search MRN" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN" />
       </div>
-      {groups.length > 1 && (
+      {(groups.length > 1 || can('groups.manage')) && (
         <div className="seg" role="radiogroup" aria-label="Group">
           {groups.map((g) => (
             <button key={g.group_id} type="button" role="radio" aria-checked={activeGroup === g.group_id} className={activeGroup === g.group_id ? 'on' : ''} onClick={() => pickGroup(g.group_id)}>
@@ -193,7 +196,21 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           <button type="button" role="radio" aria-checked={activeGroup === 'ALL'} className={activeGroup === 'ALL' ? 'on' : ''} onClick={() => pickGroup('ALL')}>
             All
           </button>
+          {can('groups.manage') && (
+            <button type="button" className="plus" aria-label="Add group" onClick={() => setAddGroup(true)} data-testid="add-group">
+              +
+            </button>
+          )}
         </div>
+      )}
+      {addGroup && (
+        <GroupNameDialog
+          onClose={() => setAddGroup(false)}
+          onSaved={(id) => {
+            setAddGroup(false);
+            if (id) pickGroup(id);
+          }}
+        />
       )}
 
       {loadError && (

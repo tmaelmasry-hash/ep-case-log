@@ -1,5 +1,6 @@
 // Case shapes shared by server and browser. Case = one EP_EPISODE of one patient (owner D4), with any number of
 // EP_PROCEDURES; rows of every dictionary entity live inside their case (as in EP Workspace P1a-3).
+import type { NotAvailable, Tally } from './readiness.ts';
 
 export type StoredRow = Record<string, unknown> & {
   _id: string;
@@ -17,8 +18,11 @@ export interface CaseMeta {
   mrn: string;
   group_id: string;
   group_seq: number;
-  /** Data-collection status (exactly In progress / Completed). Completing comes in phase 3. */
+  /** Data-collection status (exactly In progress / Completed). */
   collection_status: 'IN_PROGRESS' | 'COMPLETED';
+  completed_at?: string | null;
+  completed_by?: string | null;
+  reopen_reason?: string | null;
   created_at: string;
   created_by: string;
   updated_at: string;
@@ -38,20 +42,49 @@ export interface AdditionalInfo {
   is_deleted: boolean;
 }
 
+/** One line of a case's own history: who, when, and the value before → after (shown only inside the case). */
+export interface HistoryEntry {
+  at: string;
+  by: string;
+  kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore';
+  /** Where in the case, at the time of the change (e.g. "Procedure 2", "ECG 1"). */
+  where?: string;
+  entity?: string;
+  field?: string;
+  row_id?: string;
+  old?: unknown;
+  new?: unknown;
+  text?: string;
+}
+
 export interface CaseRecord {
   meta: CaseMeta;
   rows: Record<string, StoredRow[]>;
   additional: AdditionalInfo[];
+  /** naKey → reason (shared/readiness.ts). */
+  not_available?: Record<string, NotAvailable>;
+  history?: HistoryEntry[];
 }
 
 /** A row as the browser sees it: decoded values plus _id. */
 export type DecodedRow = Record<string, unknown> & { _id: string };
 
 export interface CaseDetail {
-  meta: CaseMeta & { group_name: string };
+  meta: CaseMeta & { group_name: string; completed_by_name: string | null };
   rows: Record<string, DecodedRow[]>;
   additional: AdditionalInfo[];
+  not_available: Record<string, NotAvailable>;
+  history_count: number;
   users: { id: string; name: string }[];
+}
+
+export interface HistoryItem {
+  at: string;
+  by: string;
+  kind: HistoryEntry['kind'];
+  text: string;
+  old?: string;
+  new?: string;
 }
 
 export interface ProcedureSummary {
@@ -73,6 +106,7 @@ export interface CaseSummary {
   sex: string | null;
   age: number | null;
   procedures: ProcedureSummary[];
+  core: Tally;
   updated_at: string;
 }
 
@@ -100,14 +134,22 @@ export interface AdditionalEdit {
   text?: string;
   fact_date?: string | null;
 }
+/** Records (reason) or clears (null) "Not available" on an empty core field; procedure_id for procedure fields. */
+export interface NaEdit {
+  entity: string;
+  field: string;
+  procedure_id?: string | null;
+  reason: string | null;
+}
 export interface EditBatch {
   creates?: EditCreate[];
   changes?: EditChange[];
   removes?: EditRemove[];
   additional?: AdditionalEdit[];
+  not_available?: NaEdit[];
 }
 export interface EditResult {
-  kind: 'create' | 'change' | 'remove' | 'additional';
+  kind: 'create' | 'change' | 'remove' | 'additional' | 'na';
   i: number;
   ok: boolean;
   message?: string;

@@ -5,7 +5,7 @@ import labels from '../../config/dictionary/labels.json';
 import core from '../../config/dictionary/core_dataset.json';
 import layout from '../../config/case_layout.json';
 import site from '../../config/site.json';
-import type { CaseLayout } from '../../shared/dictionary.ts';
+import type { CaseLayout, CoreSpec } from '../../shared/dictionary.ts';
 import type { MrnConfig } from '../../shared/mrn.ts';
 
 const files = import.meta.glob('../../config/dictionary/entities/*.json', { eager: true, import: 'default' }) as Record<string, RawEntity>;
@@ -17,7 +17,7 @@ export const dict = buildDictionary({
   extension: extension as Record<string, unknown>,
   labels: labels as { fields: Record<string, string>; codes: Record<string, string> },
   layout: layout as unknown as CaseLayout,
-  core: core as unknown as { common: { entity: string; field: string }[] },
+  core: core as unknown as CoreSpec,
 });
 
 export const mrnRules = (site as { mrn: MrnConfig }).mrn;

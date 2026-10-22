@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CaseDetail, DecodedRow, EditBatch, EditResult } from '../shared/caseTypes.ts';
 import { idPrefix, slotId } from '../shared/caseTypes.ts';
+import { naKey, type NotAvailable } from '../shared/readiness.ts';
 import { dict } from './lib/dict';
 import { api, ApiError } from './lib/api';
 import { useStore } from './store';
@@ -12,7 +13,8 @@ type Op =
   | { kind: 'create'; entity: string; id: string; parent_id?: string | null; values?: Record<string, unknown> }
   | { kind: 'change'; entity: string; id: string; field: string; value: unknown; key?: string }
   | { kind: 'remove'; entity: string; id: string }
-  | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null };
+  | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null }
+  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null };
 
 export interface CaseEditor {
   detail: CaseDetail | null;
@@ -20,6 +22,13 @@ export interface CaseEditor {
   notFound: boolean;
   error: string | null;
   pending: number;
+  /** Completed cases are read only until reopened. */
+  readOnly: boolean;
+  /** "Not available" + reason by naKey (server copy + local edits). */
+  notAvailable: Record<string, Pick<NotAvailable, 'reason'>>;
+  setNotAvailable: (entity: string, field: string, procedureId: string | null, reason: string | null) => void;
+  /** Use a fresh server copy (after Complete / Reopen). */
+  replace: (d: CaseDetail) => void;
   /** Rows of an entity as the screen should show them (server copy + local edits). */
   rows: (entity: string) => DecodedRow[];
   fieldError: (entity: string, id: string, field: string) => string | undefined;
@@ -83,12 +92,13 @@ export function useCaseEditor(caseId: string): CaseEditor {
     const ops = queueRef.current;
     inFlight.current = ops;
     setSaveStatus('saving');
-    const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [] };
+    const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [] };
     const index: { kind: EditResult['kind']; op: Op }[] = [];
     for (const op of ops) {
       if (op.kind === 'create') batch.creates!.push({ entity: op.entity, id: op.id, parent_id: op.parent_id, values: op.values });
       else if (op.kind === 'change') batch.changes!.push({ entity: op.entity, id: op.id, field: op.field, value: op.value, key: op.key });
       else if (op.kind === 'remove') batch.removes!.push({ entity: op.entity, id: op.id });
+      else if (op.kind === 'na') batch.not_available!.push({ entity: op.entity, field: op.field, procedure_id: op.procedure_id, reason: op.reason });
       else batch.additional!.push({ op: op.op, id: op.id, text: op.text, fact_date: op.fact_date });
       index.push({ kind: op.kind, op });
     }
@@ -97,13 +107,14 @@ export function useCaseEditor(caseId: string): CaseEditor {
       retry.current = 0;
       setDetail(r.case);
       setQueue((q) => q.slice(ops.length));
-      const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0 };
+      const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0 };
       const byKind = new Map(r.results.map((x) => [`${x.kind}:${x.i}`, x]));
       setErrors((prev) => {
         const next = { ...prev };
         for (const { kind, op } of index) {
           const res = byKind.get(`${kind}:${counters[kind]++}`);
-          const key = op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : `${op.kind}|${'entity' in op ? op.entity : ''}`;
+          const key =
+            op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : `${op.kind}|${'entity' in op ? op.entity : ''}`;
           if (res?.ok) delete next[key];
           else if (res) next[key] = res.message ?? 'Not saved.';
         }
@@ -160,7 +171,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
     };
   }, [flush]);
 
-  const view = useMemo(() => {
+  const overlay = useMemo(() => {
     const rows: Record<string, DecodedRow[]> = {};
     if (detail) for (const [e, rs] of Object.entries(detail.rows)) rows[e] = rs.map((r) => ({ ...r }));
     // The queue still holds the batch on its way until the answer arrives, so it covers both.
@@ -189,10 +200,28 @@ export function useCaseEditor(caseId: string): CaseEditor {
         }
       }
     }
-    return rows;
+    const na: Record<string, Pick<NotAvailable, 'reason'>> = { ...(detail?.not_available ?? {}) };
+    for (const op of queue) {
+      if (op.kind !== 'na') continue;
+      const k = naKey(op.entity, op.field, op.procedure_id);
+      if (op.reason) na[k] = { reason: op.reason };
+      else delete na[k];
+    }
+    return { rows, na };
   }, [detail, queue]);
 
+  const view = overlay.rows;
   const rows = useCallback((entity: string) => view[entity] ?? [], [view]);
+
+  const setNotAvailable: CaseEditor['setNotAvailable'] = useCallback(
+    (entity, field, procedureId, reason) => push([{ kind: 'na', entity, field, procedure_id: procedureId, reason }], 50),
+    [push],
+  );
+
+  const replace = useCallback((d: CaseDetail) => {
+    setDetail(d);
+    setErrors({});
+  }, []);
 
   const slot = useCallback((entity: string, scopeId: string) => slotId(idPrefix(dict.entities[entity].pk), entity, scopeId), []);
 
@@ -225,5 +254,6 @@ export function useCaseEditor(caseId: string): CaseEditor {
 
   const fieldError = useCallback((entity: string, id: string, field: string) => errors[errKey(entity, id, field)], [errors]);
 
-  return { detail, loading, notFound, error, pending: queue.length, rows, fieldError, setField, addRow, removeRow, slot, additional, flush, reload };
+  const readOnly = detail?.meta.collection_status === 'COMPLETED';
+  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, slot, additional, flush, reload };
 }

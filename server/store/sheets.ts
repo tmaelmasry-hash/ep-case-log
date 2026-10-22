@@ -7,7 +7,7 @@ import type { AppConfig } from '../appconfig.ts';
 import { readinessOf } from '../domain/cases.ts';
 import { diffCase, isEmptyPatch, type CasePatch } from './patch.ts';
 import { CASE_COLUMNS, ROW_META, SUPPORT_TABS, buildLayout, col, type SheetLayout } from './sheet-layout.ts';
-import type { Activity, ActivityInput, Group, ImportJob, RegistryStore, User } from './types.ts';
+import type { Activity, ActivityInput, ExportFile, ExportRequest, Group, ImportJob, RegistryStore, User } from './types.ts';
 
 /** The Apps Script web app (or a test double with the same operations). */
 export interface Gateway {
@@ -86,9 +86,44 @@ export class SheetsStore implements RegistryStore {
     return this.gw.call('init');
   }
 
-  /** Creates missing tabs and columns (never removes or reorders). */
+  /** Creates missing tabs and columns (never removes or reorders) and refreshes the Lookups tab (codes and labels). */
   setup() {
-    return this.gw.call('setup', { tabs: this.layout.tabs });
+    return this.gw.call('setup', { tabs: this.layout.tabs, lookups: this.lookupRows().map((r) => [r.entity, r.field, r.code, r.label]) });
+  }
+
+  /** Every dictionary code with its label (the Lookups tab). */
+  lookupRows(): SheetRow[] {
+    return Object.values(this.config.dict.entities).flatMap((e) => e.fields.flatMap((f) => (f.codes ?? []).map((c) => ({ entity: e.entity, field: f.name, code: c.code, label: c.label }))));
+  }
+
+  /** The Sheet itself as .xlsx (Apps Script export: a trimmed temporary copy; the Sheet is never changed). */
+  async exportXlsx(req: ExportRequest): Promise<ExportFile> {
+    return (await this.gw.call('export', { ...req })) as ExportFile;
+  }
+
+  // ── rows exactly as the Sheet holds them (local Excel export) ──
+  userRow(u: User): SheetRow {
+    return this.userCells(u);
+  }
+  groupRow(g: Group): SheetRow {
+    return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, toCell(v)]));
+  }
+  activityRow(a: Activity): SheetRow {
+    return { activity_id: a.activity_id, at: a.at, actor: toCell(a.actor), action: a.action, detail_json: a.detail === undefined ? '' : JSON.stringify(a.detail) };
+  }
+  /** Tab → rows for these cases, as a first save would write them. */
+  caseRows(recs: CaseRecord[]): Record<string, SheetRow[]> {
+    const out: Record<string, SheetRow[]> = {};
+    for (const rec of recs) {
+      for (const op of this.caseOps(rec, null)) {
+        if (op.op === 'append') (out[String(op.tab)] ??= []).push(...(op.rows as SheetRow[]));
+        else if (op.op === 'update' && op.tab === 'Cases' && op.merge) {
+          const row = out.Cases?.find((r) => r.case_id === rec.meta.case_id);
+          for (const [c, m] of Object.entries(op.merge as Record<string, { set?: Record<string, unknown> }>)) if (row && m.set && Object.keys(m.set).length) row[c] = JSON.stringify(m.set);
+        }
+      }
+    }
+    return out;
   }
 
   // ── users ──

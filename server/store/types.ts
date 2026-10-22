@@ -62,6 +62,21 @@ export interface ImportJob {
   items: ImportItem[];
 }
 
+/** What an Excel export holds (EP Workspace P4): which tabs, columns never exported, and (group export) which cases. */
+export interface ExportRequest {
+  fileName: string;
+  keepTabs: string[] | null;
+  dropColumns: Record<string, string[]>;
+  caseIds: string[] | null;
+}
+export interface ExportFile {
+  file_name: string;
+  base64: string;
+  bytes: number;
+  tabs: string[];
+  cases: number;
+}
+
 /** Storage boundary: users, groups, activity, cases. The Google Sheet store implements the same interface in phase 4. */
 export interface RegistryStore {
   readonly kind: 'memory' | 'file' | 'sheets';
@@ -90,4 +105,6 @@ export interface RegistryStore {
   claimImport(job: ImportJob): Promise<boolean>;
   getImport(by: { key?: string; id?: string }): Promise<ImportJob | null>;
   saveImport(job: ImportJob): Promise<void>;
+  /** The Google Sheet exports itself (Apps Script); local stores leave this out and the server builds the file. */
+  exportXlsx?(req: ExportRequest): Promise<ExportFile>;
 }

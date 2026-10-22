@@ -8,6 +8,7 @@ import { adminRoutes } from './routes/admin.ts';
 import { authRoutes } from './routes/auth.ts';
 import { bulkRoutes } from './routes/bulk.ts';
 import { dashboardRoutes } from './routes/dashboard.ts';
+import { exportRoutes } from './routes/exports.ts';
 import { caseRoutes } from './routes/cases.ts';
 
 const PUBLIC = [/^\/api\/health$/, /^\/api\/auth\/login$/];
@@ -30,6 +31,7 @@ export function buildRouter(ctx: AppContext): Router {
   caseRoutes(app);
   bulkRoutes(app);
   dashboardRoutes(app);
+  exportRoutes(app);
   return app;
 }
 

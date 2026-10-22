@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { AccountSection, UsersSection } from './AccountSettings';
 import { ActivitySheet, GroupsSheet, RecycleBinSheet, useRecycleBin } from './AdminSheets';
+import { api, ApiError } from '../lib/api';
 
 /** Admin rows (approved phase 3 preview): groups, recycle bin, activity log — each opens in a sheet. */
 function AdminSection() {
@@ -35,6 +36,60 @@ function AdminSection() {
   );
 }
 
+/** Excel export (phase 10): the whole registry (Admin) or one of the user's groups. Downloaded, never kept. */
+function ExportSection() {
+  const { can } = useAuth();
+  const { groups, toast } = useStore();
+  const [busy, setBusy] = useState<string | null>(null);
+  const run = async (key: string, body: Record<string, unknown>) => {
+    setBusy(key);
+    try {
+      const f = await api<{ file_name: string; base64: string; cases: number }>('POST', '/api/exports', body);
+      const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = f.file_name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      toast({ message: `Downloaded ${f.file_name}`, kind: 'success' });
+    } catch (e) {
+      toast({ message: (e as ApiError).message, kind: 'error' });
+    } finally {
+      setBusy(null);
+    }
+  };
+  if (!can('export.group')) return null;
+  return (
+    <>
+      <h2 className="section-label">Export to Excel</h2>
+      <div className="group" data-testid="export-section">
+        {can('export.all') && (
+          <button className="grow-row" disabled={!!busy} onClick={() => run('ALL', { scope: 'ALL' })} data-testid="export-all">
+            <span className="row-ic">
+              <Icon name="download" size={22} />
+            </span>
+            <span className="grow">Whole registry</span>
+            <span className="muted small">{busy === 'ALL' ? 'Preparing…' : 'All tabs'}</span>
+          </button>
+        )}
+        {groups.map((g) => (
+          <button key={g.group_id} className="grow-row" disabled={!!busy} onClick={() => run(g.group_id, { scope: 'GROUP', group_id: g.group_id })} data-testid="export-group">
+            <span className="row-ic">
+              <Icon name="download" size={22} />
+            </span>
+            <span className="grow">{g.name}</span>
+            <span className="muted small">{busy === g.group_id ? 'Preparing…' : `${g.cases ?? 0} cases`}</span>
+          </button>
+        ))}
+      </div>
+      <p className="note">The same tabs and columns as the registry Google Sheet. Passwords are never in the file. A group file holds that group's cases only.</p>
+    </>
+  );
+}
+
 export function SettingsView() {
   const { can } = useAuth();
   return (
@@ -43,6 +98,7 @@ export function SettingsView() {
       <AccountSection />
       {can('groups.manage') && <AdminSection />}
       {can('users.manage') && <UsersSection />}
+      <ExportSection />
       <h2 className="section-label">About</h2>
       <div className="card pad about">
         <p>

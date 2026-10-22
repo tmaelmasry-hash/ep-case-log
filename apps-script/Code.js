@@ -128,7 +128,12 @@ function setup_(ss, req) {
   if (req.lookups) {
     var lk = ss.getSheetByName('Lookups');
     if (lk.getLastRow() > 1) lk.getRange(2, 1, lk.getLastRow() - 1, lk.getLastColumn()).clearContent();
-    if (req.lookups.length) lk.getRange(2, 1, req.lookups.length, req.lookups[0].length).setValues(req.lookups.map(function (r) { return r.map(cell_); }));
+    if (req.lookups.length) {
+      // A new tab has 1000 rows; the dictionary has more codes than that.
+      var needRows = req.lookups.length + 1;
+      if (lk.getMaxRows() < needRows) lk.insertRowsAfter(lk.getMaxRows(), needRows - lk.getMaxRows());
+      lk.getRange(2, 1, req.lookups.length, req.lookups[0].length).setValues(req.lookups.map(function (r) { return r.map(cell_); }));
+    }
   }
   return { added: added };
 }

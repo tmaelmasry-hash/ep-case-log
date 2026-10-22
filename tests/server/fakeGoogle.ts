@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Gateway } from '../../server/store/sheets.ts';
+import { buildXlsx } from '../../shared/xlsx.ts';
 
 type V = string | number | boolean;
 
@@ -180,9 +181,27 @@ export class FakeAppsScript implements Gateway {
     return JSON.parse(this.doPost({ postData: { contents: body } }).content);
   }
 
+  /** Stand-in for Code.js export_ (Drive copy + Google's xlsx export cannot run here): the same trimming
+   *  (keepTabs, dropColumns, caseIds) applied to this fake sheet's tabs, written with the app's xlsx writer. */
+  private exportBook(req: { fileName: string; keepTabs: string[] | null; dropColumns: Record<string, string[]>; caseIds: string[] | null }) {
+    const want = req.caseIds ? new Set(req.caseIds.map(String)) : null;
+    const sheets = this.book.sheets
+      .filter((sh) => !req.keepTabs || req.keepTabs.includes(sh.name))
+      .map((sh) => {
+        const all = this.table(sh.name);
+        const head = sh.getLastColumn() ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String) : [];
+        const keep = head.filter((h) => !(req.dropColumns[sh.name] ?? []).includes(h));
+        const rows = all.filter((r) => !want || !head.includes('case_id') || want.has(String(r.case_id))).map((r) => keep.map((h) => r[h] ?? null));
+        return { name: sh.name, rows: [keep, ...rows] };
+      });
+    const bytes = buildXlsx(sheets);
+    return { file_name: req.fileName, base64: Buffer.from(bytes).toString('base64'), bytes: bytes.length, tabs: sheets.map((s) => s.name), cases: sheets.find((s) => s.name === 'Cases')?.rows.length ? sheets.find((s) => s.name === 'Cases')!.rows.length - 1 : 0 };
+  }
+
   /** The same request the Worker sends; the answer parsed the same way. */
   async call(action: string, body: Record<string, unknown> = {}) {
     this.calls++;
+    if (action === 'export') return this.exportBook(body as never);
     const out = JSON.parse(this.doPost({ postData: { contents: JSON.stringify({ ...body, action, secret: this.secret, target: 'main' }) } }).content);
     if (!out.ok) throw new Error(`Google Sheet gateway: ${out.error}`);
     return out.result;

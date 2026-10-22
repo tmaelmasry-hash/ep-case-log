@@ -13,7 +13,7 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 | D6 | Kept from EP Case Log: **Patients screen**, **CHA₂DS₂-VASc display** computed from dictionary fields (`CLINICAL_PROFILE_SNAPSHOTS` heart_failure, hypertension, diabetes, prior_stroke_tia_systemic_embolism, vascular_disease + age + sex_at_birth), never stored. **PDF case report** kept, rebuilt on dictionary fields (saved values only, no generated wording). |
 | D7 | Removed from EP Case Log: images, op-note scan, image inbox, its own sync server / local-only mode, invented fields. |
 | D8 | Brought from EP Workspace: Bulk add MRNs, AI Assistant, MRN prompt + copy-forward, Light follow-up, Excel export, Dashboard + My work, Follow-up bell (built switched off, as in F-19). Not brought: Reports templates + WhatsApp. |
-| D9 | Accounts/hosting for the new Sheet and site: **decided before phase 4**. Phases 1–3 run on a local store with synthetic data. |
+| D9 | Accounts/hosting: the owner's Google Apps Script account and Cloudflare account (Workers & Pages), named 22 Oct 2026. They hold test items only; the owner asked to delete them. Clean-up is done from a session on the owner's computer (`docs/ACCOUNTS_CLEANUP_HANDOFF.md`), list first, delete only confirmed items. Phases 1–3 run on a local store with synthetic data. |
 
 ## Build order (owner approved)
 1. Server, sign-in, Admin/Member

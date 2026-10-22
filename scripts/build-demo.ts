@@ -8,7 +8,9 @@ const root = resolve(import.meta.dirname, '..');
 execSync('node scripts/build-config.ts && npx vite build -c vite.demo.config.ts', { cwd: root, stdio: 'inherit' });
 const out = join(root, 'dist-demo');
 const assets = readdirSync(join(out, 'assets'));
-const js = readFileSync(join(out, 'assets', assets.find((f) => f.endsWith('.js'))!), 'utf8').replace(/<\/script/gi, '<\\/script');
+const js = readFileSync(join(out, 'assets', assets.find((f) => f.endsWith('.js'))!), 'utf8').replace(/<\/script/gi, '<\\/script')
+  // Non-ASCII as \uXXXX escapes (same meaning in JS strings and regexes; the preview host rejects a literal U+FFFD).
+  .replace(/[^\x00-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 const css = readFileSync(join(out, 'assets', assets.find((f) => f.endsWith('.css'))!), 'utf8').replace(/<\/style/gi, '<\\/style');
 // The preview host adds the <!doctype>, <head> and <body>; the page brings its title, styles and script.
 const page = `<title>EP Case Log Demo</title>

@@ -78,5 +78,39 @@
     "not_counted": []
    }
   }
+ },
+ "ai": {
+  "provider": "fixture",
+  "passes": 1,
+  "_passes": "1 = one request per note with all sections (owner, 16 Oct: stays within a free daily quota, e.g. Gemini free tier 20 requests/day); 2 = pass 1 finds the sections, pass 2 extracts (two requests, fewer tokens each).",
+  "_providers": "fixture (test AI, the 15 sample notes) | anthropic | gemini | openai | off. The Admin switches it in Settings; keys live only in Cloudflare environment variables.",
+  "anthropic": {
+   "api_key_env": "ANTHROPIC_API_KEY",
+   "model": "claude-opus-5-5",
+   "price_usd_per_mtok": {
+    "input": 4.0,
+    "output": 20.0
+   }
+  },
+  "gemini": {
+   "api_key_env": "GEMINI_API_KEY",
+   "model": "gemini-3.8-flash",
+   "price_usd_per_mtok": {
+    "input": 0.75,
+    "output": 3.75
+   }
+  },
+  "openai": {
+   "api_key_env": "OPENAI_API_KEY",
+   "model": "gpt-6-astra",
+   "price_usd_per_mtok": null
+  },
+  "_models": "Checked against each provider's documentation on 15–16 Oct 2026 (P5). Prices are list prices for the default model (Gemini: until 31 Dec 2026; $1.50/$7.50 from 1 Jan 2027 — update then). On Gemini's free tier nothing is charged; the estimate then overstates. OpenAI price null = tokens counted, cost not estimated. The Admin can change the model in Settings; the estimate keeps the default model's price.",
+  "deidentify_before_send": true,
+  "store_raw_note": false,
+  "max_note_chars": 20000,
+  "timeout_seconds": 120,
+  "monthly_cost_cap_usd": 20,
+  "_note": "MRN, names and phone numbers are removed before a note is sent. Raw notes are never stored or logged. The AI fills the draft only; a person accepts every value. Copied from EP Workspace config/site.json ai (models checked by the owner 15–16 Oct 2026). Keys only in the Worker's secrets / local .env."
  }
 }

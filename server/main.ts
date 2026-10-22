@@ -19,7 +19,11 @@ if (!secret) {
 }
 const config = loadConfig();
 const store = e2e ? new MemoryStore() : storeFromEnv(config);
-const ctx = makeContext({ sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0' }, store, config);
+const ctx = makeContext(
+  { sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0', anthropicKey: process.env.ANTHROPIC_API_KEY, geminiKey: process.env.GEMINI_API_KEY, openaiKey: process.env.OPENAI_API_KEY },
+  store,
+  config,
+);
 
 if (e2e) {
   const pw = process.env.E2E_PASSWORD;

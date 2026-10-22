@@ -19,6 +19,7 @@ export function readRawConfig(): RawConfig {
     layout: read('case_layout.json'),
     core: read('dictionary/core_dataset.json'),
     site: read('site.json'),
+    aiFixtures: read('ai_fixtures.json'),
   };
 }
 

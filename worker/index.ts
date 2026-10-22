@@ -16,6 +16,10 @@ export interface WorkerEnv {
   GATEWAY_SECRET?: string;
   /** "test" points at the TEST Sheet (synthetic data only). */
   SHEETS_TARGET?: string;
+  /** AI provider keys (optional; phase 11). */
+  ANTHROPIC_API_KEY?: string;
+  GEMINI_API_KEY?: string;
+  OPENAI_API_KEY?: string;
 }
 
 // One app per isolate, so the short users/groups cache lives across requests.
@@ -26,7 +30,9 @@ function app(env: WorkerEnv): Router {
   if (!env.APPS_SCRIPT_URL || !env.GATEWAY_SECRET) throw new Error('APPS_SCRIPT_URL and GATEWAY_SECRET must be set as Worker secrets');
   const config = buildAppConfig(raw as unknown as RawConfig);
   const store = new SheetsStore(config, new AppsScriptGateway(env.APPS_SCRIPT_URL, env.GATEWAY_SECRET, env.SHEETS_TARGET === 'test' ? 'test' : 'main'));
-  router = buildRouter(makeContext({ sessionSecret: env.SESSION_SECRET ?? '', secureCookies: true }, store, config));
+  router = buildRouter(
+    makeContext({ sessionSecret: env.SESSION_SECRET ?? '', secureCookies: true, anthropicKey: env.ANTHROPIC_API_KEY, geminiKey: env.GEMINI_API_KEY, openaiKey: env.OPENAI_API_KEY }, store, config),
+  );
   return router;
 }
 

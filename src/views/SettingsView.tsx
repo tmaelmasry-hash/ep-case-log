@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
@@ -90,6 +90,69 @@ function ExportSection() {
   );
 }
 
+interface AiStatus {
+  provider: string;
+  label: string;
+  model: string | null;
+  configured: boolean;
+  reason: string | null;
+  usage: { month: string; runs: number; cost_usd: number };
+  monthly_cost_cap_usd: number | null;
+  providers: { id: string; model: string | null; key_set: boolean | null }[];
+}
+
+const PROVIDER_LABEL: Record<string, string> = { fixture: 'Test AI (sample notes only)', anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)', openai: 'OpenAI', off: 'Off' };
+
+/** Admin: which AI provider the AI Assistant uses. Keys live only in the server's secrets, never here. */
+function AiSection() {
+  const { toast } = useStore();
+  const [st, setSt] = useState<AiStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = () =>
+    api<AiStatus>('GET', '/api/ai/status')
+      .then(setSt)
+      .catch((e) => toast({ message: (e as Error).message, kind: 'error' }));
+  useEffect(() => {
+    load();
+  }, []);
+  if (!st) return null;
+  const choose = async (provider: string) => {
+    setBusy(true);
+    try {
+      const r = await api<{ label: string; configured: boolean; reason: string | null }>('POST', '/api/settings/ai', { provider });
+      toast({ message: r.configured ? `AI provider: ${r.label}` : `${r.label}: ${r.reason ?? 'not ready'}`, kind: r.configured ? 'success' : 'error' });
+      await load();
+    } catch (e) {
+      toast({ message: (e as ApiError).message, kind: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <h2 className="section-label">AI Assistant</h2>
+      <div className="group" data-testid="ai-settings">
+        {st.providers.map((p) => (
+          <label key={p.id} className="grow-row">
+            <input type="radio" name="ai-provider" checked={st.provider === p.id} disabled={busy} onChange={() => choose(p.id)} />
+            <span className="grow">
+              <span className="line1">{PROVIDER_LABEL[p.id] ?? p.id}</span>
+              <span className="sub">
+                {p.model ? `${p.model} · ` : ''}
+                {p.key_set === null ? 'no key needed' : p.key_set ? 'key set' : 'key not set'}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="note">
+        {st.configured ? `In use: ${st.label}.` : `Not ready: ${st.reason ?? ''}`} This month: {st.usage.runs} run{st.usage.runs === 1 ? '' : 's'}, US$ {st.usage.cost_usd.toFixed(2)}
+        {st.monthly_cost_cap_usd ? ` of US$ ${st.monthly_cost_cap_usd}` : ''}. API keys are set on the server (secrets), never in this app.
+      </p>
+    </>
+  );
+}
+
 export function SettingsView() {
   const { can } = useAuth();
   return (
@@ -99,6 +162,7 @@ export function SettingsView() {
       {can('groups.manage') && <AdminSection />}
       {can('users.manage') && <UsersSection />}
       <ExportSection />
+      {can('settings.manage') && <AiSection />}
       <h2 className="section-label">About</h2>
       <div className="card pad about">
         <p>

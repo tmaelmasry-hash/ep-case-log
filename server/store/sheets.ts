@@ -205,6 +205,18 @@ export class SheetsStore implements RegistryStore {
     return Number(r.value);
   }
 
+  // ── settings ──
+  async getSetting<T>(key: string, fallback: T): Promise<T> {
+    const [r] = await this.batch([{ op: 'read', tab: 'Settings', where: { col: 'key', in: [key] } }]);
+    const row = (r.rows ?? [])[0];
+    return row ? json<T>(row.value_json, fallback) : fallback;
+  }
+  async setSetting(key: string, value: unknown, by: string) {
+    const row = { key, value_json: JSON.stringify(value), updated_at: new Date().toISOString(), updated_by: by };
+    const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'Settings', key: 'key', row }]);
+    if (!(r as { inserted?: boolean }).inserted) await this.batch([{ op: 'update', tab: 'Settings', key: 'key', id: key, set: row }]);
+  }
+
   // ── bulk add jobs ──
   private importCells(j: ImportJob): SheetRow {
     const { items, ...rest } = j;
@@ -272,6 +284,7 @@ export class SheetsStore implements RegistryStore {
         additional: Object.values(additional).sort((a, b) => a.created_at.localeCompare(b.created_at)),
         not_available: json(r.not_available_json, {}),
         copied: json(r.copied_json, {}),
+        ai: json(r.ai_json, {}),
         history: [],
       });
     }
@@ -364,6 +377,8 @@ export class SheetsStore implements RegistryStore {
     if (na.length) merge.not_available_json = { set: Object.fromEntries(na.filter(([, v]) => v)), unset: na.filter(([, v]) => !v).map(([k]) => k) };
     const cp = Object.entries(p.copied);
     if (cp.length) merge.copied_json = { set: Object.fromEntries(cp.filter(([, v]) => v)), unset: cp.filter(([, v]) => !v).map(([k]) => k) };
+    const am = Object.entries(p.ai);
+    if (am.length) merge.ai_json = { set: Object.fromEntries(am.filter(([, v]) => v)), unset: am.filter(([, v]) => !v).map(([k]) => k) };
     if (Object.keys(merge).length) ops.push({ op: 'update', tab: 'Cases', key: 'case_id', id, merge });
 
     const appends = new Map<string, SheetRow[]>();

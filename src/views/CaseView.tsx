@@ -15,6 +15,7 @@ import { EntityFields, type FkOption, type NaInfo } from '../components/Fields';
 import { api, ApiError } from '../lib/api';
 import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
+import { AiSheet, aiPending } from './AiAssistant';
 
 // ── readiness shared by every sheet of the open case ──
 interface CaseCtx {
@@ -94,6 +95,7 @@ function RowForm({ ed, entity, rowId, parentId, row, only }: { ed: CaseEditor; e
       naOf={(field) => naInfo(c, entity, field, pid)}
       onNa={(field) => c.askNa(entity, field, pid)}
       copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
+      aiOf={(field) => ed.detail?.ai?.[`${entity}|${rowId}|${field}`] ?? ed.detail?.ai?.[`${entity}|${rowId}|${field}#ai`]}
       only={only}
       onChange={(field, value, key) => ed.setField(entity, rowId, field, value, { key, create: exists ? undefined : { parent_id: parentId ?? null } })}
     />
@@ -626,6 +628,7 @@ const KIND_LABEL: Record<HistoryItem['kind'], [string, string]> = {
   reopen: ['REOPENED', 'comp'],
   delete: ['DELETED', 'del'],
   restore: ['RESTORED', 'add'],
+  ai: ['AI', ''],
 };
 
 function fmtWhen(iso: string): string {
@@ -922,6 +925,7 @@ type OpenSheet =
   | { kind: 'additional' }
   | { kind: 'ready' }
   | { kind: 'history' }
+  | { kind: 'ai' }
   | null;
 
 export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => void; wide: boolean }) {
@@ -946,7 +950,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
 
   const { rows: rowsOf } = ed;
   const allRows = useMemo(() => Object.fromEntries(Object.keys(dict.entities).map((e) => [e, rowsOf(e)])), [rowsOf]);
-  const readiness = useMemo(() => evaluateReadiness(dict, allRows, ed.notAvailable), [allRows, ed.notAvailable]);
+  const readiness = useMemo(() => evaluateReadiness(dict, allRows, ed.notAvailable, d?.ai ?? {}), [allRows, ed.notAvailable, d?.ai]);
   const cha = useMemo(() => (chaRelevant(allRows) ? cha2ds2vasc(allRows) : null), [allRows]);
   const caseCtx = useMemo<CaseCtx>(
     () => ({ readiness, checks: new Map(readiness.checks.map((c) => [c.key, c])), askNa: (entity, field, pid) => setNa({ entity, field, pid }) }),
@@ -978,6 +982,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const procs = ed.rows('EP_PROCEDURES');
   const comps = ed.rows('PROCEDURE_COMPONENTS');
   const completed = ed.readOnly;
+  const aiWaiting = aiPending(d);
   const addProcedure = () => {
     const pid = ed.addRow('EP_PROCEDURES');
     setSheet({ kind: 'procedure', id: pid });
@@ -1108,6 +1113,24 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           </div>
         )}
 
+        {!completed && (aiWaiting.values.length > 0 || aiWaiting.conflicts.length > 0) && (
+          <div className="banner info" data-testid="ai-banner">
+            <Icon name="extract" size={18} />
+            <span className="grow">
+              {[
+                aiWaiting.values.length ? `${aiWaiting.values.length} AI value${aiWaiting.values.length === 1 ? '' : 's'} to review` : '',
+                aiWaiting.conflicts.length ? `${aiWaiting.conflicts.length} conflict${aiWaiting.conflicts.length === 1 ? '' : 's'}` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              . The case cannot be completed until they are accepted or resolved.
+            </span>
+            <button className="btn small" onClick={() => setSheet({ kind: 'ai' })}>
+              Review
+            </button>
+          </div>
+        )}
+
         <h2 className="sechead">Procedures</h2>
         <div className="group" data-testid="procedures">
           {procs.map((p, i) => {
@@ -1179,6 +1202,16 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
 
         <h2 className="sechead">Case</h2>
         <div className="group">
+          {can('ai.extract') && !completed && (
+            <button className="grow-row" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row">
+              <span className="row-ic">
+                <Icon name="extract" size={22} />
+              </span>
+              <span className="grow">AI Assistant</span>
+              <span className="muted small">Fill from a clinical note</span>
+              <Icon name="chevron" size={16} className="muted" />
+            </button>
+          )}
           <button className="grow-row" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row">
             <span className="row-ic">
               <Icon name="cal" size={22} />
@@ -1236,6 +1269,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           />
         )}
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {na && naField && (
           <NaDialog

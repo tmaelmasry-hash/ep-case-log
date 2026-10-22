@@ -5,7 +5,7 @@
 // available" is a warning only. Pure: the server enforces it and the browser shows it from the same code.
 import { hasValue, type CoreItem, type Dictionary } from './dictionary.ts';
 
-export type CheckState = 'ok' | 'missing' | 'not_available' | 'not_applicable';
+export type CheckState = 'ok' | 'missing' | 'not_available' | 'not_applicable' | 'ai_pending';
 
 /** Reasons offered for "Not available" (EP Workspace); any other short reason may be typed. */
 export const NA_REASONS = ['Not documented in the record', 'Test not done', 'Record not accessible', 'Patient declined'];
@@ -82,7 +82,10 @@ export function sectionOf(dict: Dictionary, entity: string): string {
   return 'patient';
 }
 
-export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>, notAvailable: Record<string, { reason: string }>): Readiness {
+/** AI Assistant marks (phase 11): a core value the AI filled and nobody accepted yet, or a conflict, blocks completion. */
+type AiMarks = Record<string, { source: string }>;
+
+export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>, notAvailable: Record<string, { reason: string }>, ai: AiMarks = {}): Readiness {
   const procs = rows.EP_PROCEDURES ?? [];
   const rowsIn = (entity: string, pid: string | null): Row[] => {
     const all = rows[entity] ?? [];
@@ -124,9 +127,11 @@ export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>,
       checks.push({ ...base, state: 'not_applicable' });
       return;
     }
-    const value = candidates.map((r) => r[item.field]).find(hasValue);
+    const holder = candidates.find((r) => hasValue(r[item.field]));
+    const value = holder?.[item.field];
     let state: CheckState;
-    if (item.complete_if) state = hasValue(value) && item.complete_if.includes(String(value)) ? 'ok' : 'missing';
+    if (holder && ai[`${item.entity}|${holder._id}|${item.field}`]?.source === 'AI') state = 'ai_pending';
+    else if (item.complete_if) state = hasValue(value) && item.complete_if.includes(String(value)) ? 'ok' : 'missing';
     else if (hasValue(value)) state = 'ok';
     else if (notAvailable[key]) state = 'not_available';
     else state = 'missing';
@@ -137,6 +142,7 @@ export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>,
       if (item.not_available_is_warning) warnings.push({ ...issue, text: `${label} not available (${check.reason}) — age is never used to infer it` });
     }
     if (state === 'missing') blockers.push({ ...issue, text: item.complete_if && hasValue(value) ? `${label}: not reviewed yet` : `${label} is empty` });
+    if (state === 'ai_pending') blockers.push({ ...issue, text: `${label}: AI value not yet accepted` });
     // complications_reviewed = PRESENT needs at least one complete complication of this procedure (core_dataset "then").
     if (state === 'ok' && item.then?.[String(value)]) {
       const ok = rowsIn('COMPLICATIONS', pid).some((r) => hasValue(r.category) && hasValue(r.relatedness) && hasValue(r.outcome));
@@ -199,6 +205,9 @@ export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>,
       }
     }
   }
+
+  const conflicts = Object.entries(ai).filter(([, m]) => m.source === 'AI_CONFLICT').length;
+  if (conflicts) blockers.push({ entity: '', field: '', procedure_id: null, section: 'ai', text: `${conflicts} AI conflict${conflicts === 1 ? '' : 's'} to resolve` });
 
   const counted = checks.filter((c) => c.state !== 'not_applicable');
   const isDone = (c: CoreCheck) => c.state === 'ok' || c.state === 'not_available';

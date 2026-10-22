@@ -2193,3 +2193,39 @@ table.dt .bar {
 .warn-text {
   color: var(--warn);
 }
+
+/* AI Assistant (phase 11) */
+.ai-tag {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  vertical-align: middle;
+}
+.ai-tag.conflict {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.ai-item {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.ai-quote {
+  font-style: italic;
+}
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.ai-dropped {
+  margin-top: 12px;
+}
+.ai-dropped summary {
+  cursor: pointer;
+  padding: 6px 0;
+}

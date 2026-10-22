@@ -25,7 +25,7 @@ export const CASE_COLUMNS = [
   'case_id', 'mrn', 'group_id', 'group_seq', 'collection_status', 'patient_id', 'episode_id',
   'created_at', 'created_by', 'updated_at', 'updated_by', 'row_version',
   'is_deleted', 'deleted_at', 'deleted_by', 'completed_at', 'completed_by', 'reopen_reason',
-  'collector_user_id', 'core_done', 'core_total', 'not_available_json', 'additional_json', 'copied_json',
+  'collector_user_id', 'core_done', 'core_total', 'not_available_json', 'additional_json', 'copied_json', 'ai_json',
 ];
 /** row_key = case_id/ENTITY/row_id: unique per tab. */
 export const ROW_HEAD = ['row_key', 'row_id', 'case_id', 'record_type', 'procedure_id'];
@@ -40,6 +40,7 @@ export const SUPPORT_TABS: Record<string, string[]> = {
   Groups: ['group_id', 'name', 'sort_order', 'next_seq', 'is_deleted', 'created_at'],
   Activity: ['activity_id', 'at', 'actor', 'action', 'detail_json'],
   Lookups: ['entity', 'field', 'code', 'label'],
+  Settings: ['key', 'value_json', 'updated_at', 'updated_by'],
   Imports: ['import_job_id', 'idempotency_key', 'actor_user_id', 'group_id', 'list_fingerprint', 'status', 'total_rows', 'added', 'created_at', 'finished_at', 'items_json'],
 };
 

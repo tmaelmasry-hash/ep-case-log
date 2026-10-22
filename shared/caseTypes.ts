@@ -50,7 +50,7 @@ export interface HistoryEntry {
   id?: string;
   at: string;
   by: string;
-  kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore';
+  kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore' | 'ai';
   /** Where in the case, at the time of the change (e.g. "Procedure 2", "ECG 1"). */
   where?: string;
   entity?: string;
@@ -70,6 +70,24 @@ export interface CaseRecord {
   history?: HistoryEntry[];
   /** "ENTITY.field" → where it was copied from (phase 5); removed when someone edits the field. */
   copied?: Record<string, string>;
+  /** AI Assistant marks (phase 11): "ENTITY|row|field" = value filled by the AI, not yet accepted;
+   *  "ENTITY|row|field#ai" = conflicting values for a person to choose; "ENTITY|row|*" = a row the AI added. */
+  ai?: Record<string, AiMark>;
+}
+
+export interface AiMark {
+  source: 'AI' | 'AI_CONFLICT';
+  entity: string;
+  record_id: string;
+  field: string;
+  /** Short quote from the note (the note itself is never kept). */
+  evidence: string | null;
+  proposed?: unknown[];
+  evidences?: string[];
+  /** Conflict for a row not made yet: the procedure it belongs to (procedure-level tables). */
+  procedure_id?: string | null;
+  at: string;
+  by: string;
 }
 
 /** A row as the browser sees it: decoded values plus _id. */
@@ -81,6 +99,7 @@ export interface CaseDetail {
   additional: AdditionalInfo[];
   not_available: Record<string, NotAvailable>;
   copied: Record<string, string>;
+  ai: Record<string, AiMark>;
   history_count: number;
   users: { id: string; name: string }[];
   /** The case's line in the case list, so the list follows each save without reloading. */

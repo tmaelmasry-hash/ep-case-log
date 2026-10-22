@@ -1,7 +1,7 @@
 // What one request changed in a case, cell by cell (ported idea: EP Workspace server/store/record.ts).
 // Stores write only these cells, so two people saving different fields of one case at the same moment both
 // keep their values, and the last save of the same field wins (EP Workspace P3-4). Pure.
-import type { AdditionalInfo, CaseMeta, CaseRecord, HistoryEntry, StoredRow } from '../../shared/caseTypes.ts';
+import type { AdditionalInfo, AiMark, CaseMeta, CaseRecord, HistoryEntry, StoredRow } from '../../shared/caseTypes.ts';
 import type { NotAvailable } from '../../shared/readiness.ts';
 
 export interface RowChange<T> {
@@ -18,6 +18,7 @@ export interface CasePatch {
   additional: RowChange<AdditionalInfo>[];
   not_available: Record<string, NotAvailable | null>;
   copied: Record<string, string | null>;
+  ai: Record<string, AiMark | null>;
   history: RowChange<HistoryEntry>[];
 }
 
@@ -58,6 +59,7 @@ export function diffCase(base: CaseRecord | null, next: CaseRecord): CasePatch {
   };
   const na = mapDiff(base?.not_available ?? {}, next.not_available ?? {});
   const copied = mapDiff(base?.copied ?? {}, next.copied ?? {});
+  const ai = mapDiff(base?.ai ?? {}, next.ai ?? {});
   return {
     case_id: next.meta.case_id,
     meta: changed(base?.meta, next.meta),
@@ -65,12 +67,13 @@ export function diffCase(base: CaseRecord | null, next: CaseRecord): CasePatch {
     additional: diffList(base?.additional ?? [], next.additional, (a) => a.info_id),
     not_available: na,
     copied,
+    ai,
     history: diffList(base?.history ?? [], next.history ?? [], historyId),
   };
 }
 
 export function isEmptyPatch(p: CasePatch): boolean {
-  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !Object.keys(p.copied).length && !p.history.length;
+  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !Object.keys(p.copied).length && !Object.keys(p.ai).length && !p.history.length;
 }
 
 /** Applies a patch to the stored copy of a case (null = not stored yet). */
@@ -99,6 +102,11 @@ export function applyPatch(stored: CaseRecord | null, p: CasePatch): CaseRecord 
   for (const [k, v] of Object.entries(p.copied)) {
     if (v) copied[k] = v;
     else delete copied[k];
+  }
+  const ai = (rec.ai ??= {});
+  for (const [k, v] of Object.entries(p.ai)) {
+    if (v) ai[k] = v;
+    else delete ai[k];
   }
   const hist = (rec.history ??= []);
   for (const c of p.history) {

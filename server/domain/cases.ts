@@ -38,11 +38,11 @@ export function liveRows(rec: CaseRecord, entity: string): StoredRow[] {
   return (rec.rows[entity] ?? []).filter((r) => !r._deleted);
 }
 
-function findLive(rec: CaseRecord, entity: string, id: string): StoredRow | undefined {
+export function findLive(rec: CaseRecord, entity: string, id: string): StoredRow | undefined {
   return liveRows(rec, entity).find((r) => r._id === id);
 }
 
-function insert(rec: CaseRecord, entity: string, id: string, values: Record<string, unknown>, a: Actor): StoredRow {
+export function insert(rec: CaseRecord, entity: string, id: string, values: Record<string, unknown>, a: Actor): StoredRow {
   const row: StoredRow = { ...values, _id: id, _created_at: a.now, _created_by: a.userId, _updated_at: a.now, _updated_by: a.userId };
   (rec.rows[entity] ??= []).push(row);
   return row;
@@ -91,6 +91,7 @@ export function newCaseRecord(dict: Dictionary, input: NewCaseInput, a: Actor): 
     not_available: {},
     history: [],
     copied: {},
+    ai: {},
   };
   insert(rec, 'PATIENT_IDENTIFIERS', input.patientId, { patient_id: input.patientId, mrn: input.mrn }, a);
   insert(rec, 'PATIENTS', input.patientId, { patient_id: input.patientId, enrollment_date: input.enrollmentDate, registry_basis: input.registryBasis }, a);
@@ -123,7 +124,7 @@ function procedureOf(dict: Dictionary, entity: string, row: Record<string, unkno
 }
 
 /** Where a row is, as the case page names it: "Procedure 2", "Complication 1", "ECG 3". */
-function placeOf(dict: Dictionary, rec: CaseRecord, entity: string, row: StoredRow): { proc: string | null; own: string | null } {
+export function placeOf(dict: Dictionary, rec: CaseRecord, entity: string, row: StoredRow): { proc: string | null; own: string | null } {
   const def = dict.entities[entity];
   if (def.nest_under) {
     const parent = (rec.rows[def.nest_under.entity] ?? []).find((r) => r._id === row[def.nest_under!.fk]);
@@ -142,12 +143,12 @@ function placeOf(dict: Dictionary, rec: CaseRecord, entity: string, row: StoredR
   return { proc, own: `${def.label}${k >= 0 ? ` ${k + 1}` : ''}` };
 }
 
-const whereText = (p: { proc: string | null; own: string | null }) => [p.proc, p.own].filter(Boolean).join(' · ') || undefined;
+export const whereText = (p: { proc: string | null; own: string | null }) => [p.proc, p.own].filter(Boolean).join(' · ') || undefined;
 
-class EditError extends Error {}
+export class EditError extends Error {}
 
 /** Fill the links of a new row and check its place in the case. Returns the stored values. */
-function placeRow(dict: Dictionary, rec: CaseRecord, def: EntityDef, id: string, parentId: string | null | undefined, a: Actor): Record<string, unknown> {
+export function placeRow(dict: Dictionary, rec: CaseRecord, def: EntityDef, id: string, parentId: string | null | undefined, a: Actor): Record<string, unknown> {
   const v: Record<string, unknown> = { [def.pk]: id };
   if (def.later) throw new EditError(`${def.label} comes in ${def.later}.`);
   if (PERMANENT.has(def.entity)) throw new EditError(`${def.label} cannot be added.`);
@@ -210,7 +211,7 @@ function encodeFor(dict: Dictionary, rec: CaseRecord, def: EntityDef, row: Recor
 }
 
 /** After a value changes: clear a dependent subtype that no longer belongs, and prune "Other — specify" keys. */
-function afterChange(def: EntityDef, row: StoredRow, field: string) {
+export function afterChange(def: EntityDef, row: StoredRow, field: string) {
   for (const child of def.fields) {
     if (child.parent_field === field && child.parent_map && row[child.name] !== null && row[child.name] !== undefined) {
       if (child.parent_map[String(row[child.name])] !== row[field]) row[child.name] = null;
@@ -219,7 +220,7 @@ function afterChange(def: EntityDef, row: StoredRow, field: string) {
   if (def.fields.some((x) => x.name === 'other_specify_json')) row.other_specify_json = mergeOtherSpecify(def, row, null, null);
 }
 
-function removeRow(dict: Dictionary, rec: CaseRecord, entity: string, id: string, a: Actor) {
+export function removeRow(dict: Dictionary, rec: CaseRecord, entity: string, id: string, a: Actor) {
   const row = findLive(rec, entity, id);
   if (!row) return;
   row._deleted = true;
@@ -330,8 +331,9 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
         afterChange(def, row, ch.field);
         const after = decodeValue(f!, row[ch.field]);
         if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where, old: before, new: after }, a);
-        // Checked by a person: no longer marked as copied.
+        // Checked by a person: no longer marked as copied, nor as an AI value waiting for review.
         if (rec.copied) delete rec.copied[`${def.entity}.${ch.field}`];
+        if (rec.ai) delete rec.ai[`${def.entity}|${row._id}|${ch.field}`];
         // A value replaces "Not available" (EP Workspace: entering a value later replaces it).
         if (hasValue(after) && rec.not_available) delete rec.not_available[naKey(def.entity, ch.field, procedureOf(dict, def.entity, row))];
       }
@@ -406,7 +408,7 @@ function applyNotAvailable(dict: Dictionary, rec: CaseRecord, n: NaEdit, a: Acto
 }
 
 export function readinessOf(dict: Dictionary, rec: CaseRecord): Readiness {
-  return evaluateReadiness(dict, decodeRows(dict, rec), rec.not_available ?? {});
+  return evaluateReadiness(dict, decodeRows(dict, rec), rec.not_available ?? {}, rec.ai ?? {});
 }
 
 /** Mark completed: only when every core field has a value or "Not available". Never changes clinical values. */
@@ -438,12 +440,33 @@ export function historyItems(dict: Dictionary, rec: CaseRecord, nameOf: (id: str
       const def = h.entity ? dict.entities[h.entity] : undefined;
       const flabel = def?.fields.find((x) => x.name === h.field)?.label ?? h.field ?? '';
       const prefix = h.where ? `${h.where} · ` : '';
+      if (h.kind === 'edit' && h.text === 'ai' && def) return { ...base, kind: 'ai' as const, text: `${prefix}${flabel} (AI, to review)`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
       if (h.kind === 'edit' && h.text === 'other') return { ...base, text: `${prefix}${flabel}: Other — specify`, old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };
       if (h.kind === 'edit' && def) return { ...base, text: `${prefix}${flabel}`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
       if (h.kind === 'edit') return { ...base, text: h.text ?? 'Changed', old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };
       if (h.kind === 'na') return { ...base, text: h.new ? `${prefix}${flabel}: Not available (${h.new})` : `${prefix}${flabel}: "Not available" cleared` };
       return { ...base, text: h.text ?? h.kind };
     });
+}
+
+/** The one-per-scope row of an entity (scope = the case, or a procedure), made if missing. */
+export function ensureSingleRow(dict: Dictionary, rec: CaseRecord, entity: string, procedureId: string | null, a: Actor): StoredRow {
+  const def = dict.entities[entity];
+  if (entity === 'PATIENT_IDENTIFIERS' || entity === 'PATIENTS') return findLive(rec, entity, rec.meta.patient_id)!;
+  if (entity === 'EP_EPISODES') return findLive(rec, entity, rec.meta.episode_id)!;
+  if (entity === 'EP_PROCEDURES') return findLive(rec, entity, procedureId!)!;
+  const id = expectedSlot(dict, entity, def.scope === 'procedure' ? procedureId! : rec.meta.case_id);
+  return findLive(rec, entity, id) ?? insert(rec, entity, id, placeRow(dict, rec, def, id, def.scope === 'procedure' ? procedureId : null, a), a);
+}
+
+/** A new repeatable row (in a procedure for procedure sections). */
+export function addNewRow(dict: Dictionary, rec: CaseRecord, entity: string, procedureId: string | null, a: Actor): StoredRow {
+  const def = dict.entities[entity];
+  const id = newRowId(def);
+  const row = insert(rec, entity, id, placeRow(dict, rec, def, id, def.scope === 'procedure' || entity === 'EP_PROCEDURES' ? (entity === 'EP_PROCEDURES' ? null : procedureId) : null, a), a);
+  const p = placeOf(dict, rec, entity, row);
+  addHistory(rec, { kind: 'add', entity, row_id: id, text: entity === 'EP_PROCEDURES' ? `${p.proc} added (AI)` : `${p.own} added${p.proc ? ` to ${p.proc}` : ''} (AI)` }, a);
+  return row;
 }
 
 /** Copies the configured history fields (case_layout copy_forward) from the same MRN's latest case into a new one.
@@ -495,6 +518,7 @@ export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, u
     additional: rec.additional.filter((x) => !x.is_deleted),
     not_available: rec.not_available ?? {},
     copied: rec.copied ?? {},
+    ai: rec.ai ?? {},
     history_count: rec.history?.length ?? 0,
     users,
     summary: summarize(dict, rec),

@@ -12,4 +12,8 @@ export interface Env {
   sessionSecret: string;
   /** False only for plain-http local runs on a LAN address (cookies need HTTPS or localhost when true). */
   secureCookies: boolean;
+  /** AI provider keys (phase 11): only in the Worker's secrets / local .env, never in the browser or the Sheet. */
+  anthropicKey?: string;
+  geminiKey?: string;
+  openaiKey?: string;
 }

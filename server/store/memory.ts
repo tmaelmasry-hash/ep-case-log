@@ -8,6 +8,7 @@ export interface StoreData {
   activity: Activity[];
   cases: CaseRecord[];
   imports?: ImportJob[];
+  settings?: Record<string, { value: unknown; updated_at: string; updated_by: string }>;
 }
 
 export function emptyData(): StoreData {
@@ -100,6 +101,16 @@ export class MemoryStore implements RegistryStore {
 
   async putNewCases(recs: CaseRecord[]) {
     for (const r of recs) this.data.cases.push(this.clone(r));
+    await this.persist();
+  }
+
+  async getSetting<T>(key: string, fallback: T): Promise<T> {
+    const s = this.data.settings?.[key];
+    return s ? (this.clone(s.value) as T) : fallback;
+  }
+
+  async setSetting(key: string, value: unknown, by: string) {
+    (this.data.settings ??= {})[key] = { value: this.clone(value), updated_at: new Date().toISOString(), updated_by: by };
     await this.persist();
   }
 

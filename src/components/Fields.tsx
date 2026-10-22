@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { codeLabel, editable, formFields, hasValue, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
 import { dict } from '../lib/dict';
-import type { DecodedRow } from '../../shared/caseTypes.ts';
+import type { AiMark, DecodedRow } from '../../shared/caseTypes.ts';
 
 const PILL_MAX = 8;
 
@@ -134,6 +134,7 @@ export function FieldRow({
   na,
   onNa,
   copied,
+  ai,
 }: {
   def: EntityDef;
   f: FormField;
@@ -148,6 +149,8 @@ export function FieldRow({
   onNa?: () => void;
   /** Where the value was copied from (same MRN), until someone edits it. */
   copied?: string;
+  /** The AI filled this value (or proposes another); shown until a person accepts it or edits the field. */
+  ai?: AiMark;
 }) {
   const value = row?.[f.name] ?? null;
   const kind = controlKind(f, row);
@@ -161,6 +164,11 @@ export function FieldRow({
       {copied && (
         <span className="copied-tag" title={copied} data-testid="copied-tag">
           Copied
+        </span>
+      )}
+      {ai && (
+        <span className={`ai-tag${ai.source === 'AI_CONFLICT' ? ' conflict' : ''}`} title={ai.evidence ? `From the note: “${ai.evidence}”` : 'Filled by the AI'} data-testid="ai-tag">
+          {ai.source === 'AI_CONFLICT' ? 'AI conflict' : 'AI'}
         </span>
       )}
     </span>
@@ -279,6 +287,7 @@ export function EntityFields({
   naOf,
   onNa,
   copiedOf,
+  aiOf,
   only,
 }: {
   entity: string;
@@ -291,6 +300,7 @@ export function EntityFields({
   naOf?: (field: string) => NaInfo | undefined;
   onNa?: (field: string) => void;
   copiedOf?: (field: string) => string | undefined;
+  aiOf?: (field: string) => AiMark | undefined;
   /** Show only these fields (in this order). */
   only?: string[];
 }) {
@@ -313,6 +323,7 @@ export function EntityFields({
           na={naOf?.(f.name)}
           onNa={onNa ? () => onNa(f.name) : undefined}
           copied={copiedOf?.(f.name)}
+          ai={aiOf?.(f.name)}
         />
       ))}
     </div>

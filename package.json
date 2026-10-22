@@ -20,6 +20,7 @@
     "worker:secrets": "node scripts/worker-secrets.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.132.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

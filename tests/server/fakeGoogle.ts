@@ -178,6 +178,11 @@ export class FakeAppsScript implements Gateway {
   /** A raw web-app request body (as sent over HTTP) → the parsed answer, exactly as Code.js gives it. */
   post(body: string): { ok: boolean; result?: unknown; error?: string } {
     this.calls++;
+    const req = JSON.parse(body) as Record<string, unknown>;
+    if (req.action === 'export') {
+      if (req.secret !== this.secret) return { ok: false, error: 'unauthorised' };
+      return { ok: true, result: this.exportBook(req as never) };
+    }
     return JSON.parse(this.doPost({ postData: { contents: body } }).content);
   }
 

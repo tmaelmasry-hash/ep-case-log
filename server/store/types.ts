@@ -105,6 +105,9 @@ export interface RegistryStore {
   claimImport(job: ImportJob): Promise<boolean>;
   getImport(by: { key?: string; id?: string }): Promise<ImportJob | null>;
   saveImport(job: ImportJob): Promise<void>;
+  /** Site settings set in the app (AI provider choice, AI usage). */
+  getSetting<T>(key: string, fallback: T): Promise<T>;
+  setSetting(key: string, value: unknown, by: string): Promise<void>;
   /** The Google Sheet exports itself (Apps Script); local stores leave this out and the server builds the file. */
   exportXlsx?(req: ExportRequest): Promise<ExportFile>;
 }

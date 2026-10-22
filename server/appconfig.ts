@@ -9,6 +9,35 @@ export interface Site {
   mrn: MrnConfig;
   registry_basis_default: string;
   dashboard: DashConfig;
+  ai: AiConfig;
+}
+
+export interface AiProviderConfig {
+  api_key_env: string;
+  model: string;
+  price_usd_per_mtok: { input: number; output: number } | null;
+}
+export interface AiConfig {
+  provider: string;
+  passes?: 1 | 2;
+  anthropic: AiProviderConfig;
+  gemini: AiProviderConfig;
+  openai: AiProviderConfig;
+  max_note_chars?: number;
+  timeout_seconds?: number;
+  monthly_cost_cap_usd?: number;
+}
+
+/** Synthetic sample notes (EP Workspace fixtures/notes): the Test AI answers these only. */
+export interface AiFixture {
+  id: string;
+  title: string;
+  identifiers: { mrn: string; name?: string; phone?: string };
+  text: string[];
+  expected: [string, string, unknown, string][];
+  conflicts?: [string, string, string[], string[]][];
+  additional_info?: string[];
+  must_not?: unknown[];
 }
 
 export interface RawConfig {
@@ -18,11 +47,13 @@ export interface RawConfig {
   layout: CaseLayout;
   core: CoreSpec;
   site: Site;
+  aiFixtures: { notes: AiFixture[] };
 }
 
 export interface AppConfig {
   dict: Dictionary;
   site: Site;
+  aiFixtures: AiFixture[];
 }
 
 export function buildAppConfig(raw: RawConfig): AppConfig {
@@ -32,7 +63,7 @@ export function buildAppConfig(raw: RawConfig): AppConfig {
     throw new Error('config/site.json registry_basis_default is not a dictionary code');
   }
   checkDashConfig(dict, site.dashboard);
-  return { dict, site };
+  return { dict, site, aiFixtures: raw.aiFixtures?.notes ?? [] };
 }
 
 /** Site-local calendar date (YYYY-MM-DD) — never UTC truncation. */

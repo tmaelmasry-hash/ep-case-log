@@ -1,7 +1,9 @@
 # Hand-off: clean the owner's test accounts before phase 4
 
-For a Claude session on the owner's own computer (Claude Desktop app with its built-in browser, or Claude in Chrome).
-The cloud session that built phases 1–3 has no browser, so it could not do this step.
+Two ways, depending on where the session runs:
+- **Cloudflare from a cloud session:** if the environment has `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (set by the owner in the environment settings, never pasted into chat), use the Cloudflare API or `wrangler` to list and delete Workers / Pages projects (steps 1–4 below).
+- **Apps Script (and Cloudflare without a token):** this needs the owner's own Google sign-in. Do it from a Claude session on the owner's computer (Claude Desktop app with its built-in browser, or Claude in Chrome), or the owner deletes the confirmed test projects by hand.
+The cloud session that built phases 1–3 had no browser and no token, so it could not do this step.
 
 ## Owner's words (22 Oct 2026)
 - Accounts to use for the new registry (decision D9):

@@ -1409,3 +1409,358 @@ select {
   background: linear-gradient(160deg, #1c3f8f, #0a1f4f);
   color: #fff;
 }
+
+/* ---------- Phase 2: EP Log-style case screens (approved preview) ---------- */
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  color: var(--accent);
+}
+.navbar .title {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+}
+.navbar > span:first-child,
+.navbar .back,
+.navbar .right {
+  min-width: 96px;
+}
+.navbar .right {
+  display: inline-flex;
+  justify-content: flex-end;
+}
+.navbar .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 1.05rem;
+}
+.navbar .grow {
+  flex: 1;
+}
+.hcard {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+}
+.hdate {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.hmrn {
+  margin-top: 10px;
+}
+.sechead {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  margin: 22px 16px 7px;
+}
+.monthhead {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 20px 4px 8px;
+}
+.group {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.grow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--text);
+  font-size: 1rem;
+  position: relative;
+}
+.grow-row + .grow-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  border-top: 0.5px solid #c6c6c8;
+}
+@media (hover: hover) {
+  a.grow-row:hover,
+  button.grow-row:hover:not(:disabled) {
+    background: var(--fill);
+  }
+}
+.grow-row:disabled {
+  opacity: 1;
+  cursor: default;
+  color: var(--muted);
+}
+.grow-row.add {
+  color: var(--accent);
+}
+.grow-row.sel {
+  background: var(--accent-soft);
+}
+.grow-row .grow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.grow-row .line1 b {
+  font-weight: 600;
+}
+.grow-row .sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.row-ic {
+  width: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.grow-row .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.c-abl {
+  background: color-mix(in srgb, var(--cat-ablation) 14%, transparent);
+  color: var(--cat-ablation);
+}
+.c-dev {
+  background: color-mix(in srgb, var(--cat-device) 14%, transparent);
+  color: var(--cat-device);
+}
+.c-eps {
+  background: color-mix(in srgb, var(--cat-diagnostic) 14%, transparent);
+  color: var(--cat-diagnostic);
+}
+.c-neutral {
+  background: var(--fill);
+  color: var(--muted);
+}
+.status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.s-prog {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.s-done {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+.seg {
+  display: flex;
+  background: var(--fill);
+  border-radius: 9px;
+  padding: 2px;
+  margin: 12px 0 4px;
+  overflow-x: auto;
+}
+.seg button,
+.mini-seg button {
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.seg button.on,
+.mini-seg button.on {
+  background: var(--card);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 1px 1px rgb(0 0 0 / 0.04);
+  font-weight: 600;
+}
+.seg small {
+  color: var(--muted);
+}
+.mini-seg {
+  display: flex;
+  background: var(--fill);
+  border-radius: 8px;
+  padding: 2px;
+}
+.pill-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill-set button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 13px;
+  background: var(--fill);
+  font-size: 0.92rem;
+}
+.pill-set button.on {
+  background: var(--accent);
+  color: #fff;
+}
+.frow {
+  padding: 11px 16px;
+  position: relative;
+}
+.frow + .frow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  border-top: 0.5px solid #c6c6c8;
+}
+.frow.inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.frow.inline .lab-wrap {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.frow.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.frow .lab {
+  font-size: 0.97rem;
+}
+.frow .val {
+  color: var(--muted);
+  text-align: right;
+}
+.frow-err {
+  flex-basis: 100%;
+}
+.ios-value,
+.ios-select {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  text-align: right;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 0;
+  outline: none;
+}
+.with-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.with-unit .ios-value {
+  width: 9em;
+}
+.ios-value:focus,
+.ios-select:focus {
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+.ios-select {
+  max-width: 60%;
+  cursor: pointer;
+}
+.ios-text {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  font: inherit;
+  resize: vertical;
+}
+.other-specify {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.other-specify .with-unit,
+.other-specify .ios-value {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+}
+.other-specify .ios-value {
+  border-bottom: 1px solid var(--line);
+}
+.offer {
+  margin-top: 14px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.offer summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+.offer .pill-set {
+  margin-top: 10px;
+}
+.notice-err {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+.case-view {
+  padding-bottom: 24px;
+}
+.kpis {
+  grid-template-columns: repeat(3, 1fr);
+}
+.frow.inline > :not(.lab-wrap):not(.frow-err):not(.lab) {
+  margin-left: auto;
+}
+.frow.inline .ios-select {
+  max-width: 100%;
+}
+.frow .with-unit .ios-value {
+  width: 12em;
+}
+.frow .with-unit input.ios-value {
+  border: 0;
+  background: transparent;
+  min-height: 0;
+  padding: 4px 0;
+  border-radius: 6px;
+}
+.frow .with-unit input.ios-value:focus {
+  background: var(--accent-soft);
+}
+.frow .ios-value::placeholder {
+  color: var(--muted);
+}

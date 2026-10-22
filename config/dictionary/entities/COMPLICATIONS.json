@@ -1,0 +1,442 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "COMPLICATIONS",
+ "pk": "complication_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "timing",
+  "severity",
+  "major_event"
+ ],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "event_datetime",
+   "label": "Event datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R; **must be on or after `EP_PROCEDURES.procedure_start_datetime` of the parent procedure.** An `event_datetime` **before** procedure start is a VALIDATION_FAILED ERROR and cannot be stored: a procedural complication cannot precede the procedure that caused it, and a pre-existing condition is not a complication of a procedure that had not begun. v1.3 had no branch for this case at all, so `timing` fell through every rule and the row was storable with no derivable timing. It must also not be after the current site-local datetime"
+  },
+  {
+   "name": "same_day_discharge_relation",
+   "label": "Same day discharge relation",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "BEFORE_DISCHARGE",
+     "label": "Before discharge"
+    },
+    {
+     "code": "AFTER_DISCHARGE",
+     "label": "After discharge"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C; **required when, and only when, the site-local calendar date of `event_datetime` equals the known `discharge_date` of the parent procedure and the event is after `procedure_end_datetime`.** NOT_APPLICABLE in every other case, including an event on an earlier or later date, an intraprocedural event, and an event whose discharge date is not yet known. This is the one lean conditional fact that separates the two same-day states; **no discharge time is collected**, because a discharge timestamp would be a new required value on every admitted case to answer a question that arises only on the discharge day itself. INDETERMINATE is a legitimate recorded value where the record genuinely does not establish the order; it is never treated as BEFORE_DISCHARGE"
+  },
+  {
+   "name": "category",
+   "label": "Category",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DEATH",
+     "label": "Death"
+    },
+    {
+     "code": "CARDIAC_ARREST",
+     "label": "Cardiac arrest"
+    },
+    {
+     "code": "STROKE_TIA",
+     "label": "Stroke TIA"
+    },
+    {
+     "code": "SYSTEMIC_EMBOLISM",
+     "label": "Systemic embolism"
+    },
+    {
+     "code": "CARDIAC_PERFORATION",
+     "label": "Cardiac perforation"
+    },
+    {
+     "code": "PERICARDIAL_EFFUSION",
+     "label": "Pericardial effusion"
+    },
+    {
+     "code": "TAMPONADE",
+     "label": "Tamponade"
+    },
+    {
+     "code": "PERICARDITIS",
+     "label": "Pericarditis"
+    },
+    {
+     "code": "MYOCARDIAL_INFARCTION",
+     "label": "Myocardial infarction"
+    },
+    {
+     "code": "CORONARY_INJURY",
+     "label": "Coronary injury"
+    },
+    {
+     "code": "MAJOR_VASCULAR_INJURY",
+     "label": "Major vascular injury"
+    },
+    {
+     "code": "ACCESS_BLEEDING",
+     "label": "Access bleeding"
+    },
+    {
+     "code": "RETROPERITONEAL_BLEED",
+     "label": "Retroperitoneal bleed"
+    },
+    {
+     "code": "MAJOR_HEMATOMA",
+     "label": "Major hematoma"
+    },
+    {
+     "code": "POCKET_HEMATOMA",
+     "label": "Pocket hematoma"
+    },
+    {
+     "code": "PNEUMOTHORAX",
+     "label": "Pneumothorax"
+    },
+    {
+     "code": "HEMOTHORAX",
+     "label": "Hemothorax"
+    },
+    {
+     "code": "AV_BLOCK_NEW_PACING_REQUIREMENT",
+     "label": "AV block new pacing requirement"
+    },
+    {
+     "code": "PHRENIC_NERVE_INJURY",
+     "label": "Phrenic nerve injury"
+    },
+    {
+     "code": "ESOPHAGEAL_INJURY",
+     "label": "Esophageal injury"
+    },
+    {
+     "code": "ATRIOESOPHAGEAL_FISTULA",
+     "label": "Atrioesophageal fistula"
+    },
+    {
+     "code": "PULMONARY_VEIN_STENOSIS",
+     "label": "Pulmonary vein stenosis"
+    },
+    {
+     "code": "LEAD_DISLODGEMENT",
+     "label": "Lead dislodgement"
+    },
+    {
+     "code": "LEAD_PERFORATION",
+     "label": "Lead perforation"
+    },
+    {
+     "code": "LEAD_MALFUNCTION",
+     "label": "Lead malfunction"
+    },
+    {
+     "code": "DEVICE_EMBOLIZATION",
+     "label": "Device embolization"
+    },
+    {
+     "code": "POCKET_INFECTION",
+     "label": "Pocket infection"
+    },
+    {
+     "code": "SYSTEMIC_DEVICE_INFECTION",
+     "label": "Systemic device infection"
+    },
+    {
+     "code": "ANESTHESIA_RESPIRATORY_COMPLICATION",
+     "label": "Anesthesia respiratory complication"
+    },
+    {
+     "code": "AKI_REQUIRING_DIALYSIS",
+     "label": "AKI requiring dialysis"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "relatedness",
+   "label": "Relatedness",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DEFINITE",
+     "label": "Definite"
+    },
+    {
+     "code": "PROBABLE",
+     "label": "Probable"
+    },
+    {
+     "code": "POSSIBLE",
+     "label": "Possible"
+    },
+    {
+     "code": "UNRELATED",
+     "label": "Unrelated"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "intervention",
+   "label": "Intervention",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "MEDICATION",
+     "label": "Medication"
+    },
+    {
+     "code": "TRANSFUSION",
+     "label": "Transfusion"
+    },
+    {
+     "code": "PERCUTANEOUS",
+     "label": "Percutaneous"
+    },
+    {
+     "code": "SURGERY",
+     "label": "Surgery"
+    },
+    {
+     "code": "DEVICE_REINTERVENTION",
+     "label": "Device reintervention"
+    },
+    {
+     "code": "ICU",
+     "label": "ICU"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "outcome",
+   "label": "Outcome",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RESOLVED",
+     "label": "Resolved"
+    },
+    {
+     "code": "ONGOING",
+     "label": "Ongoing"
+    },
+    {
+     "code": "PERMANENT_SEQUELA",
+     "label": "Permanent sequela"
+    },
+    {
+     "code": "DEATH",
+     "label": "Death"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "prolonged_index_admission",
+   "label": "Prolonged index admission",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "unplanned_readmission",
+   "label": "Unplanned readmission",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "invasive_intervention_required",
+   "label": "Invasive intervention required",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "transfusion_required",
+   "label": "Transfusion required",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "unplanned_icu_or_life_support",
+   "label": "Unplanned ICU or life support",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; unplanned intensive-care admission, mechanical ventilation, mechanical circulatory support, or cardiopulmonary resuscitation attributable to this event"
+  },
+  {
+   "name": "permanent_harm",
+   "label": "Permanent harm",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "resolution_date",
+   "label": "Resolution date",
+   "type": "date",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "rule": "**C — applicability is frozen and total, per `CANON_D30_COMPLICATION_V1` in Section 1.7.** It is **required exactly when `outcome = RESOLVED`**, must be **on or after `site_local_date(event_datetime)`**, and must **not be after the current site-local date**. It is **blank and forbidden** for ONGOING, PERMANENT_SEQUELA, and DEATH, and a supplied value in those states is a VALIDATION_FAILED ERROR. **Outcome transitions enforce this matrix in the same locked mutation and are audited**: a transition out of RESOLVED clears the date, and a transition into RESOLVED requires a validated replacement date in the same mutation. v1.4 had no rule preventing `resolution_date` from preceding `event_datetime`"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

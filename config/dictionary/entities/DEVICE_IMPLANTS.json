@@ -1,0 +1,373 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_IMPLANTS",
+ "pk": "device_implant_id",
+ "parentFk": [
+  "procedure_id",
+  "device_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "number_of_leads"
+ ],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R; for replacement/upgrade/downgrade this is the newly implanted hardware",
+   "auto": true
+  },
+  {
+   "name": "prior_device_id",
+   "label": "Prior device",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "C; required for GENERATOR_CHANGE, UPGRADE, or DOWNGRADE and cross-validated with DEVICES replacement linkage"
+  },
+  {
+   "name": "device_action",
+   "label": "Device action",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NEW_IMPLANT",
+     "label": "New implant"
+    },
+    {
+     "code": "GENERATOR_CHANGE",
+     "label": "Generator change"
+    },
+    {
+     "code": "UPGRADE",
+     "label": "Upgrade"
+    },
+    {
+     "code": "DOWNGRADE",
+     "label": "Downgrade"
+    },
+    {
+     "code": "REPOSITION",
+     "label": "Reposition"
+    },
+    {
+     "code": "EXPLANT",
+     "label": "Explant"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "implant_indication",
+   "label": "Implant indication",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SND",
+     "label": "SND"
+    },
+    {
+     "code": "AV_BLOCK",
+     "label": "AV block"
+    },
+    {
+     "code": "AF_BRADY",
+     "label": "AF brady"
+    },
+    {
+     "code": "POST_AVJ_ABLATION",
+     "label": "Post AVJ ablation"
+    },
+    {
+     "code": "ASYSTOLIC_SYNCOPE",
+     "label": "Asystolic syncope"
+    },
+    {
+     "code": "PRIMARY_SCD_PREVENTION",
+     "label": "Primary SCD prevention"
+    },
+    {
+     "code": "SECONDARY_SCD_PREVENTION",
+     "label": "Secondary SCD prevention"
+    },
+    {
+     "code": "HF_CRT",
+     "label": "HF CRT"
+    },
+    {
+     "code": "REPLACEMENT_ERI_EOL",
+     "label": "Replacement ERI EOL"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "icd_prevention_type",
+   "label": "ICD prevention type",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PRIMARY",
+     "label": "Primary"
+    },
+    {
+     "code": "SECONDARY",
+     "label": "Secondary"
+    }
+   ],
+   "rule": "C for ICD/CRT-D/S-ICD/EV-ICD"
+  },
+  {
+   "name": "pacemaker_dependent_preimplant",
+   "label": "Pacemaker dependent preimplant",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "UNCERTAIN",
+     "label": "Uncertain"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "implant_side",
+   "label": "Implant side",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LEFT",
+     "label": "Left"
+    },
+    {
+     "code": "RIGHT",
+     "label": "Right"
+    },
+    {
+     "code": "MIDLINE",
+     "label": "Midline"
+    },
+    {
+     "code": "FEMORAL",
+     "label": "Femoral"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "final_programmed_mode",
+   "label": "Final programmed mode",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AAI",
+     "label": "AAI"
+    },
+    {
+     "code": "AAIR",
+     "label": "AAIR"
+    },
+    {
+     "code": "VVI",
+     "label": "VVI"
+    },
+    {
+     "code": "VVIR",
+     "label": "VVIR"
+    },
+    {
+     "code": "VDD",
+     "label": "VDD"
+    },
+    {
+     "code": "VDDR",
+     "label": "VDDR"
+    },
+    {
+     "code": "DDI",
+     "label": "DDI"
+    },
+    {
+     "code": "DDIR",
+     "label": "DDIR"
+    },
+    {
+     "code": "DDD",
+     "label": "DDD"
+    },
+    {
+     "code": "DDDR",
+     "label": "DDDR"
+    },
+    {
+     "code": "AOO",
+     "label": "AOO"
+    },
+    {
+     "code": "VOO",
+     "label": "VOO"
+    },
+    {
+     "code": "DOO",
+     "label": "DOO"
+    },
+    {
+     "code": "ODO",
+     "label": "ODO"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC for a pacing-capable implant/generator/upgrade; not required for pure EXPLANT or defibrillation-only systems"
+  },
+  {
+   "name": "lower_rate_bpm",
+   "label": "Lower rate",
+   "type": "integer",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "bpm",
+   "rule": "RC when a pacing mode is applicable"
+  },
+  {
+   "name": "tachytherapy_status",
+   "label": "Tachytherapy status",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ENABLED",
+     "label": "Enabled"
+    },
+    {
+     "code": "DISABLED",
+     "label": "Disabled"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "RC for ICD-capable systems at finalization"
+  },
+  {
+   "name": "perioperative_antibiotic_given",
+   "label": "Perioperative antibiotic given",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "defibrillation_testing",
+   "label": "Defibrillation testing",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NOT_DONE",
+     "label": "Not done"
+    },
+    {
+     "code": "SUCCESSFUL",
+     "label": "Successful"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for defibrillator systems"
+  },
+  {
+   "name": "acute_device_result",
+   "label": "Acute device result",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SUCCESSFUL",
+     "label": "Successful"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED_ABORTED",
+     "label": "Failed aborted"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

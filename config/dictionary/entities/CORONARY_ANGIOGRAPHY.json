@@ -1,0 +1,216 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "CORONARY_ANGIOGRAPHY",
+ "pk": "angiography_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "angiography_date",
+   "label": "Angiography date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "indication",
+   "label": "Indication",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ACS",
+     "label": "ACS"
+    },
+    {
+     "code": "ISCHEMIA_EVALUATION",
+     "label": "Ischemia evaluation"
+    },
+    {
+     "code": "POST_ARREST",
+     "label": "Post arrest"
+    },
+    {
+     "code": "VT_WORKUP",
+     "label": "VT workup"
+    },
+    {
+     "code": "PREPROCEDURE",
+     "label": "Preprocedure"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "cad_extent",
+   "label": "CAD extent",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "NONOBSTRUCTIVE",
+     "label": "Nonobstructive"
+    },
+    {
+     "code": "ONE_VESSEL",
+     "label": "One vessel"
+    },
+    {
+     "code": "TWO_VESSEL",
+     "label": "Two vessel"
+    },
+    {
+     "code": "THREE_VESSEL",
+     "label": "Three vessel"
+    },
+    {
+     "code": "LEFT_MAIN",
+     "label": "Left main"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "active_culprit_or_unrevascularized_significant_disease",
+   "label": "Active culprit or unrevascularized significant disease",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "revascularization",
+   "label": "Revascularization",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "PCI",
+     "label": "Pci"
+    },
+    {
+     "code": "CABG",
+     "label": "Cabg"
+    },
+    {
+     "code": "PLANNED",
+     "label": "Planned"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "revascularization_completeness",
+   "label": "Revascularization completeness",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETE",
+     "label": "Complete"
+    },
+    {
+     "code": "INCOMPLETE",
+     "label": "Incomplete"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "C if revascularized"
+  },
+  {
+   "name": "ischemic_substrate_relevance",
+   "label": "Ischemic substrate relevance",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LIKELY",
+     "label": "Likely"
+    },
+    {
+     "code": "UNLIKELY",
+     "label": "Unlikely"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "C for VT/VF"
+  },
+  {
+   "name": "report_reference",
+   "label": "Report reference",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "O"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

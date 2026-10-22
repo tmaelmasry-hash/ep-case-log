@@ -1,0 +1,173 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_LEAD_STATUS_EVENTS",
+ "pk": "lead_status_event_id",
+ "parentFk": [
+  "lead_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "lead_id",
+   "label": "Lead",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICE_LEADS",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "lead_functional_status",
+   "label": "Lead functional status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "ABNORMAL_MONITORED",
+     "label": "Abnormal monitored"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; electrical and mechanical performance, independent of disposition"
+  },
+  {
+   "name": "lead_disposition",
+   "label": "Lead disposition",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "IN_USE",
+     "label": "In use"
+    },
+    {
+     "code": "ABANDONED",
+     "label": "Abandoned"
+    },
+    {
+     "code": "EXTRACTED",
+     "label": "Extracted"
+    }
+   ],
+   "rule": "R; physical disposition, independent of functional status. A failed lead capped and left in place is FAILED plus ABANDONED, which a single-valued status could not express"
+  },
+  {
+   "name": "status_effective_date",
+   "label": "Status effective date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R; site-local calendar date on which this combination became true"
+  },
+  {
+   "name": "clinician_confirmed_same_date_order",
+   "label": "Clinician confirmed same date order",
+   "type": "integer",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "min": 1,
+   "rule": "**C; human-entered; required when and only when two or more non-deleted `DEVICE_LEAD_STATUS_EVENTS` rows for this `lead_id` share this `status_effective_date`, and rejected as an ERROR when this event is the only one for the lead on that date.** It is the clinician's statement of **what actually happened first**, expressed as a relative rank among that date's events for that lead. **Necessity:** without it the server has no source of intra-day chronology at all, and v1.3 inferred order from severity — which reconstructs the real sequence `NORMAL → FAILED → NORMAL after successful revision` as a lead that ended FAILED, corrupting the Section 1.4 lead-survival endpoint in exactly the cases that matter. No other stored field can supply this: severity, disposition, source type, and insertion order are all independent of time. **Burden effect:** zero on the Section 10.5 reference pathway, which contains no lead; and zero on the ordinary single-event lead day, where the field is rejected and the server assigns 1 automatically. It costs one entry per event only on a day when several events for one lead genuinely occurred, which is the day whose order cannot otherwise be known. **Audited:** the mutation that writes or corrects this field requires a `reason` and records `clinician_confirmed_same_date_order` in `ACTIVITY_LOG.changed_field_codes`, so the confirmed order is attributable and reviewable. Ties are rejected: two events for one lead and date may not carry the same value"
+  },
+  {
+   "name": "source_device_check_id",
+   "label": "Source device check",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_INTERROGATIONS",
+   "rule": "C; the interrogation that established this status, where one did"
+  },
+  {
+   "name": "source_lead_procedure_id",
+   "label": "Source lead procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "LEAD_PROCEDURES",
+   "rule": "C; the lead procedure that established this status, where one did. At most one source link may be present, and it must resolve to the same patient"
+  },
+  {
+   "name": "status_change_reason",
+   "label": "Status change reason",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "INFECTION",
+     "label": "Infection"
+    },
+    {
+     "code": "MALFUNCTION",
+     "label": "Malfunction"
+    },
+    {
+     "code": "FRACTURE",
+     "label": "Fracture"
+    },
+    {
+     "code": "INSULATION_FAILURE",
+     "label": "Insulation failure"
+    },
+    {
+     "code": "DISLODGEMENT",
+     "label": "Dislodgement"
+    },
+    {
+     "code": "PERFORATION",
+     "label": "Perforation"
+    },
+    {
+     "code": "VENOUS_OCCLUSION",
+     "label": "Venous occlusion"
+    },
+    {
+     "code": "UPGRADE",
+     "label": "Upgrade"
+    },
+    {
+     "code": "ADVISORY",
+     "label": "Advisory"
+    },
+    {
+     "code": "REDUNDANT_LEAD",
+     "label": "Redundant lead"
+    },
+    {
+     "code": "TRICUSPID_INTERVENTION",
+     "label": "Tricuspid intervention"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C; the shared Section 2.29 group 32, not a reference to another sheet's inline group. Because that group contains `OTHER`, this sheet is OTHER-capable and carries `other_specify_json`"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

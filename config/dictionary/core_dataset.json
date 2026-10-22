@@ -1,0 +1,281 @@
+{
+  "_note": "Defines what 'Mark completed' requires in Release 1. Field names are from FIELD_INVENTORY.csv; 'complications_reviewed' is a new operational extension (not in the clinical dictionary). Edit this file to change the core set; the UI progress bars and the Completed check read it.",
+  "version": "core/r1-2026-10-13",
+  "completion_rule": {
+    "core_field_ok_if": [
+      "has_value",
+      "explicit_not_available_with_reason"
+    ],
+    "blockers": [
+      "empty_core_field",
+      "unresolved_ai_conflict",
+      "unaccepted_ai_value_in_core"
+    ],
+    "warnings_only": [
+      "date_of_birth_not_available",
+      "extended_fields_empty"
+    ],
+    "never": [
+      "infer_dob_from_age",
+      "set_clinical_FINAL",
+      "change_procedure_status"
+    ]
+  },
+  "common": [
+    {
+      "entity": "PATIENT_IDENTIFIERS",
+      "field": "mrn"
+    },
+    {
+      "entity": "PATIENTS",
+      "field": "sex_at_birth"
+    },
+    {
+      "entity": "PATIENT_IDENTIFIERS",
+      "field": "date_of_birth",
+      "not_available_is_warning": true
+    },
+    {
+      "entity": "PATIENTS",
+      "field": "enrollment_date",
+      "default": "date_mrn_added"
+    },
+    {
+      "entity": "EP_EPISODES",
+      "field": "episode_start_date"
+    },
+    {
+      "entity": "EP_EPISODES",
+      "field": "pilgrim_status"
+    },
+    {
+      "entity": "EP_EPISODES",
+      "field": "hajj_timing",
+      "when": {
+        "EP_EPISODES.pilgrim_status": [
+          "HAJJ",
+          "UMRAH"
+        ]
+      }
+    },
+    {
+      "entity": "ARRHYTHMIA_INDICATIONS",
+      "field": "primary_ep_diagnosis"
+    },
+    {
+      "entity": "ARRHYTHMIA_INDICATIONS",
+      "field": "diagnosis_subtype",
+      "when": "lookup_has_codes_for_primary_ep_diagnosis"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "hypertension"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "diabetes"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "heart_failure"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "coronary_artery_disease_or_prior_mi"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "vascular_disease"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "prior_stroke_tia_systemic_embolism"
+    },
+    {
+      "entity": "ECHO_STUDIES",
+      "field": "lvef_assessment"
+    },
+    {
+      "entity": "ECHO_STUDIES",
+      "field": "lvef_pct",
+      "when": {
+        "ECHO_STUDIES.lvef_assessment": [
+          "MEASURED"
+        ]
+      }
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "procedure_start_datetime"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "primary_procedure_type"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "procedure_status"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "urgency"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "care_setting"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "first_or_redo"
+    },
+    {
+      "entity": "EP_PROCEDURES",
+      "field": "discharge_date"
+    },
+    {
+      "entity": "EXT_PROCEDURE_REVIEW",
+      "field": "complications_reviewed",
+      "extension": true,
+      "codes": [
+        "NONE_DOCUMENTED",
+        "PRESENT",
+        "NOT_REVIEWED"
+      ],
+      "complete_if": [
+        "NONE_DOCUMENTED",
+        "PRESENT"
+      ],
+      "then": {
+        "PRESENT": "at least one COMPLICATIONS row with category, relatedness, outcome"
+      }
+    }
+  ],
+  "categories": {
+    "AF_ABLATION": [
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "af_type_at_procedure"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "preprocedure_anticoagulant"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "preprocedure_antiarrhythmic"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "la_laa_thrombus_status"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "af_energy_source"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "pvi_or_reisolation_attempted"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "pv_status_at_case_end"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "additional_ablation_beyond_pvi"
+      },
+      {
+        "entity": "AF_ABLATIONS",
+        "field": "acute_af_endpoint"
+      }
+    ],
+    "SVT_ABLATION": [
+      {
+        "entity": "SVT_ABLATIONS",
+        "field": "svt_mechanism"
+      },
+      {
+        "entity": "SVT_ABLATIONS",
+        "field": "ablation_target"
+      },
+      {
+        "entity": "SVT_ABLATIONS",
+        "field": "ablation_energy"
+      },
+      {
+        "entity": "SVT_ABLATIONS",
+        "field": "acute_svt_endpoint"
+      },
+      {
+        "entity": "SVT_ABLATIONS",
+        "field": "accessory_pathway_location",
+        "when": {
+          "SVT_ABLATIONS.svt_mechanism": [
+            "ORTHODROMIC_AVRT",
+            "ANTIDROMIC_AVRT",
+            "PREEXCITED_AF"
+          ]
+        }
+      }
+    ],
+    "DEVICES": [
+      {
+        "entity": "DEVICES",
+        "field": "current_device_type"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "device_action"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "implant_indication"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "icd_prevention_type",
+        "when": {
+          "DEVICES.current_device_type": [
+            "ICD_SINGLE",
+            "ICD_DUAL",
+            "CRT_D",
+            "S_ICD",
+            "EV_ICD"
+          ]
+        }
+      },
+      {
+        "entity": "DEVICES",
+        "field": "manufacturer"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "implant_side"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "perioperative_antibiotic_given"
+      },
+      {
+        "entity": "DEVICE_IMPLANTS",
+        "field": "acute_device_result"
+      }
+    ],
+    "FLUTTER_ABLATION": "common_only_until_R2",
+    "VENTRICULAR_ABLATION": "common_only_until_R2",
+    "OTHER_EP": "common_only_until_R2"
+  },
+  "multi_category_rule": "A case in two categories (e.g. AF Ablation + ICD) needs common core + both category sets.",
+  "counts": {
+    "common_base": 22,
+    "common_max": 25,
+    "_conditional_common": [
+      "hajj_timing",
+      "diagnosis_subtype",
+      "lvef_pct"
+    ],
+    "AF_ABLATION_total": "31-34",
+    "SVT_ABLATION_total": "26-30",
+    "DEVICES_total": "29-33"
+  }
+}

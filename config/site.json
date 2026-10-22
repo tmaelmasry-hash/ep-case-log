@@ -1,0 +1,23 @@
+{
+ "_note": "Site rules copied from EP Workspace config/site.json (mrn, timezone, registry_basis_default). Edit here to change them.",
+ "timezone": "Asia/Riyadh",
+ "mrn": {
+  "storage": "text",
+  "normalize": [
+   "trim",
+   "arabic_indic_digits_to_ascii",
+   "persian_digits_to_ascii",
+   "remove_inner_spaces_only_if_all_digits"
+  ],
+  "hard_rule": {
+   "regex": "^\\d{7}$",
+   "message": "MRN must be exactly 7 digits."
+  },
+  "soft_rule": {
+   "regex": "^(10\\d|11\\d|120)\\d{4}$",
+   "message": "Unusual MRN prefix (expected 1000000–1209999). Check before adding."
+  },
+  "_soft_rule_reason": "KAMC MRNs started at 100xxxx and currently reach 120xxxx. The soft rule warns but does not block, so 121xxxx will still be accepted when it appears. Update in Settings."
+ },
+ "registry_basis_default": "CLINICAL_QI"
+}

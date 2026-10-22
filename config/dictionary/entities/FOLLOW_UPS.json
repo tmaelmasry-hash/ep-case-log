@@ -1,0 +1,460 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "FOLLOW_UPS",
+ "pk": "followup_id",
+ "parentFk": [
+  "index_event_type",
+  "index_event_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "days_from_index",
+  "followup_due_state"
+ ],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "index_event_type",
+   "label": "Index event type",
+   "type": "enum",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "codes": [
+    {
+     "code": "PROCEDURE",
+     "label": "Procedure"
+    },
+    {
+     "code": "DEVICE_INTERROGATION",
+     "label": "Device interrogation"
+    },
+    {
+     "code": "DEVICE_INFECTION",
+     "label": "Device infection"
+    },
+    {
+     "code": "TILT_TEST",
+     "label": "Tilt test"
+    }
+   ],
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "index_event_id",
+   "label": "Index event",
+   "type": "fk_polymorphic",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "rule": "R; must resolve to exactly the entity named by index_event_type and to the same authorized patient/site",
+   "auto": true
+  },
+  {
+   "name": "followup_timepoint",
+   "label": "Followup timepoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DISCHARGE",
+     "label": "Discharge"
+    },
+    {
+     "code": "D30",
+     "label": "D30"
+    },
+    {
+     "code": "M6",
+     "label": "M6"
+    },
+    {
+     "code": "M12",
+     "label": "M12"
+    },
+    {
+     "code": "PLANNED_REVIEW",
+     "label": "Planned review"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "actual_followup_date",
+   "label": "Actual followup date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C when completed"
+  },
+  {
+   "name": "followup_completion_status",
+   "label": "Followup completion status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "OPEN",
+     "label": "Open"
+    },
+    {
+     "code": "COMPLETED",
+     "label": "Completed"
+    },
+    {
+     "code": "LOST",
+     "label": "Lost"
+    },
+    {
+     "code": "DECEASED",
+     "label": "Deceased"
+    },
+    {
+     "code": "WITHDRAWN",
+     "label": "Withdrawn"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R; stores workflow disposition only"
+  },
+  {
+   "name": "contact_method",
+   "label": "Contact method",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "VISIT",
+     "label": "Visit"
+    },
+    {
+     "code": "PHONE",
+     "label": "Phone"
+    },
+    {
+     "code": "RECORD_REVIEW",
+     "label": "Record review"
+    },
+    {
+     "code": "REMOTE_DEVICE",
+     "label": "Remote device"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R to finalize a COMPLETED checkpoint"
+  },
+  {
+   "name": "vital_status",
+   "label": "Vital status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ALIVE",
+     "label": "Alive"
+    },
+    {
+     "code": "DECEASED",
+     "label": "Deceased"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R to finalize a COMPLETED checkpoint. UNKNOWN is a legitimate recorded value for a checkpoint completed by record review with no vital-status source; blank is not"
+  },
+  {
+   "name": "current_rhythm",
+   "label": "Current rhythm",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINUS",
+     "label": "Sinus"
+    },
+    {
+     "code": "SINUS_BRADYCARDIA",
+     "label": "Sinus bradycardia"
+    },
+    {
+     "code": "SINUS_TACHYCARDIA",
+     "label": "Sinus tachycardia"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "AFL",
+     "label": "AFL"
+    },
+    {
+     "code": "AT",
+     "label": "AT"
+    },
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "JUNCTIONAL",
+     "label": "Junctional"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "ASYSTOLE_OR_PAUSE",
+     "label": "Asystole or pause"
+    },
+    {
+     "code": "ATRIAL_PACED",
+     "label": "Atrial paced"
+    },
+    {
+     "code": "VENTRICULAR_PACED",
+     "label": "Ventricular paced"
+    },
+    {
+     "code": "AV_SEQUENTIAL_PACED",
+     "label": "AV sequential paced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "C; required for arrhythmia-domain follow-up after an ablation or an arrhythmia-indication device procedure, where NOT_ASSESSED is permitted and expresses a phone or record-only contact. Not applicable to other domains"
+  },
+  {
+   "name": "symptom_change",
+   "label": "Symptom change",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RESOLVED",
+     "label": "Resolved"
+    },
+    {
+     "code": "IMPROVED",
+     "label": "Improved"
+    },
+    {
+     "code": "UNCHANGED",
+     "label": "Unchanged"
+    },
+    {
+     "code": "WORSE",
+     "label": "Worse"
+    },
+    {
+     "code": "ASYMPTOMATIC_BASELINE",
+     "label": "Asymptomatic baseline"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "RC to finalize a COMPLETED checkpoint; NOT_ASSESSED is permitted for a record-review contact and is distinct from blank"
+  },
+  {
+   "name": "rhythm_monitor_id",
+   "label": "Rhythm monitor",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "RHYTHM_MONITORING",
+   "rule": "C"
+  },
+  {
+   "name": "followup_device_check_id",
+   "label": "Followup device check",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_INTERROGATIONS",
+   "rule": "C; required source when device-derived pacing/capture values are displayed"
+  },
+  {
+   "name": "current_antiarrhythmic",
+   "label": "Current antiarrhythmic",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "AMIODARONE",
+     "label": "Amiodarone"
+    },
+    {
+     "code": "SOTALOL",
+     "label": "Sotalol"
+    },
+    {
+     "code": "FLECAINIDE",
+     "label": "Flecainide"
+    },
+    {
+     "code": "PROPAFENONE",
+     "label": "Propafenone"
+    },
+    {
+     "code": "DRONEDARONE",
+     "label": "Dronedarone"
+    },
+    {
+     "code": "DOFETILIDE",
+     "label": "Dofetilide"
+    },
+    {
+     "code": "MEXILETINE",
+     "label": "Mexiletine"
+    },
+    {
+     "code": "BETA_BLOCKER_ONLY",
+     "label": "Beta blocker only"
+    },
+    {
+     "code": "NONDIHYDROPYRIDINE_CCB_ONLY",
+     "label": "Nondihydropyridine CCB only"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC after arrhythmia ablation"
+  },
+  {
+   "name": "current_anticoagulant",
+   "label": "Current anticoagulant",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "VKA",
+     "label": "VKA"
+    },
+    {
+     "code": "DOAC",
+     "label": "DOAC"
+    },
+    {
+     "code": "LMWH",
+     "label": "LMWH"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC after AF/AFL"
+  },
+  {
+   "name": "current_nyha_class",
+   "label": "Current NYHA class",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "I",
+     "label": "I"
+    },
+    {
+     "code": "II",
+     "label": "II"
+    },
+    {
+     "code": "III",
+     "label": "III"
+    },
+    {
+     "code": "IV",
+     "label": "IV"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for HF/CRT"
+  },
+  {
+   "name": "followup_echo_id",
+   "label": "Followup echo",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "ECHO_STUDIES",
+   "rule": "C for CRT/CSP/VA"
+  },
+  {
+   "name": "complications_assessed",
+   "label": "Complications assessed",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R at DISCHARGE and D30 for PROCEDURE-anchored follow-ups only. Conditionally inapplicable for DEVICE_INTERROGATION, DEVICE_INFECTION, and TILT_TEST anchors, because those anchors have no reachable COMPLICATIONS table; for them the field is excluded from the completeness denominator and adverse events are recorded in OUTCOME_EVENTS"
+  },
+  {
+   "name": "outcomes_reviewed_through_date",
+   "label": "Outcomes reviewed through date",
+   "type": "date",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "rule": "**The last-ascertainment date. R to finalize a checkpoint whose `followup_completion_status` is COMPLETED, LOST, WITHDRAWN, or DECEASED**, and not applicable for OPEN or NOT_APPLICABLE. For LOST and WITHDRAWN it is the date through which outcomes were actually reviewed before contact was lost or consent withdrawn, and it is the **censoring date** every freedom-from-event analysis uses; without it a lost patient is censored at an unknown time and the survival estimate is not reproducible. **Range validation, all on site-local calendar dates. The direction of the `actual_followup_date` bound is corrected in v1.4.** Bound (1): it must be **on or after** the validated index event's index date. Bound (2): it must **not be after** the current site-local date, nor after the analysis cut-off when one is in force. Bound (3): **where an actual contact exists — that is, where `actual_followup_date` is present — it must be on or before `actual_followup_date`.** A review cannot ascertain outcomes beyond the last contact that ascertained them. The v1.3 rule required the opposite (`on or after`), which permitted an observation interval extending past the last contact and **overstated event-free exposure** — a patient last seen at day 40 could be recorded as reviewed through day 365 and counted as event-free for eleven months nobody looked at. Bound (4): **DECEASED is the one frozen exception, and it is reasoned rather than convenient** — for a checkpoint whose `followup_completion_status` is DECEASED, `outcomes_reviewed_through_date` **must equal the authoritative death date**, and any `actual_followup_date` recorded on that row must not postdate the death date; ascertainment ends at death and is complete to that instant, and because death is ascertained by record, registry, or informant rather than by contact with the patient, bound (3) cannot apply and is replaced rather than relaxed. A value outside the applicable bounds is a VALIDATION_FAILED ERROR, not a warning. Negative exposure is impossible by construction, exposure beyond the last contact is impossible by construction, and every censoring interval is reproducible from stored fields alone"
+  },
+  {
+   "name": "followup_note",
+   "label": "Followup note",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 240,
+   "rule": "O; excluded from de-identified export"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

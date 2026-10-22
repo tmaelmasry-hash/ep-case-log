@@ -1,0 +1,237 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICES",
+ "pk": "device_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "current_device_type",
+   "label": "Current device type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PPM_SINGLE",
+     "label": "PPM single"
+    },
+    {
+     "code": "PPM_DUAL",
+     "label": "PPM dual"
+    },
+    {
+     "code": "ICD_SINGLE",
+     "label": "ICD single"
+    },
+    {
+     "code": "ICD_DUAL",
+     "label": "ICD dual"
+    },
+    {
+     "code": "CRT_P",
+     "label": "CRT p"
+    },
+    {
+     "code": "CRT_D",
+     "label": "CRT d"
+    },
+    {
+     "code": "LEADLESS_SINGLE",
+     "label": "Leadless single"
+    },
+    {
+     "code": "LEADLESS_DUAL",
+     "label": "Leadless dual"
+    },
+    {
+     "code": "S_ICD",
+     "label": "S ICD"
+    },
+    {
+     "code": "EV_ICD",
+     "label": "EV ICD"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "current_status",
+   "label": "Current status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ACTIVE",
+     "label": "Active"
+    },
+    {
+     "code": "EXPLANTED",
+     "label": "Explanted"
+    },
+    {
+     "code": "REPLACED",
+     "label": "Replaced"
+    },
+    {
+     "code": "ABANDONED",
+     "label": "Abandoned"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "implant_date",
+   "label": "Implant date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; required when implant_date_precision is EXACT_DATE, which is mandatory for a device implanted in the registry"
+  },
+  {
+   "name": "implant_date_precision",
+   "label": "Implant date precision",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "EXACT_DATE",
+     "label": "Exact date"
+    },
+    {
+     "code": "YEAR_ONLY",
+     "label": "Year only"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; a pre-registry device with no retrievable implant date records YEAR_ONLY or UNKNOWN. No exact date is ever invented to satisfy a required field"
+  },
+  {
+   "name": "implant_year",
+   "label": "Implant year",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; required when implant_date_precision is YEAR_ONLY",
+   "required_when": {
+    "field": "implant_date_precision",
+    "in": [
+     "YEAR_ONLY"
+    ]
+   }
+  },
+  {
+   "name": "manufacturer",
+   "label": "Manufacturer",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ABBOTT",
+     "label": "Abbott"
+    },
+    {
+     "code": "BIOTRONIK",
+     "label": "Biotronik"
+    },
+    {
+     "code": "BOSTON_SCIENTIFIC",
+     "label": "Boston scientific"
+    },
+    {
+     "code": "MEDTRONIC",
+     "label": "Medtronic"
+    },
+    {
+     "code": "MICROPORT",
+     "label": "Microport"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "model",
+   "label": "Model",
+   "type": "string",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "RC"
+  },
+  {
+   "name": "serial_number",
+   "label": "Serial number",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 240,
+   "rule": "O operational field; excluded from analysis"
+  },
+  {
+   "name": "remote_monitoring_enrolled",
+   "label": "Remote monitoring enrolled",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC; the single source of remote-monitoring enrolment for every device class including ILR"
+  },
+  {
+   "name": "replacement_device_id",
+   "label": "Replacement device",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "C if replaced"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

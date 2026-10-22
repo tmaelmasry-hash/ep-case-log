@@ -1,0 +1,89 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "LEAD_PROCEDURE_ITEMS",
+ "pk": "lead_procedure_item_id",
+ "parentFk": [
+  "lead_procedure_id",
+  "lead_id"
+ ],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "lead_procedure_id",
+   "label": "Lead procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "LEAD_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "lead_id",
+   "label": "Lead",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICE_LEADS",
+   "rule": "R"
+  },
+  {
+   "name": "final_lead_action",
+   "label": "Final lead action",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RETAINED",
+     "label": "Retained"
+    },
+    {
+     "code": "REPAIRED",
+     "label": "Repaired"
+    },
+    {
+     "code": "REPOSITIONED",
+     "label": "Repositioned"
+    },
+    {
+     "code": "ABANDONED",
+     "label": "Abandoned"
+    },
+    {
+     "code": "PARTIALLY_EXTRACTED",
+     "label": "Partially extracted"
+    },
+    {
+     "code": "COMPLETELY_EXTRACTED",
+     "label": "Completely extracted"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "item_success",
+   "label": "Item success",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETE",
+     "label": "Complete"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    }
+   ],
+   "rule": "R"
+  }
+ ]
+}

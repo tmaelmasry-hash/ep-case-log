@@ -54,3 +54,14 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 - Removed: EP Case Log's own sync server and sync client (D7). Consequence: the app now needs the server to open (no offline start).
 - Cases are still kept in each browser until phase 2 moves them to the server with the dictionary fields.
 - Tests: tests/server/auth.test.ts (21), browser tests tests/e2e/auth.spec.ts + existing flows signed in (22 runs over desktop + phone).
+
+## Phase 2 — dictionary forms, case = episode with several procedures (built 22 Oct 2026)
+- Dictionary files copied unchanged from EP Workspace into `config/dictionary/` (37 entities, 545 fields + EXT_PROCEDURE_REVIEW); provenance in `config/dictionary/SOURCE.md`. `config/case_layout.json` only arranges them: scope case / procedure, nest_under, modules by component type, auto_parent; FOLLOW_UPS and OUTCOME_EVENTS marked `later: phase 7`.
+- Shared code (`shared/`): dictionary builder, value validation ported from EP Workspace validate.ts (codes, subsets, ranges, dates, other_specify), MRN rules (7 digits, Arabic/Persian digits), slot ids for one-per-scope rows (EP Workspace P1b-6).
+- Server: cases stored whole (`RegistryStore` putCase/getCase/listCases/allocateSeq), `server/domain/cases.ts` applies creates/changes/removes per item with field-level last save wins; routes list/create/read/edit/delete; group scope (Members see own groups, others = 404); activity keeps field names only.
+- New case = PATIENT_IDENTIFIERS + PATIENTS (enrollment_date today, registry_basis default) + EP_EPISODES (status OPEN). Cases of one MRN share patient_id. Group numbering No. 1, 2…
+- Procedures: any number per episode; each has its PROCEDURE_COMPONENTS (sequence auto-numbered), the modules its components call for (AF, flutter, SVT, ventricular, AVJ, EPS, device implant, CRT/CSP, ILR, lead), complications review + complications. Removing a procedure removes its rows.
+- UI (approved EP Log style): cases list by month with group switcher; case page header + PROCEDURES + Patient & history + Studies & follow-up + Additional clinical information; every section opens in a sheet; controls chosen by dictionary type; core fields marked ★.
+- Removed from EP Case Log: invented fields (catalog), images/op note/inbox, old PDF report, JSON/CSV backup, IndexedDB store (old local database deleted on first open, owner-approved). CHA₂DS₂-VASc display returns in phase 8 from dictionary fields; PDF report on dictionary fields in phase 8.
+- Not yet: readiness/Completed/Not available/history/recycle-bin screen (phase 3), Google Sheet (4), MRN prompt + copy-forward (5), follow-up (7).
+- Tests: tests/server/cases.test.ts (18) + auth (21); browser tests 24 runs (desktop + phone).

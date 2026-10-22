@@ -1,0 +1,318 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_LEADS",
+ "pk": "lead_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "rule": "R; stable lead identity is independent of generator changes",
+   "auto": true
+  },
+  {
+   "name": "lead_origin",
+   "label": "Lead origin",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "IN_REGISTRY_IMPLANT",
+     "label": "In registry implant"
+    },
+    {
+     "code": "PRE_REGISTRY",
+     "label": "Pre registry"
+    },
+    {
+     "code": "EXTERNAL_DOCUMENTED",
+     "label": "External documented"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "implant_procedure_id",
+   "label": "Implant procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "C; required for IN_REGISTRY_IMPLANT, optional/blank for a documented historical device"
+  },
+  {
+   "name": "lead_implant_date",
+   "label": "Lead implant date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; required for IN_REGISTRY_IMPLANT, and for PRE_REGISTRY or EXTERNAL_DOCUMENTED only when lead_implant_date_precision is EXACT_DATE"
+  },
+  {
+   "name": "lead_implant_date_precision",
+   "label": "Lead implant date precision",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "EXACT_DATE",
+     "label": "Exact date"
+    },
+    {
+     "code": "YEAR_ONLY",
+     "label": "Year only"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; EXACT_DATE is mandatory for IN_REGISTRY_IMPLANT. A historical lead whose exact implant date is genuinely unknown records YEAR_ONLY or UNKNOWN rather than a fabricated date"
+  },
+  {
+   "name": "lead_implant_year",
+   "label": "Lead implant year",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; required when lead_implant_date_precision is YEAR_ONLY",
+   "required_when": {
+    "field": "lead_implant_date_precision",
+    "in": [
+     "YEAR_ONLY"
+    ]
+   }
+  },
+  {
+   "name": "lead_location",
+   "label": "Lead location",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RA",
+     "label": "RA"
+    },
+    {
+     "code": "RV",
+     "label": "RV"
+    },
+    {
+     "code": "HIS",
+     "label": "His"
+    },
+    {
+     "code": "LBB_AREA",
+     "label": "Lbb area"
+    },
+    {
+     "code": "CS_LV",
+     "label": "CS LV"
+    },
+    {
+     "code": "EPICARDIAL",
+     "label": "Epicardial"
+    },
+    {
+     "code": "SUBCUTANEOUS",
+     "label": "Subcutaneous"
+    },
+    {
+     "code": "SUBSTERNAL",
+     "label": "Substernal"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "lead_type",
+   "label": "Lead type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PACE_SENSE",
+     "label": "Pace sense"
+    },
+    {
+     "code": "TRANSVENOUS_DEFIBRILLATION",
+     "label": "Transvenous defibrillation"
+    },
+    {
+     "code": "LV",
+     "label": "LV"
+    },
+    {
+     "code": "CSP",
+     "label": "CSP"
+    },
+    {
+     "code": "EXTRAVASCULAR_DEFIBRILLATION",
+     "label": "Extravascular defibrillation"
+    },
+    {
+     "code": "EPICARDIAL",
+     "label": "Epicardial"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "manufacturer",
+   "label": "Manufacturer",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ABBOTT",
+     "label": "Abbott"
+    },
+    {
+     "code": "BIOTRONIK",
+     "label": "Biotronik"
+    },
+    {
+     "code": "BOSTON_SCIENTIFIC",
+     "label": "Boston scientific"
+    },
+    {
+     "code": "MEDTRONIC",
+     "label": "Medtronic"
+    },
+    {
+     "code": "MICROPORT",
+     "label": "Microport"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "model",
+   "label": "Model",
+   "type": "string",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "C"
+  },
+  {
+   "name": "serial_number",
+   "label": "Serial number",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 240,
+   "rule": "O; excluded from analysis"
+  },
+  {
+   "name": "acute_sensing_mv",
+   "label": "Acute sensing",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "mV",
+   "rule": "RC for pacing-capable leads and when clinically applicable to a defibrillation electrode"
+  },
+  {
+   "name": "acute_capture_threshold_v",
+   "label": "Acute capture threshold",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "V",
+   "rule": "RC only for pacing-capable leads"
+  },
+  {
+   "name": "pulse_width_ms",
+   "label": "Pulse width",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "RC only when capture threshold is recorded"
+  },
+  {
+   "name": "acute_impedance_ohm",
+   "label": "Acute impedance",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "Ω",
+   "rule": "RC only for pacing-capable leads"
+  },
+  {
+   "name": "shock_impedance_ohm",
+   "label": "Shock impedance",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "Ω",
+   "rule": "RC for transvenous or extravascular defibrillation electrodes when tested"
+  },
+  {
+   "name": "acute_lead_status",
+   "label": "Acute lead status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "ABNORMAL_ACCEPTED",
+     "label": "Abnormal accepted"
+    },
+    {
+     "code": "REVISED",
+     "label": "Revised"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

@@ -1,0 +1,188 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "EP_EPISODES",
+ "pk": "episode_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "UNIVERSAL_PATIENT",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "rule": "R on every clinical sheet except PATIENT_IDENTIFIERS and PATIENTS, where it is the primary key. On a patient-owned sheet it is the client-supplied, server-validated **required parent FK** and is not DERIVED at all. It is DERIVED and MATERIALIZED_SERVER **only** on the sheets where the Section 3.2 catalog lists it under Server-materialized scope, and a client value is rejected there. Never inferred from MRN. Where materialized — **authoritative sources:** the `patient_id` of the row's validated required parent (`EP_EPISODES.patient_id` for `EP_PROCEDURES` and `ARRHYTHMIA_INDICATIONS`; `EP_PROCEDURES.patient_id` for every procedure-owned module; `DEVICES.patient_id` for every device-owned sheet; `DEVICE_LEADS.patient_id` for `DEVICE_LEAD_STATUS_EVENTS`; the `patient_id` of the validated `index_event_id` for `FOLLOW_UPS` and `OUTCOME_EVENTS`). **Derivation version** `scope_materialization/v1`. **Recomputation triggers:** row create; relink of the required parent FK; a patient merge that remaps the row. **Recomputation rule:** resolve the required parent named for this sheet in Section 3.2, take that parent's current `patient_id`, and write it. Recomputation is transactional, inside the same lock as the mutation that changed a source",
+   "auto": true
+  },
+  {
+   "name": "episode_start_date",
+   "label": "Episode start date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "episode_end_date",
+   "label": "Episode end date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C"
+  },
+  {
+   "name": "episode_status",
+   "label": "Episode status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "OPEN",
+     "label": "Open"
+    },
+    {
+     "code": "CLOSED",
+     "label": "Closed"
+    },
+    {
+     "code": "CANCELLED",
+     "label": "Cancelled"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "referring_service",
+   "label": "Referring service",
+   "type": "lookup",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CARDIOLOGY",
+     "label": "Cardiology"
+    },
+    {
+     "code": "EMERGENCY",
+     "label": "Emergency"
+    },
+    {
+     "code": "INTERNAL_MEDICINE",
+     "label": "Internal medicine"
+    },
+    {
+     "code": "CARDIAC_SURGERY",
+     "label": "Cardiac surgery"
+    },
+    {
+     "code": "NEUROLOGY",
+     "label": "Neurology"
+    },
+    {
+     "code": "INTENSIVE_CARE",
+     "label": "Intensive care"
+    },
+    {
+     "code": "PRIMARY_CARE",
+     "label": "Primary care"
+    },
+    {
+     "code": "EXTERNAL_HOSPITAL",
+     "label": "External hospital"
+    },
+    {
+     "code": "EP_CLINIC_DIRECT",
+     "label": "EP clinic direct"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "O"
+  },
+  {
+   "name": "responsible_ep_clinician_id",
+   "label": "Responsible EP clinician",
+   "type": "fk",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "target": "USERS",
+   "rule": "RC"
+  },
+  {
+   "name": "pilgrim_status",
+   "label": "Pilgrim status",
+   "type": "enum",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HAJJ",
+     "label": "Hajj"
+    },
+    {
+     "code": "UMRAH",
+     "label": "Umrah"
+    },
+    {
+     "code": "NON_PILGRIM",
+     "label": "Non pilgrim"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "hajj_timing",
+   "label": "Hajj timing",
+   "type": "enum",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PRE_HAJJ",
+     "label": "Pre hajj"
+    },
+    {
+     "code": "DURING_HAJJ",
+     "label": "During hajj"
+    },
+    {
+     "code": "POST_HAJJ",
+     "label": "Post hajj"
+    },
+    {
+     "code": "UMRAH_RELATED",
+     "label": "Umrah related"
+    },
+    {
+     "code": "OUTSIDE_PILGRIMAGE_SEASON",
+     "label": "Outside pilgrimage season"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "rule": "C; present only on the sheets listed in Section 3.2 as OTHER-capable. See the rule below",
+   "auto_other": true
+  }
+ ]
+}

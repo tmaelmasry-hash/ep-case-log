@@ -1,0 +1,60 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_LEAD_CONNECTIONS",
+ "pk": "device_lead_connection_id",
+ "parentFk": [
+  "device_id",
+  "lead_id"
+ ],
+ "otherCapable": false,
+ "virtual": [
+  "connection_status"
+ ],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "lead_id",
+   "label": "Lead",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICE_LEADS",
+   "rule": "R"
+  },
+  {
+   "name": "connected_from_datetime",
+   "label": "Connected from datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "connected_to_datetime",
+   "label": "Connected to datetime",
+   "type": "datetime",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C while active"
+  },
+  {
+   "name": "connection_procedure_id",
+   "label": "Connection procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "C when connection/change occurred in registry"
+  }
+ ]
+}

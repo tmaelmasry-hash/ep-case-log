@@ -1,0 +1,352 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "ECHO_STUDIES",
+ "pk": "echo_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "echo_date",
+   "label": "Echo date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "echo_context",
+   "label": "Echo context",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "BASELINE",
+     "label": "Baseline"
+    },
+    {
+     "code": "PREPROCEDURE",
+     "label": "Preprocedure"
+    },
+    {
+     "code": "POSTPROCEDURE",
+     "label": "Postprocedure"
+    },
+    {
+     "code": "FOLLOWUP",
+     "label": "Followup"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "lvef_assessment",
+   "label": "LVEF assessment",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "MEASURED",
+     "label": "Measured"
+    },
+    {
+     "code": "NOT_MEASURABLE",
+     "label": "Not measurable"
+    },
+    {
+     "code": "NOT_REPORTED",
+     "label": "Not reported"
+    }
+   ],
+   "rule": "R for a finalized interpretable Echo; NOT_REPORTED remains a quality warning"
+  },
+  {
+   "name": "lvef_pct",
+   "label": "LVEF",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "rule": "C when lvef_assessment is MEASURED; required for VT/ICD/CRT/CSP and expected for AF baseline Echo"
+  },
+  {
+   "name": "rv_function",
+   "label": "RV function",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "MILDLY_REDUCED",
+     "label": "Mildly reduced"
+    },
+    {
+     "code": "MODERATE_SEVERE_REDUCTION",
+     "label": "Moderate severe reduction"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "la_size_category",
+   "label": "LA size category",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "MILD",
+     "label": "Mild"
+    },
+    {
+     "code": "MODERATE",
+     "label": "Moderate"
+    },
+    {
+     "code": "SEVERE",
+     "label": "Severe"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC for AF/AFL"
+  },
+  {
+   "name": "la_volume_index_ml_m2",
+   "label": "LA volume index",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "mL/m²",
+   "rule": "C if reported; do not require when category is available"
+  },
+  {
+   "name": "significant_valve_lesion",
+   "label": "Significant valve lesion",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "AORTIC_STENOSIS_MODERATE",
+     "label": "Aortic stenosis moderate"
+    },
+    {
+     "code": "AORTIC_STENOSIS_SEVERE",
+     "label": "Aortic stenosis severe"
+    },
+    {
+     "code": "AORTIC_REGURGITATION_MODERATE",
+     "label": "Aortic regurgitation moderate"
+    },
+    {
+     "code": "AORTIC_REGURGITATION_SEVERE",
+     "label": "Aortic regurgitation severe"
+    },
+    {
+     "code": "MITRAL_STENOSIS_MODERATE",
+     "label": "Mitral stenosis moderate"
+    },
+    {
+     "code": "MITRAL_STENOSIS_SEVERE",
+     "label": "Mitral stenosis severe"
+    },
+    {
+     "code": "MITRAL_REGURGITATION_MODERATE",
+     "label": "Mitral regurgitation moderate"
+    },
+    {
+     "code": "MITRAL_REGURGITATION_SEVERE",
+     "label": "Mitral regurgitation severe"
+    },
+    {
+     "code": "TRICUSPID_REGURGITATION_MODERATE",
+     "label": "Tricuspid regurgitation moderate"
+    },
+    {
+     "code": "TRICUSPID_REGURGITATION_SEVERE",
+     "label": "Tricuspid regurgitation severe"
+    },
+    {
+     "code": "PROSTHETIC_VALVE_DYSFUNCTION",
+     "label": "Prosthetic valve dysfunction"
+    },
+    {
+     "code": "MULTIPLE_SIGNIFICANT_LESIONS",
+     "label": "Multiple significant lesions"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "pulmonary_hypertension",
+   "label": "Pulmonary hypertension",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "MILD",
+     "label": "Mild"
+    },
+    {
+     "code": "MODERATE_SEVERE",
+     "label": "Moderate severe"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "C if reported"
+  },
+  {
+   "name": "pericardial_effusion",
+   "label": "Pericardial effusion",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "SMALL",
+     "label": "Small"
+    },
+    {
+     "code": "MODERATE",
+     "label": "Moderate"
+    },
+    {
+     "code": "LARGE_TAMPONADE",
+     "label": "Large tamponade"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "structural_diagnosis",
+   "label": "Structural diagnosis",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ISCHEMIC",
+     "label": "Ischemic"
+    },
+    {
+     "code": "DILATED_NONISCHEMIC",
+     "label": "Dilated nonischemic"
+    },
+    {
+     "code": "HYPERTROPHIC",
+     "label": "Hypertrophic"
+    },
+    {
+     "code": "ARRHYTHMOGENIC",
+     "label": "Arrhythmogenic"
+    },
+    {
+     "code": "INFILTRATIVE_INFLAMMATORY",
+     "label": "Infiltrative inflammatory"
+    },
+    {
+     "code": "CONGENITAL",
+     "label": "Congenital"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "report_reference",
+   "label": "Report reference",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "O"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

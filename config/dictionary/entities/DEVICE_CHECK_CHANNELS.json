@@ -1,0 +1,175 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_CHECK_CHANNELS",
+ "pk": "check_channel_id",
+ "parentFk": [
+  "device_check_id"
+ ],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "device_check_id",
+   "label": "Device check",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICE_INTERROGATIONS",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "channel_type",
+   "label": "Channel type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PHYSICAL_LEAD",
+     "label": "Physical lead"
+    },
+    {
+     "code": "LEADLESS_ATRIAL",
+     "label": "Leadless atrial"
+    },
+    {
+     "code": "LEADLESS_VENTRICULAR",
+     "label": "Leadless ventricular"
+    },
+    {
+     "code": "ILR_SENSING",
+     "label": "ILR sensing"
+    },
+    {
+     "code": "SYSTEM_OTHER",
+     "label": "System other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "lead_id",
+   "label": "Lead",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_LEADS",
+   "rule": "C; required only for PHYSICAL_LEAD and forbidden for leadless/ILR channels"
+  },
+  {
+   "name": "channel_label",
+   "label": "Channel label",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LEADLESS_ATRIAL_CHANNEL",
+     "label": "Leadless atrial channel"
+    },
+    {
+     "code": "LEADLESS_VENTRICULAR_CHANNEL",
+     "label": "Leadless ventricular channel"
+    },
+    {
+     "code": "ILR_SENSING_CHANNEL",
+     "label": "ILR sensing channel"
+    },
+    {
+     "code": "SUBCUTANEOUS_SENSING_VECTOR",
+     "label": "Subcutaneous sensing vector"
+    },
+    {
+     "code": "SUBSTERNAL_SENSING_VECTOR",
+     "label": "Substernal sensing vector"
+    },
+    {
+     "code": "SYSTEM_OTHER",
+     "label": "System other"
+    }
+   ],
+   "rule": "C for non-physical channels"
+  },
+  {
+   "name": "sensing_mv",
+   "label": "Sensing",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "mV",
+   "rule": "C"
+  },
+  {
+   "name": "capture_threshold_v",
+   "label": "Capture threshold",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "V",
+   "rule": "C"
+  },
+  {
+   "name": "pulse_width_ms",
+   "label": "Pulse width",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "C"
+  },
+  {
+   "name": "impedance_ohm",
+   "label": "Impedance",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "Ω",
+   "rule": "C"
+  },
+  {
+   "name": "shock_impedance_ohm",
+   "label": "Shock impedance",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "Ω",
+   "rule": "C"
+  },
+  {
+   "name": "trend_flag",
+   "label": "Trend flag",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "STABLE",
+     "label": "Stable"
+    },
+    {
+     "code": "IMPROVED",
+     "label": "Improved"
+    },
+    {
+     "code": "WORSENED",
+     "label": "Worsened"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "channel_action_required",
+   "label": "Channel action required",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "PROCEDURE_COMPONENTS",
+ "pk": "component_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "energy_source",
+  "component_endpoint_achieved"
+ ],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "component_type",
+   "label": "Component type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DIAGNOSTIC_EPS",
+     "label": "Diagnostic EPS"
+    },
+    {
+     "code": "AVNRT",
+     "label": "AVNRT"
+    },
+    {
+     "code": "AVRT_WPW",
+     "label": "AVRT WPW"
+    },
+    {
+     "code": "AT_SVT",
+     "label": "AT SVT"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "FLUTTER",
+     "label": "Flutter"
+    },
+    {
+     "code": "PVC",
+     "label": "PVC"
+    },
+    {
+     "code": "VT_VF",
+     "label": "VT VF"
+    },
+    {
+     "code": "AVJ_ABLATION",
+     "label": "AVJ ablation"
+    },
+    {
+     "code": "DEVICE_IMPLANT",
+     "label": "Device implant"
+    },
+    {
+     "code": "CRT_CSP",
+     "label": "CRT CSP"
+    },
+    {
+     "code": "LEAD_MANAGEMENT",
+     "label": "Lead management"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "component_sequence",
+   "label": "Component sequence",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

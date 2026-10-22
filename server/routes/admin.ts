@@ -1,7 +1,7 @@
 // Admin: users (username + password typed or generated, role, groups, new password, disable, unlock) — ported from
 // EP Workspace routes/admin.ts. Group management (add/rename) comes with phase 3; this phase lists groups for the user form.
 import { generatePassword, newUser, normalizeUsername, passwordProblem, setPasswordByAdmin, usernameProblem } from '../auth/auth.ts';
-import { badRequest, conflict, notFound, requireCap, type Req, type Router } from '../http.ts';
+import { badRequest, conflict, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { User } from '../store/types.ts';
 import { newId, nowIso } from '../util.ts';
 
@@ -106,8 +106,10 @@ export function adminRoutes(app: Router) {
     return { ok: true };
   });
 
+  /** Groups the user may see (Admin: all). */
   app.get('/api/groups', async (req) => {
-    requireCap(req, 'case.read');
-    return { groups: (await store.listGroups()).filter((g) => !g.is_deleted).sort((a, b) => a.sort_order - b.sort_order).map((g) => ({ group_id: g.group_id, name: g.name })) };
+    const u = requireCap(req, 'case.read');
+    const mine = new Set(await groupIdsFor(ctx, u));
+    return { groups: (await store.listGroups()).filter((g) => mine.has(g.group_id)).sort((a, b) => a.sort_order - b.sort_order).map((g) => ({ group_id: g.group_id, name: g.name })) };
   });
 }

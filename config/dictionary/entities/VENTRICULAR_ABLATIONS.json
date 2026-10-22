@@ -1,0 +1,443 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "VENTRICULAR_ABLATIONS",
+ "pk": "ventricular_ablation_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "va_type",
+   "label": "Va type",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PVC",
+     "label": "PVC"
+    },
+    {
+     "code": "IDIOPATHIC_SUSTAINED_VT",
+     "label": "Idiopathic sustained VT"
+    },
+    {
+     "code": "SCAR_MONOMORPHIC_VT",
+     "label": "Scar monomorphic VT"
+    },
+    {
+     "code": "POLYMORPHIC_VT",
+     "label": "Polymorphic VT"
+    },
+    {
+     "code": "VF_TRIGGER",
+     "label": "VF trigger"
+    },
+    {
+     "code": "BUNDLE_BRANCH_REENTRY",
+     "label": "Bundle branch reentry"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "clinical_presentations",
+   "label": "Clinical presentations",
+   "type": "lookup_array",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HIGH_PVC_BURDEN",
+     "label": "High PVC burden"
+    },
+    {
+     "code": "PVC_CARDIOMYOPATHY",
+     "label": "PVC cardiomyopathy"
+    },
+    {
+     "code": "SUSTAINED_VT",
+     "label": "Sustained VT"
+    },
+    {
+     "code": "INCESSANT_VT",
+     "label": "Incessant VT"
+    },
+    {
+     "code": "VT_STORM",
+     "label": "VT storm"
+    },
+    {
+     "code": "ICD_THERAPIES",
+     "label": "ICD therapies"
+    },
+    {
+     "code": "CARDIAC_ARREST",
+     "label": "Cardiac arrest"
+    }
+   ],
+   "rule": "RC; simultaneous high-value states are preserved"
+  },
+  {
+   "name": "structural_substrate",
+   "label": "Structural substrate",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ISCHEMIC_CM",
+     "label": "Ischemic cm"
+    },
+    {
+     "code": "NONISCHEMIC_CM",
+     "label": "Nonischemic cm"
+    },
+    {
+     "code": "ARRHYTHMOGENIC_CM",
+     "label": "Arrhythmogenic cm"
+    },
+    {
+     "code": "SARCOID_INFLAMMATORY",
+     "label": "Sarcoid inflammatory"
+    },
+    {
+     "code": "HCM",
+     "label": "Hcm"
+    },
+    {
+     "code": "CHD",
+     "label": "Chd"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "baseline_echo_id",
+   "label": "Baseline echo",
+   "type": "fk",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "target": "ECHO_STUDIES",
+   "rule": "RC"
+  },
+  {
+   "name": "baseline_monitor_id",
+   "label": "Baseline monitor",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "RHYTHM_MONITORING",
+   "rule": "C for PVC"
+  },
+  {
+   "name": "baseline_device_id",
+   "label": "Baseline device",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "C when a defibrillator is present; derive device type/presence from inventory"
+  },
+  {
+   "name": "prior_appropriate_icd_therapy",
+   "label": "Prior appropriate ICD therapy",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C when a defibrillator is present"
+  },
+  {
+   "name": "dominant_origin_or_substrate_location",
+   "label": "Dominant origin or substrate location",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RVOT",
+     "label": "RVOT"
+    },
+    {
+     "code": "LVOT_OR_AORTIC_CUSP",
+     "label": "LVOT or aortic cusp"
+    },
+    {
+     "code": "LV_SUMMIT",
+     "label": "LV summit"
+    },
+    {
+     "code": "PAPILLARY_MUSCLE",
+     "label": "Papillary muscle"
+    },
+    {
+     "code": "FASCICULAR",
+     "label": "Fascicular"
+    },
+    {
+     "code": "TRICUSPID_ANNULAR",
+     "label": "Tricuspid annular"
+    },
+    {
+     "code": "MITRAL_ANNULAR",
+     "label": "Mitral annular"
+    },
+    {
+     "code": "RV_FREE_WALL_OR_APEX",
+     "label": "RV free wall or apex"
+    },
+    {
+     "code": "LV_SEPTAL",
+     "label": "LV septal"
+    },
+    {
+     "code": "LV_ANTERIOR",
+     "label": "LV anterior"
+    },
+    {
+     "code": "LV_LATERAL",
+     "label": "LV lateral"
+    },
+    {
+     "code": "LV_INFERIOR",
+     "label": "LV inferior"
+    },
+    {
+     "code": "LV_APICAL",
+     "label": "LV apical"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "approach",
+   "label": "Approach",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ENDOCARDIAL",
+     "label": "Endocardial"
+    },
+    {
+     "code": "EPICARDIAL",
+     "label": "Epicardial"
+    },
+    {
+     "code": "CORONARY_VENOUS",
+     "label": "Coronary venous"
+    },
+    {
+     "code": "COMBINED",
+     "label": "Combined"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "mapping_strategy",
+   "label": "Mapping strategy",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ACTIVATION",
+     "label": "Activation"
+    },
+    {
+     "code": "PACE",
+     "label": "Pace"
+    },
+    {
+     "code": "ENTRAINMENT",
+     "label": "Entrainment"
+    },
+    {
+     "code": "SUBSTRATE",
+     "label": "Substrate"
+    },
+    {
+     "code": "COMBINED",
+     "label": "Combined"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "clinical_vt_inducible",
+   "label": "Clinical VT inducible",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "NOT_TESTED",
+     "label": "Not tested"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "ablation_energy",
+   "label": "Ablation energy",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RF",
+     "label": "RF"
+    },
+    {
+     "code": "CRYO",
+     "label": "Cryo"
+    },
+    {
+     "code": "PFA",
+     "label": "PFA"
+    },
+    {
+     "code": "LASER",
+     "label": "Laser"
+    },
+    {
+     "code": "ETHANOL",
+     "label": "Ethanol"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC; the authoritative energy source for the PVC / VT_VF component, and the sole input to the derived `PROCEDURE_COMPONENTS.energy_source` for that component"
+  },
+  {
+   "name": "mechanical_circulatory_support",
+   "label": "Mechanical circulatory support",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "IABP",
+     "label": "Iabp"
+    },
+    {
+     "code": "IMPELLA",
+     "label": "Impella"
+    },
+    {
+     "code": "ECMO",
+     "label": "Ecmo"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "acute_va_endpoint",
+   "label": "Acute va endpoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PVC_SUPPRESSED",
+     "label": "PVC suppressed"
+    },
+    {
+     "code": "CLINICAL_VT_NONINDUCIBLE",
+     "label": "Clinical VT noninducible"
+    },
+    {
+     "code": "ALL_VT_NONINDUCIBLE",
+     "label": "All VT noninducible"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    },
+    {
+     "code": "NOT_TESTED",
+     "label": "Not tested"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

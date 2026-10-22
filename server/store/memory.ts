@@ -1,13 +1,15 @@
+import type { CaseRecord } from '../../shared/caseTypes.ts';
 import type { Activity, ActivityInput, Group, RegistryStore, User } from './types.ts';
 
 export interface StoreData {
   users: User[];
   groups: Group[];
   activity: Activity[];
+  cases: CaseRecord[];
 }
 
 export function emptyData(): StoreData {
-  return { users: [], groups: [], activity: [] };
+  return { users: [], groups: [], activity: [], cases: [] };
 }
 
 /** In-memory store (tests, throw-away runs). `persist` lets FileStore save after each write. */
@@ -71,5 +73,30 @@ export class MemoryStore implements RegistryStore {
 
   async listActivity() {
     return this.clone(this.data.activity);
+  }
+
+  async allocateSeq(groupId: string) {
+    const g = this.data.groups.find((x) => x.group_id === groupId);
+    if (!g) throw new Error('unknown group');
+    const seq = g.next_seq;
+    g.next_seq++;
+    await this.persist();
+    return seq;
+  }
+
+  async listCases() {
+    return this.clone(this.data.cases);
+  }
+
+  async getCase(id: string) {
+    const c = this.data.cases.find((x) => x.meta.case_id === id);
+    return c ? this.clone(c) : null;
+  }
+
+  async putCase(rec: CaseRecord) {
+    const i = this.data.cases.findIndex((x) => x.meta.case_id === rec.meta.case_id);
+    if (i >= 0) this.data.cases[i] = this.clone(rec);
+    else this.data.cases.push(this.clone(rec));
+    await this.persist();
   }
 }

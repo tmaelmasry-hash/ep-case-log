@@ -111,3 +111,11 @@ export function requireCap(req: Req, cap: Capability): SessionUser {
   if (!can(u.role, cap)) throw forbidden();
   return u;
 }
+
+/** Groups the user may see: Admin → all live groups; Member → their memberships (read fresh every request). */
+export async function groupIdsFor(ctx: AppContext, user: SessionUser): Promise<string[]> {
+  const live = (await ctx.store.listGroups()).filter((g) => !g.is_deleted);
+  if (user.role === 'ADMIN') return live.map((g) => g.group_id);
+  const mine = new Set((await ctx.store.getUser(user.userId))?.groups ?? []);
+  return live.filter((g) => mine.has(g.group_id)).map((g) => g.group_id);
+}

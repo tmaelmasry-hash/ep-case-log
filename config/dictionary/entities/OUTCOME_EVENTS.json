@@ -1,0 +1,488 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "OUTCOME_EVENTS",
+ "pk": "outcome_event_id",
+ "parentFk": [
+  "index_event_type",
+  "index_event_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "recurrence_confirmation_state",
+  "burden_link_mode"
+ ],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "index_event_type",
+   "label": "Index event type",
+   "type": "enum",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "codes": [
+    {
+     "code": "PROCEDURE",
+     "label": "Procedure"
+    },
+    {
+     "code": "DEVICE_INTERROGATION",
+     "label": "Device interrogation"
+    },
+    {
+     "code": "DEVICE_INFECTION",
+     "label": "Device infection"
+    },
+    {
+     "code": "TILT_TEST",
+     "label": "Tilt test"
+    }
+   ],
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "index_event_id",
+   "label": "Index event",
+   "type": "fk_polymorphic",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "rule": "R; exactly one valid anchor",
+   "auto": true
+  },
+  {
+   "name": "followup_id",
+   "label": "Followup",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "FOLLOW_UPS",
+   "rule": "C; when present it must share the same index-event anchor"
+  },
+  {
+   "name": "event_date",
+   "label": "Event date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R; **chronology is enforced, not merely required.** It must be **on or after** the site-local index date of the validated anchor named by `(index_event_type, index_event_id)` — `EP_PROCEDURES.procedure_start_datetime` for PROCEDURE, `DEVICE_INTERROGATIONS.check_datetime` for DEVICE_INTERROGATION, `DEVICE_INFECTIONS.infection_diagnosis_date` for DEVICE_INFECTION, `TILT_TESTS.test_datetime` for TILT_TEST — and **not after** the current site-local date. A post-index outcome that predates its own anchor is a VALIDATION_FAILED ERROR. v1.3 required only that the field be present, so a recurrence, hospitalization, death, infection resolution, or repeat intervention could be dated before the event it was an outcome of. It must additionally satisfy the frozen linked-date agreement rules below"
+  },
+  {
+   "name": "same_day_event_temporal_relation",
+   "label": "Same day event temporal relation",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AFTER_INDEX",
+     "label": "After index"
+    },
+    {
+     "code": "BEFORE_INDEX",
+     "label": "Before index"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "**C — STORED, human-entered, and required when and only when `event_date` equals the anchor's site-local index date AND no authoritative linked datetime can establish order.** Its fourth semantic state, `NOT_APPLICABLE`, is represented by **blank** whenever the dates differ or an authoritative linked datetime proves the order, so it costs no human entry outside the one branch that needs it. A client-supplied value outside the human-entry branch is rejected with VALIDATION_FAILED. **Only a link that genuinely dates *this* event may establish order, and the typed mapping is frozen in `CANON_SAME_DAY_CHRONOLOGY_V1.authoritative_time_sources`.** A repeat procedure's `EP_PROCEDURES.procedure_start_datetime` dates that repeat procedure, and a linked `COMPLICATIONS.event_datetime` dates that same complication, so in those two cases the server **compares directly and does not request this field**. **A `DEVICE_INTERROGATIONS.check_datetime` does NOT date an arrhythmia detected inside the interval that check reviewed**: it records when the device was read. v1.5 listed it among the authoritative datetimes, which allowed a 12:00 check reviewing 00:00–12:00 to prove that an 08:00 arrhythmia followed a 10:00 procedure. It is now explicitly non-authoritative for event time, as are `followup_device_check_id`, `burden_source_monitor_id`, `linked_device_infection_id` and `followup_id`. **Order also requires a datetime-precise anchor**: a `DEVICE_INFECTION` anchor carries only the date-granular `infection_diagnosis_date` and can never order anything inside its own calendar day. Where no permitted link and no datetime-precise anchor establish order, the human-entry branch applies. An authoritative datetime exactly equal to the anchor instant returns `UNRESOLVED_EXACT_TIE`, which is treated exactly as `INDETERMINATE`: never post-index, never negative, and no tie-break is invented. **Only a directly proven post-anchor relation or `AFTER_INDEX` can finalize a same-day outcome as post-index.** `BEFORE_INDEX` is pre-index and is rejected with `EVENT_PREDATES_ANCHOR` or correctly re-anchored; `INDETERMINATE` remains visible as unresolved but can never become a confirmed post-index endpoint and is never counted as negative. The **day-0 recurrence logic in this section runs only after this chronology gate returns `POST_INDEX_PROVEN`**. The sole authority is `CANON_SAME_DAY_CHRONOLOGY_V1` in Section 1.7. **Necessity and burden:** `OUTCOME_EVENTS` stores only `event_date`, so v1.4 could classify an unlinked episode earlier on the anchor's own calendar date as a post-index day-0 outcome, with nothing proving it happened after the procedure. This adds **one** human value, and only to outcomes that are otherwise time-unresolvable on the same calendar day; it avoids collecting two timestamps on every case. Its effect on the reference burden pathway is **zero**, because that pathway records no outcome event"
+  },
+  {
+   "name": "event_type",
+   "label": "Event type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DEATH",
+     "label": "Death"
+    },
+    {
+     "code": "ARRHYTHMIA_RECURRENCE",
+     "label": "Arrhythmia recurrence"
+    },
+    {
+     "code": "CARDIOVERSION",
+     "label": "Cardioversion"
+    },
+    {
+     "code": "REPEAT_ABLATION",
+     "label": "Repeat ablation"
+    },
+    {
+     "code": "REPEAT_DEVICE_PROCEDURE",
+     "label": "Repeat device procedure"
+    },
+    {
+     "code": "HOSPITALIZATION",
+     "label": "Hospitalization"
+    },
+    {
+     "code": "STROKE_TIA_SYSTEMIC_EMBOLISM",
+     "label": "Stroke TIA systemic embolism"
+    },
+    {
+     "code": "MAJOR_BLEEDING",
+     "label": "Major bleeding"
+    },
+    {
+     "code": "DEVICE_COMPLICATION",
+     "label": "Device complication"
+    },
+    {
+     "code": "ICD_ATP",
+     "label": "ICD atp"
+    },
+    {
+     "code": "ICD_SHOCK",
+     "label": "ICD shock"
+    },
+    {
+     "code": "ELECTRICAL_STORM",
+     "label": "Electrical storm"
+    },
+    {
+     "code": "ILR_DIAGNOSTIC_EVENT",
+     "label": "ILR diagnostic event"
+    },
+    {
+     "code": "CIED_INFECTION_RESOLUTION",
+     "label": "CIED infection resolution"
+    },
+    {
+     "code": "CIED_INFECTION_RECURRENCE",
+     "label": "CIED infection recurrence"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "hospitalization_is_heart_failure",
+   "label": "Hospitalization is heart failure",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for HOSPITALIZATION; TRUE marks a heart-failure admission"
+  },
+  {
+   "name": "hospitalization_encounter_reference",
+   "label": "Hospitalization encounter reference",
+   "type": "string",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "C; applicable only to HOSPITALIZATION. **An optional restricted reference to the hospital's own admission/encounter identifier**, where the workflow makes one available. It exists solely to make duplicate detection deterministic: two non-deleted HOSPITALIZATION rows for one patient carrying the same non-blank reference are the same admission and the second is a hard **ERROR**. It is never a relationship key, never used to join anything, excluded from de-identified export unconditionally, and excluded from the identified export unless the export type explicitly permits restricted references. Where the workflow supplies no such identifier the field is blank and duplicate detection falls back to the reviewed warning below"
+  },
+  {
+   "name": "death_cause",
+   "label": "Death cause",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CARDIAC",
+     "label": "Cardiac"
+    },
+    {
+     "code": "NONCARDIAC",
+     "label": "Noncardiac"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "**R for a DEATH row and rejected on every other row.** `UNKNOWN` is an explicitly permitted, meaningful answer — many registry deaths are ascertained without a cause — so the field is required without forcing a fabricated cause. A DEATH row saved with a blank `death_cause` cannot be finalized"
+  },
+  {
+   "name": "rhythm_or_event_subtype",
+   "label": "Rhythm or event subtype",
+   "type": "lookup",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "ATRIAL_FLUTTER",
+     "label": "Atrial flutter"
+    },
+    {
+     "code": "ATRIAL_TACHYCARDIA",
+     "label": "Atrial tachycardia"
+    },
+    {
+     "code": "AVNRT_OR_AVRT",
+     "label": "AVNRT or AVRT"
+    },
+    {
+     "code": "SUSTAINED_MONOMORPHIC_VT",
+     "label": "Sustained monomorphic VT"
+    },
+    {
+     "code": "POLYMORPHIC_VT",
+     "label": "Polymorphic VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "NONSUSTAINED_VT",
+     "label": "Nonsustained VT"
+    },
+    {
+     "code": "FREQUENT_PVC",
+     "label": "Frequent PVC"
+    },
+    {
+     "code": "BRADYARRHYTHMIA_OR_PAUSE",
+     "label": "Bradyarrhythmia or pause"
+    },
+    {
+     "code": "AV_BLOCK",
+     "label": "AV block"
+    },
+    {
+     "code": "ISCHEMIC_STROKE",
+     "label": "Ischemic stroke"
+    },
+    {
+     "code": "TIA",
+     "label": "TIA"
+    },
+    {
+     "code": "SYSTEMIC_EMBOLISM",
+     "label": "Systemic embolism"
+    },
+    {
+     "code": "INTRACRANIAL_HEMORRHAGE",
+     "label": "Intracranial hemorrhage"
+    },
+    {
+     "code": "GASTROINTESTINAL_BLEEDING",
+     "label": "Gastrointestinal bleeding"
+    },
+    {
+     "code": "OTHER_MAJOR_BLEEDING",
+     "label": "Other major bleeding"
+    },
+    {
+     "code": "POCKET_OR_LEAD_COMPLICATION",
+     "label": "Pocket or lead complication"
+    },
+    {
+     "code": "HEART_FAILURE_DECOMPENSATION",
+     "label": "Heart failure decompensation"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "**R for every event type whose subset is non-empty in the frozen event-type/subtype table below, and not applicable where that table shows none.** For `ARRHYTHMIA_RECURRENCE` the value must be a member of the `RHYTHM` subset of the group: a recurrence cannot finalize with a non-rhythm subtype such as ISCHEMIC_STROKE, and it cannot finalize blank. The stored value must belong to the subset for this row's `event_type`; a member of the group that is outside that subset is rejected"
+  },
+  {
+   "name": "documentation_method",
+   "label": "Documentation method",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ECG",
+     "label": "ECG"
+    },
+    {
+     "code": "MONITOR",
+     "label": "Monitor"
+    },
+    {
+     "code": "CIED",
+     "label": "CIED"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "TELEMETRY",
+     "label": "Telemetry"
+    },
+    {
+     "code": "RECORD_REVIEW",
+     "label": "Record review"
+    },
+    {
+     "code": "CLINICAL_ONLY",
+     "label": "Clinical only"
+    }
+   ],
+   "rule": "**R for every rhythm event** — `ARRHYTHMIA_RECURRENCE`, `ILR_DIAGNOSTIC_EVENT`, `ICD_ATP`, `ICD_SHOCK`, and `ELECTRICAL_STORM` — because an undocumented rhythm event is not an analysable endpoint. C for other event types. **`CLINICAL_ONLY` is retained and is never a confirmed rhythm-documented endpoint:** it means symptoms alone, with no ECG, monitor, device, ILR, or telemetry tracing, and it forces `recurrence_confirmation_state = INDETERMINATE` under the frozen rule below. The 2024 international AF ablation consensus (Section 12.1 references 2 and 3) defines recurrence by **rhythm documentation**, so a clinical-only report cannot satisfy it. The value is kept because a symptomatic report is clinically useful and discarding it would lose a real signal; it is simply not counted as a confirmed recurrence"
+  },
+  {
+   "name": "episode_duration_sec",
+   "label": "Episode duration",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "s",
+   "rule": "C; applicable only where `duration_assessment` applies; required when `duration_assessment` is EXACT",
+   "required_when": {
+    "field": "duration_assessment",
+    "in": [
+     "EXACT"
+    ]
+   }
+  },
+  {
+   "name": "duration_assessment",
+   "label": "Duration assessment",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "EXACT",
+     "label": "Exact"
+    },
+    {
+     "code": "AT_LEAST_30_SEC",
+     "label": "AT least 30 SEC"
+    },
+    {
+     "code": "LESS_THAN_30_SEC",
+     "label": "Less than 30 SEC"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "**R with the value NOT_APPLICABLE for every row except an `ARRHYTHMIA_RECURRENCE` whose `rhythm_or_event_subtype` is AF, ATRIAL_FLUTTER, or ATRIAL_TACHYCARDIA.** For those three subtypes one of EXACT, AT_LEAST_30_SEC, LESS_THAN_30_SEC, or UNKNOWN is required, and EXACT requires `episode_duration_sec`. The 30-second threshold is an AF/AFL/AT reporting convention and is not applied to ventricular, bradyarrhythmic, or non-rhythm events; requiring it there would invent a duration judgement nobody made"
+  },
+  {
+   "name": "burden_source_monitor_id",
+   "label": "Burden source monitor",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "RHYTHM_MONITORING",
+   "rule": "C; the same-patient `RHYTHM_MONITORING` row whose defined interval — `start_datetime`, `end_datetime`, `analyzable_duration_hours` — supplies the displayed burden for this event. **At most one of the two burden-source links may be present; both present is an ERROR.** The burden figure itself is never copied onto this row. **The link must additionally satisfy every clause of the frozen burden-source validity contract below**; a link that resolves to the same patient but carries no interval, no compatible metric, or an interval that excludes the event date is an ERROR, not a warning"
+  },
+  {
+   "name": "burden_source_device_check_id",
+   "label": "Burden source device check",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_INTERROGATIONS",
+   "rule": "C; the `DEVICE_INTERROGATIONS` row, on a device belonging to the same patient, whose defined review interval — `review_period_start_status`, `review_period_start_datetime`, through `check_datetime` — supplies the displayed burden. **At most one of the two burden-source links may be present; both present is an ERROR.** **The link must additionally satisfy every clause of the frozen burden-source validity contract below.** A check whose `review_period_start_status` is `CUMULATIVE_UNKNOWN_START` may be linked for descriptive display only and can never support an interval rate"
+  },
+  {
+   "name": "therapy_appropriateness",
+   "label": "Therapy appropriateness",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "APPROPRIATE",
+     "label": "Appropriate"
+    },
+    {
+     "code": "INAPPROPRIATE",
+     "label": "Inappropriate"
+    },
+    {
+     "code": "MIXED",
+     "label": "Mixed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for ICD therapy"
+  },
+  {
+   "name": "linked_procedure_id",
+   "label": "Linked procedure",
+   "type": "fk",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "RC for REPEAT_ABLATION and REPEAT_DEVICE_PROCEDURE when the repeat procedure is in this registry; links the event to the EP_PROCEDURES row it describes so the endpoint is counted once"
+  },
+  {
+   "name": "linked_complication_id",
+   "label": "Linked complication",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "COMPLICATIONS",
+   "rule": "C; required when the same clinical event is also recorded as a procedural complication, and for the authoritative death event when death was a procedural complication"
+  },
+  {
+   "name": "linked_device_infection_id",
+   "label": "Linked device infection",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_INFECTIONS",
+   "rule": "C for CIED_INFECTION_RESOLUTION or CIED_INFECTION_RECURRENCE"
+  },
+  {
+   "name": "event_outcome",
+   "label": "Event outcome",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RESOLVED",
+     "label": "Resolved"
+    },
+    {
+     "code": "ONGOING",
+     "label": "Ongoing"
+    },
+    {
+     "code": "SEQUELA",
+     "label": "Sequela"
+    },
+    {
+     "code": "DEATH",
+     "label": "Death"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R. **On a row with `event_type = DEATH` the only permitted value is `DEATH`**; any other value is an ERROR, because an event that is a death cannot have a non-fatal outcome"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

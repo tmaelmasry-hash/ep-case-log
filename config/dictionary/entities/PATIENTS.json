@@ -1,0 +1,92 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "PATIENTS",
+ "pk": "patient_id",
+ "parentFk": [],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "UNIVERSAL_PATIENT",
+ "fields": [
+  {
+   "name": "enrollment_date",
+   "label": "Enrollment date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "registry_basis",
+   "label": "Registry basis",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CLINICAL_QI",
+     "label": "Clinical QI"
+    },
+    {
+     "code": "RESEARCH_CONSENT",
+     "label": "Research consent"
+    },
+    {
+     "code": "APPROVED_WAIVER",
+     "label": "Approved waiver"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "sex_at_birth",
+   "label": "Sex at birth",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "FEMALE",
+     "label": "Female"
+    },
+    {
+     "code": "MALE",
+     "label": "Male"
+    }
+   ],
+   "offer": [
+    "MALE",
+    "FEMALE"
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "nationality",
+   "label": "Nationality",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 60
+  },
+  {
+   "name": "residence_status",
+   "label": "Residence status",
+   "type": "enum",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SAUDI_RESIDENT",
+     "label": "Saudi resident"
+    },
+    {
+     "code": "INTERNATIONAL_VISITOR",
+     "label": "International visitor"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  }
+ ]
+}

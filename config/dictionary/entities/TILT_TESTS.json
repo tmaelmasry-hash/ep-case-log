@@ -1,0 +1,389 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "TILT_TESTS",
+ "pk": "tilt_test_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "maximum_hr_rise_bpm",
+  "pots_applicable"
+ ],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "test_datetime",
+   "label": "Test datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "tilt_indication",
+   "label": "Tilt indication",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SUSPECTED_REFLEX_SYNCOPE",
+     "label": "Suspected reflex syncope"
+    },
+    {
+     "code": "ORTHOSTATIC_HYPOTENSION",
+     "label": "Orthostatic hypotension"
+    },
+    {
+     "code": "POTS",
+     "label": "POTS"
+    },
+    {
+     "code": "PSYCHOGENIC_PSEUDOSYNCOPE",
+     "label": "Psychogenic pseudosyncope"
+    },
+    {
+     "code": "UNEXPLAINED_TLOC",
+     "label": "Unexplained TLOC"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "protocol",
+   "label": "Protocol",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PASSIVE",
+     "label": "Passive"
+    },
+    {
+     "code": "NITROGLYCERIN",
+     "label": "Nitroglycerin"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "tilt_result_status",
+   "label": "Tilt result status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETED",
+     "label": "Completed"
+    },
+    {
+     "code": "ABORTED",
+     "label": "Aborted"
+    },
+    {
+     "code": "NOT_INTERPRETABLE",
+     "label": "Not interpretable"
+    }
+   ],
+   "rule": "R; only a COMPLETED interpretable test requires the hemodynamic and result fields below"
+  },
+  {
+   "name": "tilt_limitation_reason",
+   "label": "Tilt limitation reason",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PATIENT_INTOLERANCE",
+     "label": "Patient intolerance"
+    },
+    {
+     "code": "HEMODYNAMIC_OR_SAFETY_STOP",
+     "label": "Hemodynamic or safety stop"
+    },
+    {
+     "code": "SYMPTOM_WITHDRAWAL",
+     "label": "Symptom withdrawal"
+    },
+    {
+     "code": "TECHNICAL_FAILURE",
+     "label": "Technical failure"
+    },
+    {
+     "code": "INCOMPLETE_PROTOCOL",
+     "label": "Incomplete protocol"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C for ABORTED or NOT_INTERPRETABLE, and not applicable for COMPLETED. Uses the dedicated tilt group 33, **not** the imaging group: claustrophobia, poor acoustic window, contrast or renal contraindication, and device artifact cannot stop a tilt-table test, and offering them as reasons produced clinically invalid stored values. **The final codes require EP owner sign-off**"
+  },
+  {
+   "name": "symptoms_or_syncope_reproduced",
+   "label": "Symptoms or syncope reproduced",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES_TYPICAL",
+     "label": "Yes typical"
+    },
+    {
+     "code": "YES_ATYPICAL",
+     "label": "Yes atypical"
+    }
+   ],
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "test_result",
+   "label": "Test result",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NEGATIVE",
+     "label": "Negative"
+    },
+    {
+     "code": "VASODEPRESSOR",
+     "label": "Vasodepressor"
+    },
+    {
+     "code": "CARDIOINHIBITORY",
+     "label": "Cardioinhibitory"
+    },
+    {
+     "code": "MIXED_REFLEX",
+     "label": "Mixed reflex"
+    },
+    {
+     "code": "INITIAL_OH",
+     "label": "Initial oh"
+    },
+    {
+     "code": "CLASSIC_OH",
+     "label": "Classic oh"
+    },
+    {
+     "code": "DELAYED_OH",
+     "label": "Delayed oh"
+    },
+    {
+     "code": "POTS",
+     "label": "POTS"
+    },
+    {
+     "code": "PSYCHOGENIC_PSEUDOSYNCOPE",
+     "label": "Psychogenic pseudosyncope"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R for a COMPLETED interpretable test; not applicable otherwise"
+  },
+  {
+   "name": "asystole_duration_sec",
+   "label": "Asystole duration",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "s",
+   "rule": "C if asystole"
+  },
+  {
+   "name": "supine_hr_bpm",
+   "label": "Supine HR",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "bpm",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "supine_sbp_mm_hg",
+   "label": "Supine SBP",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmHg",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "supine_dbp_mm_hg",
+   "label": "Supine DBP",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmHg",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "peak_hr_bpm",
+   "label": "Peak HR",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "bpm",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "nadir_sbp_mm_hg",
+   "label": "Nadir SBP",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmHg",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "nadir_dbp_mm_hg",
+   "label": "Nadir DBP",
+   "type": "integer",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmHg",
+   "rule": "R for a COMPLETED interpretable test"
+  },
+  {
+   "name": "pots_hr_criterion_met",
+   "label": "POTS HR criterion met",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "**C; required when and only when `pots_applicable` is TRUE, and rejected when it is FALSE.** **YES only when, within ten minutes of head-up tilt or standing, a sustained heart-rate rise greater than 30 bpm from supine, or a sustained absolute heart rate greater than 120 bpm, occurred without meeting orthostatic-hypotension criteria** — the adult definition of the 2021 EFAS/AAS/EAN tilt-testing consensus, Section 12.1 reference 10, unchanged in v1.4 under `pots_adult_criterion` definition version v2. INDETERMINATE where the recording does not allow the judgement. NO where the criterion was assessed and not met. **Frozen consistency with `test_result`, enforced at finalization and jointly with `pots_clinical_criteria_met`:** `test_result = POTS` **requires** `pots_hr_criterion_met = YES` **and** `pots_clinical_criteria_met = YES`; `pots_hr_criterion_met = NO` **forbids** `test_result = POTS`; `pots_hr_criterion_met = INDETERMINATE` **cannot finalize as a definite POTS diagnosis** — the test finalizes with `test_result` recorded as the non-diagnostic or alternative classification the recording supports, never as POTS. A stored POTS result that contradicts the criterion is the exact defect this rule removes"
+  },
+  {
+   "name": "pots_clinical_criteria_met",
+   "label": "POTS clinical criteria met",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "**C; human-entered; required when and only when `pots_applicable` is TRUE, and rejected when it is FALSE.** The stored **clinical** half of the POTS diagnosis, which v1.3 had nowhere: v1.3 permitted `test_result = POTS` from the heart-rate criterion alone, even with `symptoms_or_syncope_reproduced = NO`, so a purely haemodynamic postural tachycardia was stored as a POTS diagnosis. **YES** means compatible **chronic** orthostatic-intolerance symptoms — recurrent lightheadedness, palpitations, weakness, blurred vision, or exercise intolerance on standing, present for at least three months — **and** no better explanatory condition documented (acute dehydration, active bleeding, anaemia, hyperthyroidism, medication effect, or deconditioning attributable to another cause). **NO** means the clinical criterion was assessed and not met. **INDETERMINATE** means the available history does not allow the judgement. **Necessity:** the 2021 EFAS/AAS/EAN consensus (Section 12.1 reference 10) treats POTS as a **clinical** diagnosis requiring orthostatic-intolerance symptoms **plus** documented postural tachycardia; a heart-rate number alone is a postural-tachycardia pattern, not POTS, and no other stored field carries the chronic-symptom and no-better-explanation judgement. `symptoms_or_syncope_reproduced` records what happened **during this test**, which is a different question from chronic orthostatic intolerance and cannot substitute for it. **Burden effect:** exactly **one** additional human-entered value, and only on a tilt test where `pots_applicable` is TRUE; **zero** on the Section 10.5 reference pathway, which contains no tilt test, and zero on every tilt test where POTS is neither the indication nor the result. **Frozen conjunction:** `test_result = POTS` **requires both** `pots_clinical_criteria_met = YES` **and** `pots_hr_criterion_met = YES`. Either field NO or INDETERMINATE forbids a definite POTS result; the test finalizes with the non-diagnostic or alternative classification the recording supports. **The existing EFAS haemodynamic threshold in `pots_hr_criterion_met` is unchanged**"
+  },
+  {
+   "name": "time_to_diagnostic_change_min",
+   "label": "Time to diagnostic change",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "min",
+   "rule": "C when a diagnostic hemodynamic change occurs"
+  },
+  {
+   "name": "planned_followup_date",
+   "label": "Planned followup date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; presence activates a PLANNED_REVIEW follow-up anchored to this tilt test"
+  },
+  {
+   "name": "management_consequence",
+   "label": "Management consequence",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "EDUCATION_LIFESTYLE",
+     "label": "Education lifestyle"
+    },
+    {
+     "code": "MEDICATION",
+     "label": "Medication"
+    },
+    {
+     "code": "PACEMAKER_EVALUATION",
+     "label": "Pacemaker evaluation"
+    },
+    {
+     "code": "FURTHER_TESTING",
+     "label": "Further testing"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R for a COMPLETED interpretable test; NONE is a valid answer"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

@@ -1,0 +1,157 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "AVJ_ABLATIONS",
+ "pk": "avj_ablation_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "avj_indication",
+   "label": "AVJ indication",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PERMANENT_AF_RATE_CONTROL_FAILURE",
+     "label": "Permanent AF rate control failure"
+    },
+    {
+     "code": "PACE_AND_ABLATE_WITH_CRT_OR_CSP",
+     "label": "Pace and ablate with CRT or CSP"
+    },
+    {
+     "code": "RVR_INTOLERANT_OF_DRUG_THERAPY",
+     "label": "Rvr intolerant of drug therapy"
+    },
+    {
+     "code": "INAPPROPRIATE_DEVICE_THERAPY_FROM_AF",
+     "label": "Inappropriate device therapy from AF"
+    },
+    {
+     "code": "TACHYCARDIA_INDUCED_CARDIOMYOPATHY",
+     "label": "Tachycardia induced cardiomyopathy"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "ablation_energy",
+   "label": "Ablation energy",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RF",
+     "label": "RF"
+    },
+    {
+     "code": "CRYO",
+     "label": "Cryo"
+    },
+    {
+     "code": "PFA",
+     "label": "PFA"
+    },
+    {
+     "code": "LASER",
+     "label": "Laser"
+    },
+    {
+     "code": "ETHANOL",
+     "label": "Ethanol"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC; the authoritative energy source for the AVJ_ABLATION component, and the sole input to the derived `PROCEDURE_COMPONENTS.energy_source` for that component"
+  },
+  {
+   "name": "acute_av_block_endpoint",
+   "label": "Acute AV block endpoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETE_AV_BLOCK_ACHIEVED",
+     "label": "Complete AV block achieved"
+    },
+    {
+     "code": "PARTIAL_MODIFICATION",
+     "label": "Partial modification"
+    },
+    {
+     "code": "NOT_ACHIEVED",
+     "label": "Not achieved"
+    }
+   ],
+   "rule": "R; authoritative acute endpoint for the AVJ component"
+  },
+  {
+   "name": "functioning_pacing_system_confirmed_preablation",
+   "label": "Functioning pacing system confirmed preablation",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES_EXISTING_SYSTEM",
+     "label": "Yes existing system"
+    },
+    {
+     "code": "YES_IMPLANTED_SAME_SESSION",
+     "label": "Yes implanted same session"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    }
+   ],
+   "rule": "R; safety audit field. NO is a recordable fact, not a validation failure, and is surfaced as a data-quality WARNING for review"
+  },
+  {
+   "name": "pacing_system_device_id",
+   "label": "Pacing system device",
+   "type": "fk",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "RC when the preceding field is YES_EXISTING_SYSTEM or YES_IMPLANTED_SAME_SESSION; identifies which system was verified. Validated as a same-patient device that was ACTIVE at the ablation time, or as the device implanted by a DEVICE_IMPLANTS row on this same procedure. Not applicable when NO"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

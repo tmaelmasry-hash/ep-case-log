@@ -1,0 +1,423 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "MEDICATION_RECORDS",
+ "pk": "medication_record_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES"
+  },
+  {
+   "name": "record_date",
+   "label": "Record date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "record_context",
+   "label": "Record context",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "BASELINE",
+     "label": "Baseline"
+    },
+    {
+     "code": "PREPROCEDURE",
+     "label": "Preprocedure"
+    },
+    {
+     "code": "DISCHARGE",
+     "label": "Discharge"
+    },
+    {
+     "code": "FOLLOWUP",
+     "label": "Followup"
+    },
+    {
+     "code": "UNSCHEDULED",
+     "label": "Unscheduled"
+    }
+   ]
+  },
+  {
+   "name": "oral_anticoagulant",
+   "label": "Oral anticoagulant",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "WARFARIN",
+     "label": "Warfarin"
+    },
+    {
+     "code": "APIXABAN",
+     "label": "Apixaban"
+    },
+    {
+     "code": "RIVAROXABAN",
+     "label": "Rivaroxaban"
+    },
+    {
+     "code": "DABIGATRAN",
+     "label": "Dabigatran"
+    },
+    {
+     "code": "EDOXABAN",
+     "label": "Edoxaban"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "oral_anticoagulant_dose",
+   "label": "Oral anticoagulant dose",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 60
+  },
+  {
+   "name": "parenteral_anticoagulant",
+   "label": "Parenteral anticoagulant",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ENOXAPARIN_LMWH",
+     "label": "Enoxaparin LMWH"
+    },
+    {
+     "code": "UNFRACTIONATED_HEPARIN",
+     "label": "Unfractionated heparin"
+    },
+    {
+     "code": "FONDAPARINUX",
+     "label": "Fondaparinux"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "antiarrhythmic",
+   "label": "Antiarrhythmic",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "AMIODARONE",
+     "label": "Amiodarone"
+    },
+    {
+     "code": "SOTALOL",
+     "label": "Sotalol"
+    },
+    {
+     "code": "FLECAINIDE",
+     "label": "Flecainide"
+    },
+    {
+     "code": "PROPAFENONE",
+     "label": "Propafenone"
+    },
+    {
+     "code": "DRONEDARONE",
+     "label": "Dronedarone"
+    },
+    {
+     "code": "DOFETILIDE",
+     "label": "Dofetilide"
+    },
+    {
+     "code": "MEXILETINE",
+     "label": "Mexiletine"
+    },
+    {
+     "code": "BETA_BLOCKER_ONLY",
+     "label": "Beta blocker only"
+    },
+    {
+     "code": "NONDIHYDROPYRIDINE_CCB_ONLY",
+     "label": "Nondihydropyridine CCB only"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ]
+  },
+  {
+   "name": "antiarrhythmic_dose",
+   "label": "Antiarrhythmic dose",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 60
+  },
+  {
+   "name": "beta_blocker",
+   "label": "Beta blocker",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "raas_inhibitor",
+   "label": "RAAS inhibitor",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ACEI",
+     "label": "ACEI"
+    },
+    {
+     "code": "ARB",
+     "label": "ARB"
+    },
+    {
+     "code": "ARNI",
+     "label": "ARNI"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "mra",
+   "label": "MRA",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "sglt2_inhibitor",
+   "label": "SGLT2 inhibitor",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "loop_diuretic",
+   "label": "Loop diuretic",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "digoxin",
+   "label": "Digoxin",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "non_dhp_ccb",
+   "label": "Non DHP CCB",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "statin",
+   "label": "Statin",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "antiplatelet",
+   "label": "Antiplatelet",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ASPIRIN",
+     "label": "Aspirin"
+    },
+    {
+     "code": "P2Y12_INHIBITOR",
+     "label": "P2Y12 inhibitor"
+    },
+    {
+     "code": "DUAL_ANTIPLATELET",
+     "label": "Dual antiplatelet"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

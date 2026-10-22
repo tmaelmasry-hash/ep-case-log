@@ -1,0 +1,290 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "LEAD_PROCEDURES",
+ "pk": "lead_procedure_id",
+ "parentFk": [
+  "procedure_id",
+  "device_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "targeted_lead_count",
+  "oldest_target_lead_dwell_days"
+ ],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "lead_management_type",
+   "label": "Lead management type",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "REPOSITION",
+     "label": "Reposition"
+    },
+    {
+     "code": "REVISION",
+     "label": "Revision"
+    },
+    {
+     "code": "ADD",
+     "label": "Add"
+    },
+    {
+     "code": "ABANDON",
+     "label": "Abandon"
+    },
+    {
+     "code": "EXTRACT",
+     "label": "Extract"
+    },
+    {
+     "code": "COMPLETE_SYSTEM_EXPLANT",
+     "label": "Complete system explant"
+    },
+    {
+     "code": "POCKET_REVISION",
+     "label": "Pocket revision"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "primary_indication",
+   "label": "Primary indication",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "INFECTION",
+     "label": "Infection"
+    },
+    {
+     "code": "MALFUNCTION",
+     "label": "Malfunction"
+    },
+    {
+     "code": "FRACTURE",
+     "label": "Fracture"
+    },
+    {
+     "code": "INSULATION_FAILURE",
+     "label": "Insulation failure"
+    },
+    {
+     "code": "DISLODGEMENT",
+     "label": "Dislodgement"
+    },
+    {
+     "code": "PERFORATION",
+     "label": "Perforation"
+    },
+    {
+     "code": "VENOUS_OCCLUSION",
+     "label": "Venous occlusion"
+    },
+    {
+     "code": "UPGRADE",
+     "label": "Upgrade"
+    },
+    {
+     "code": "ADVISORY",
+     "label": "Advisory"
+    },
+    {
+     "code": "REDUNDANT_LEAD",
+     "label": "Redundant lead"
+    },
+    {
+     "code": "TRICUSPID_INTERVENTION",
+     "label": "Tricuspid intervention"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "extraction_approach",
+   "label": "Extraction approach",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SIMPLE_TRACTION",
+     "label": "Simple traction"
+    },
+    {
+     "code": "LOCKING_STYLET",
+     "label": "Locking stylet"
+    },
+    {
+     "code": "MECHANICAL_SHEATH",
+     "label": "Mechanical sheath"
+    },
+    {
+     "code": "POWERED_SHEATH",
+     "label": "Powered sheath"
+    },
+    {
+     "code": "FEMORAL_JUGULAR",
+     "label": "Femoral jugular"
+    },
+    {
+     "code": "SURGICAL",
+     "label": "Surgical"
+    },
+    {
+     "code": "COMBINED",
+     "label": "Combined"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "extraction_result",
+   "label": "Extraction result",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETE_PROCEDURAL_SUCCESS",
+     "label": "Complete procedural success"
+    },
+    {
+     "code": "CLINICAL_SUCCESS",
+     "label": "Clinical success"
+    },
+    {
+     "code": "FAILURE",
+     "label": "Failure"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "retained_fragment",
+   "label": "Retained fragment",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "CLINICALLY_ACCEPTABLE",
+     "label": "Clinically acceptable"
+    },
+    {
+     "code": "SIGNIFICANT",
+     "label": "Significant"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "surgical_rescue_required",
+   "label": "Surgical rescue required",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for extraction"
+  },
+  {
+   "name": "reimplant_plan",
+   "label": "Reimplant plan",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "IMMEDIATE_SAME_SITE",
+     "label": "Immediate same site"
+    },
+    {
+     "code": "IMMEDIATE_NEW_SITE",
+     "label": "Immediate new site"
+    },
+    {
+     "code": "DELAYED",
+     "label": "Delayed"
+    },
+    {
+     "code": "LEADLESS",
+     "label": "Leadless"
+    },
+    {
+     "code": "S_ICD_EV_ICD",
+     "label": "S ICD EV ICD"
+    },
+    {
+     "code": "EPICARDIAL",
+     "label": "Epicardial"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "reimplant_date",
+   "label": "Reimplant date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C if reimplanted"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

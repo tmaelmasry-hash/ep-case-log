@@ -1,0 +1,572 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "ARRHYTHMIA_INDICATIONS",
+ "pk": "arrhythmia_indication_id",
+ "parentFk": [
+  "episode_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "UNIVERSAL_PATIENT",
+ "fields": [
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_EPISODES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "primary_ep_diagnosis",
+   "label": "Primary EP diagnosis",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "TYPICAL_AFL",
+     "label": "Typical AFL"
+    },
+    {
+     "code": "ATYPICAL_AFL",
+     "label": "Atypical AFL"
+    },
+    {
+     "code": "FOCAL_AT",
+     "label": "Focal AT"
+    },
+    {
+     "code": "MACROREENTRANT_AT",
+     "label": "Macroreentrant AT"
+    },
+    {
+     "code": "AVNRT",
+     "label": "AVNRT"
+    },
+    {
+     "code": "AVRT",
+     "label": "AVRT"
+    },
+    {
+     "code": "WPW_PREEXCITATION",
+     "label": "WPW preexcitation"
+    },
+    {
+     "code": "OTHER_SVT",
+     "label": "Other SVT"
+    },
+    {
+     "code": "PVC",
+     "label": "PVC"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "SND",
+     "label": "SND"
+    },
+    {
+     "code": "AV_BLOCK",
+     "label": "AV block"
+    },
+    {
+     "code": "INHERITED_ARRHYTHMIA",
+     "label": "Inherited arrhythmia"
+    },
+    {
+     "code": "SYNCOPE_TLOC",
+     "label": "Syncope TLOC"
+    },
+    {
+     "code": "DEVICE_PROBLEM",
+     "label": "Device problem"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "diagnosis_subtype",
+   "label": "Diagnosis subtype",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PAROXYSMAL_AF",
+     "label": "Paroxysmal AF"
+    },
+    {
+     "code": "PERSISTENT_AF",
+     "label": "Persistent AF"
+    },
+    {
+     "code": "LONG_STANDING_PERSISTENT_AF",
+     "label": "Long standing persistent AF"
+    },
+    {
+     "code": "COUNTERCLOCKWISE_CTI",
+     "label": "Counterclockwise CTI"
+    },
+    {
+     "code": "CLOCKWISE_CTI",
+     "label": "Clockwise CTI"
+    },
+    {
+     "code": "RA_ATYPICAL",
+     "label": "RA atypical"
+    },
+    {
+     "code": "LA_ATYPICAL",
+     "label": "LA atypical"
+    },
+    {
+     "code": "TYPICAL_SLOW_FAST",
+     "label": "Typical slow fast"
+    },
+    {
+     "code": "ATYPICAL_AVNRT",
+     "label": "Atypical AVNRT"
+    },
+    {
+     "code": "ORTHODROMIC",
+     "label": "Orthodromic"
+    },
+    {
+     "code": "ANTIDROMIC",
+     "label": "Antidromic"
+    },
+    {
+     "code": "MANIFEST_WPW",
+     "label": "Manifest WPW"
+    },
+    {
+     "code": "INTERMITTENT_PREEXCITATION",
+     "label": "Intermittent preexcitation"
+    },
+    {
+     "code": "ASYMPTOMATIC_PREEXCITATION",
+     "label": "Asymptomatic preexcitation"
+    },
+    {
+     "code": "MONOMORPHIC_PVC",
+     "label": "Monomorphic PVC"
+    },
+    {
+     "code": "MULTIFORM_PVC",
+     "label": "Multiform PVC"
+    },
+    {
+     "code": "IDIOPATHIC_VT",
+     "label": "Idiopathic VT"
+    },
+    {
+     "code": "SCAR_RELATED_VT",
+     "label": "Scar related VT"
+    },
+    {
+     "code": "BUNDLE_BRANCH_REENTRY_VT",
+     "label": "Bundle branch reentry VT"
+    },
+    {
+     "code": "SYMPTOMATIC_SINUS_BRADYCARDIA",
+     "label": "Symptomatic sinus bradycardia"
+    },
+    {
+     "code": "SINUS_PAUSE_OR_ARREST",
+     "label": "Sinus pause or arrest"
+    },
+    {
+     "code": "CHRONOTROPIC_INCOMPETENCE",
+     "label": "Chronotropic incompetence"
+    },
+    {
+     "code": "TACHY_BRADY_SYNDROME",
+     "label": "Tachy brady syndrome"
+    },
+    {
+     "code": "FIRST_DEGREE",
+     "label": "First degree"
+    },
+    {
+     "code": "SECOND_DEGREE_MOBITZ_I",
+     "label": "Second degree Mobitz I"
+    },
+    {
+     "code": "SECOND_DEGREE_MOBITZ_II",
+     "label": "Second degree Mobitz II"
+    },
+    {
+     "code": "HIGH_GRADE",
+     "label": "High grade"
+    },
+    {
+     "code": "COMPLETE",
+     "label": "Complete"
+    },
+    {
+     "code": "LONG_QT_SYNDROME",
+     "label": "Long qt syndrome"
+    },
+    {
+     "code": "BRUGADA_SYNDROME",
+     "label": "Brugada syndrome"
+    },
+    {
+     "code": "CPVT",
+     "label": "CPVT"
+    },
+    {
+     "code": "SHORT_QT_SYNDROME",
+     "label": "Short qt syndrome"
+    },
+    {
+     "code": "IDIOPATHIC_VF",
+     "label": "Idiopathic VF"
+    },
+    {
+     "code": "OTHER_INHERITED",
+     "label": "Other inherited"
+    },
+    {
+     "code": "REFLEX",
+     "label": "Reflex"
+    },
+    {
+     "code": "ORTHOSTATIC",
+     "label": "Orthostatic"
+    },
+    {
+     "code": "CARDIAC_ARRHYTHMIC",
+     "label": "Cardiac arrhythmic"
+    },
+    {
+     "code": "UNEXPLAINED",
+     "label": "Unexplained"
+    },
+    {
+     "code": "LEAD_MALFUNCTION",
+     "label": "Lead malfunction"
+    },
+    {
+     "code": "GENERATOR_MALFUNCTION",
+     "label": "Generator malfunction"
+    },
+    {
+     "code": "DEVICE_INFECTION",
+     "label": "Device infection"
+    },
+    {
+     "code": "INAPPROPRIATE_THERAPY",
+     "label": "Inappropriate therapy"
+    },
+    {
+     "code": "BATTERY_DEPLETION",
+     "label": "Battery depletion"
+    }
+   ],
+   "parent_field": "primary_ep_diagnosis",
+   "parent_map": {
+    "PAROXYSMAL_AF": "AF",
+    "PERSISTENT_AF": "AF",
+    "LONG_STANDING_PERSISTENT_AF": "AF",
+    "COUNTERCLOCKWISE_CTI": "TYPICAL_AFL",
+    "CLOCKWISE_CTI": "TYPICAL_AFL",
+    "RA_ATYPICAL": "ATYPICAL_AFL",
+    "LA_ATYPICAL": "ATYPICAL_AFL",
+    "TYPICAL_SLOW_FAST": "AVNRT",
+    "ATYPICAL_AVNRT": "AVNRT",
+    "ORTHODROMIC": "AVRT",
+    "ANTIDROMIC": "AVRT",
+    "MANIFEST_WPW": "WPW_PREEXCITATION",
+    "INTERMITTENT_PREEXCITATION": "WPW_PREEXCITATION",
+    "ASYMPTOMATIC_PREEXCITATION": "WPW_PREEXCITATION",
+    "MONOMORPHIC_PVC": "PVC",
+    "MULTIFORM_PVC": "PVC",
+    "IDIOPATHIC_VT": "VT",
+    "SCAR_RELATED_VT": "VT",
+    "BUNDLE_BRANCH_REENTRY_VT": "VT",
+    "SYMPTOMATIC_SINUS_BRADYCARDIA": "SND",
+    "SINUS_PAUSE_OR_ARREST": "SND",
+    "CHRONOTROPIC_INCOMPETENCE": "SND",
+    "TACHY_BRADY_SYNDROME": "SND",
+    "FIRST_DEGREE": "AV_BLOCK",
+    "SECOND_DEGREE_MOBITZ_I": "AV_BLOCK",
+    "SECOND_DEGREE_MOBITZ_II": "AV_BLOCK",
+    "HIGH_GRADE": "AV_BLOCK",
+    "COMPLETE": "AV_BLOCK",
+    "LONG_QT_SYNDROME": "INHERITED_ARRHYTHMIA",
+    "BRUGADA_SYNDROME": "INHERITED_ARRHYTHMIA",
+    "CPVT": "INHERITED_ARRHYTHMIA",
+    "SHORT_QT_SYNDROME": "INHERITED_ARRHYTHMIA",
+    "IDIOPATHIC_VF": "INHERITED_ARRHYTHMIA",
+    "OTHER_INHERITED": "INHERITED_ARRHYTHMIA",
+    "REFLEX": "SYNCOPE_TLOC",
+    "ORTHOSTATIC": "SYNCOPE_TLOC",
+    "CARDIAC_ARRHYTHMIC": "SYNCOPE_TLOC",
+    "UNEXPLAINED": "SYNCOPE_TLOC",
+    "LEAD_MALFUNCTION": "DEVICE_PROBLEM",
+    "GENERATOR_MALFUNCTION": "DEVICE_PROBLEM",
+    "DEVICE_INFECTION": "DEVICE_PROBLEM",
+    "INAPPROPRIATE_THERAPY": "DEVICE_PROBLEM",
+    "BATTERY_DEPLETION": "DEVICE_PROBLEM"
+   },
+   "rule": "C; the selected code's `parent_diagnosis` must equal primary_ep_diagnosis"
+  },
+  {
+   "name": "arrhythmia_documented",
+   "label": "Arrhythmia documented",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "documentation_modality",
+   "label": "Documentation modality",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ECG_12LEAD",
+     "label": "ECG 12lead"
+    },
+    {
+     "code": "TELEMETRY",
+     "label": "Telemetry"
+    },
+    {
+     "code": "AMBULATORY",
+     "label": "Ambulatory"
+    },
+    {
+     "code": "CIED",
+     "label": "CIED"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "EPS",
+     "label": "EPS"
+    },
+    {
+     "code": "WEARABLE",
+     "label": "Wearable"
+    },
+    {
+     "code": "CLINICAL_ONLY",
+     "label": "Clinical only"
+    }
+   ],
+   "rule": "C if documented"
+  },
+  {
+   "name": "presentation",
+   "label": "Presentation",
+   "type": "lookup_array",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PALPITATIONS",
+     "label": "Palpitations"
+    },
+    {
+     "code": "DYSPNEA",
+     "label": "Dyspnea"
+    },
+    {
+     "code": "FATIGUE",
+     "label": "Fatigue"
+    },
+    {
+     "code": "CHEST_PAIN",
+     "label": "Chest pain"
+    },
+    {
+     "code": "PRESYNCOPE",
+     "label": "Presyncope"
+    },
+    {
+     "code": "SYNCOPE",
+     "label": "Syncope"
+    },
+    {
+     "code": "HF",
+     "label": "HF"
+    },
+    {
+     "code": "CARDIAC_ARREST",
+     "label": "Cardiac arrest"
+    },
+    {
+     "code": "ASYMPTOMATIC",
+     "label": "Asymptomatic"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "symptom_severity",
+   "label": "Symptom severity",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ASYMPTOMATIC",
+     "label": "Asymptomatic"
+    },
+    {
+     "code": "MILD",
+     "label": "Mild"
+    },
+    {
+     "code": "MODERATE",
+     "label": "Moderate"
+    },
+    {
+     "code": "SEVERE",
+     "label": "Severe"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "primary_indication",
+   "label": "Primary indication",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DIAGNOSIS",
+     "label": "Diagnosis"
+    },
+    {
+     "code": "ABLATION",
+     "label": "Ablation"
+    },
+    {
+     "code": "RISK_STRATIFICATION",
+     "label": "Risk stratification"
+    },
+    {
+     "code": "PACING",
+     "label": "Pacing"
+    },
+    {
+     "code": "DEFIBRILLATION",
+     "label": "Defibrillation"
+    },
+    {
+     "code": "RESYNCHRONIZATION",
+     "label": "Resynchronization"
+    },
+    {
+     "code": "MONITORING",
+     "label": "Monitoring"
+    },
+    {
+     "code": "DEVICE_MAINTENANCE",
+     "label": "Device maintenance"
+    },
+    {
+     "code": "LEAD_MANAGEMENT",
+     "label": "Lead management"
+    },
+    {
+     "code": "INFECTION_MANAGEMENT",
+     "label": "Infection management"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "arrhythmia_first_diagnosis_date",
+   "label": "Arrhythmia first diagnosis date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C if known"
+  },
+  {
+   "name": "prior_same_arrhythmia_ablation_count",
+   "label": "Prior same arrhythmia ablation count",
+   "type": "integer",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for ablation"
+  },
+  {
+   "name": "prior_aad_failed_or_intolerant_count",
+   "label": "Prior AAD failed or intolerant count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for AF/AT/VT ablation"
+  },
+  {
+   "name": "syncope_related_to_index_arrhythmia",
+   "label": "Syncope related to index arrhythmia",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "UNCERTAIN",
+     "label": "Uncertain"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "prior_cardiac_arrest",
+   "label": "Prior cardiac arrest",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for VT/VF/ICD"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

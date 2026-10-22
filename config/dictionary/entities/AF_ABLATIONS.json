@@ -1,0 +1,513 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "AF_ABLATIONS",
+ "pk": "af_ablation_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "af_type_at_procedure",
+   "label": "AF type at procedure",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PAROXYSMAL_AF",
+     "label": "Paroxysmal AF"
+    },
+    {
+     "code": "PERSISTENT_AF",
+     "label": "Persistent AF"
+    },
+    {
+     "code": "LONG_STANDING_PERSISTENT_AF",
+     "label": "Long standing persistent AF"
+    }
+   ],
+   "rule": "RC; the phenotype **at the time of this procedure**, using the same codes as the episode-level diagnosis subtype. Progression is expected and the two are never forced to be equal; a difference is a documented clinical fact, not a validation error"
+  },
+  {
+   "name": "longest_continuous_af_duration_days",
+   "label": "Longest continuous AF duration",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "days",
+   "rule": "C if known"
+  },
+  {
+   "name": "modified_ehra_symptom_class",
+   "label": "Modified EHRA symptom class",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "I",
+     "label": "I"
+    },
+    {
+     "code": "IIA",
+     "label": "IIa"
+    },
+    {
+     "code": "IIB",
+     "label": "IIb"
+    },
+    {
+     "code": "III",
+     "label": "III"
+    },
+    {
+     "code": "IV",
+     "label": "IV"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "sleep_apnea_status",
+   "label": "Sleep apnea status",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "TREATED",
+     "label": "Treated"
+    },
+    {
+     "code": "UNTREATED",
+     "label": "Untreated"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC for AF module"
+  },
+  {
+   "name": "preprocedure_anticoagulant",
+   "label": "Preprocedure anticoagulant",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "VKA",
+     "label": "VKA"
+    },
+    {
+     "code": "DOAC",
+     "label": "DOAC"
+    },
+    {
+     "code": "LMWH",
+     "label": "LMWH"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "preprocedure_antiarrhythmic",
+   "label": "Preprocedure antiarrhythmic",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "AMIODARONE",
+     "label": "Amiodarone"
+    },
+    {
+     "code": "SOTALOL",
+     "label": "Sotalol"
+    },
+    {
+     "code": "FLECAINIDE",
+     "label": "Flecainide"
+    },
+    {
+     "code": "PROPAFENONE",
+     "label": "Propafenone"
+    },
+    {
+     "code": "DRONEDARONE",
+     "label": "Dronedarone"
+    },
+    {
+     "code": "DOFETILIDE",
+     "label": "Dofetilide"
+    },
+    {
+     "code": "MEXILETINE",
+     "label": "Mexiletine"
+    },
+    {
+     "code": "BETA_BLOCKER_ONLY",
+     "label": "Beta blocker only"
+    },
+    {
+     "code": "NONDIHYDROPYRIDINE_CCB_ONLY",
+     "label": "Nondihydropyridine CCB only"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "la_laa_thrombus_status",
+   "label": "LA LAA thrombus status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NEGATIVE",
+     "label": "Negative"
+    },
+    {
+     "code": "POSITIVE",
+     "label": "Positive"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "R; the procedural decision state acted on by the operator, retained deliberately. **This field is a column of the frozen thrombus source, result, and timing matrix below, which is its sole authority** — it is never validated independently of `thrombus_exclusion_modality`. `NOT_ASSESSED` here holds **if and only if** `thrombus_exclusion_modality` is NOT_ASSESSED; any assessing source requires an assessed status. Where imaging supplied it, `thrombus_assessment_imaging_id` must be present and the value must equal that study's `la_laa_thrombus_result`. Any local requirement for documented exclusion is a finalization rule"
+  },
+  {
+   "name": "thrombus_assessment_imaging_id",
+   "label": "Thrombus assessment imaging",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "ADVANCED_IMAGING",
+   "rule": "C only when a registry imaging study supplied the result. Must reference a finalized same-patient ADVANCED_IMAGING row whose `modality_code` is TEE or CARDIAC_CT — CMR is not an approved thrombus-result source in release 1 — and whose `study_date` is **on or before** the site-local procedure start date. A same-day study performed before left atrial access is therefore valid"
+  },
+  {
+   "name": "thrombus_exclusion_modality",
+   "label": "Thrombus exclusion modality",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TEE",
+     "label": "TEE"
+    },
+    {
+     "code": "CARDIAC_CT",
+     "label": "Cardiac CT"
+    },
+    {
+     "code": "EXTERNAL_APPROVED_SOURCE",
+     "label": "External approved source"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "**Stored** controlled procedural source, not derived. When `thrombus_assessment_imaging_id` is present the server auto-populates it from that study's modality and cross-validates; a disagreement is an ERROR. When the result came from an approved study performed outside the registry it is entered as EXTERNAL_APPROVED_SOURCE with no link. A blank link never derives OTHER — an unstored source cannot be inferred"
+  },
+  {
+   "name": "thrombus_assessment_date",
+   "label": "Thrombus assessment date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; required whenever `thrombus_exclusion_modality` is TEE, CARDIAC_CT, or EXTERNAL_APPROVED_SOURCE, and not applicable when it is NOT_ASSESSED. **Stored, with a per-source authority:** when `thrombus_assessment_imaging_id` is present the server auto-populates it from that study's `study_date` and cross-validates any submitted value; a disagreement is an ERROR. For EXTERNAL_APPROVED_SOURCE it is entered. It must be on or before the site-local procedure start date. This is the minimum fact needed to know **whether the assessment and the procedure fall on the same calendar day**, which is the only case where intra-day ordering matters"
+  },
+  {
+   "name": "same_day_thrombus_assessment_completed_before_la_access",
+   "label": "Same day thrombus assessment completed before LA access",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C; **required when `thrombus_assessment_date` equals the site-local calendar date of `procedure_start_datetime`, and NOT_APPLICABLE in every other case** — including an assessment on an earlier date, where ordering is settled by the calendar and needs no extra fact. YES asserts the study was completed before left atrial access. Only YES permits finalization of an AF ablation whose `transseptal_access` is TRUE; NO and INDETERMINATE block finalization with a data-quality ERROR, because a thrombus assessment completed after LA access did not inform the decision to cross. **No timestamp is collected.** This single conditional fact replaces a study-completion time and an LA-access time, which would be two new timestamps on every case to answer a question that arises only on same-day studies"
+  },
+  {
+   "name": "baseline_echo_id",
+   "label": "Baseline echo",
+   "type": "fk",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "target": "ECHO_STUDIES",
+   "rule": "RC"
+  },
+  {
+   "name": "af_energy_source",
+   "label": "AF energy source",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RF",
+     "label": "RF"
+    },
+    {
+     "code": "CRYOBALLOON",
+     "label": "Cryoballoon"
+    },
+    {
+     "code": "PFA",
+     "label": "PFA"
+    },
+    {
+     "code": "LASER",
+     "label": "Laser"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ]
+  },
+  {
+   "name": "pvi_or_reisolation_attempted",
+   "label": "PVI or reisolation attempted",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "pv_status_at_case_end",
+   "label": "PV status at case end",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ALL_TARGET_PVS_ISOLATED",
+     "label": "All target PVs isolated"
+    },
+    {
+     "code": "PARTIAL_ISOLATION",
+     "label": "Partial isolation"
+    },
+    {
+     "code": "NOT_ISOLATED",
+     "label": "Not isolated"
+    },
+    {
+     "code": "NO_RECONNECTION_CONFIRMED",
+     "label": "No reconnection confirmed"
+    }
+   ]
+  },
+  {
+   "name": "pvi_block_confirmation",
+   "label": "PVI block confirmation",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ENTRANCE",
+     "label": "Entrance"
+    },
+    {
+     "code": "ENTRANCE_AND_EXIT",
+     "label": "Entrance and exit"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "NOT_DOCUMENTED",
+     "label": "Not documented"
+    }
+   ]
+  },
+  {
+   "name": "pv_reconnection_present_at_redo",
+   "label": "PV reconnection present at redo",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "reconnected_pv_count",
+   "label": "Reconnected PV count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "additional_ablation_beyond_pvi",
+   "label": "Additional ablation beyond PVI",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "additional_ablation_types",
+   "label": "Additional ablation types",
+   "type": "lookup_array",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "POSTERIOR_WALL",
+     "label": "Posterior wall"
+    },
+    {
+     "code": "ROOF_LINE",
+     "label": "Roof line"
+    },
+    {
+     "code": "MITRAL_ISTHMUS",
+     "label": "Mitral isthmus"
+    },
+    {
+     "code": "SVC",
+     "label": "SVC"
+    },
+    {
+     "code": "LAA",
+     "label": "LAA"
+    },
+    {
+     "code": "VEIN_OF_MARSHALL",
+     "label": "Vein of Marshall"
+    },
+    {
+     "code": "FOCAL_TRIGGER",
+     "label": "Focal trigger"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ]
+  },
+  {
+   "name": "intraprocedure_cardioversion",
+   "label": "Intraprocedure cardioversion",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ELECTRICAL",
+     "label": "Electrical"
+    },
+    {
+     "code": "PHARMACOLOGIC",
+     "label": "Pharmacologic"
+    },
+    {
+     "code": "BOTH",
+     "label": "Both"
+    }
+   ]
+  },
+  {
+   "name": "acute_af_endpoint",
+   "label": "Acute AF endpoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "COMPLETE_PVI_OR_REISOLATION",
+     "label": "Complete PVI or reisolation"
+    },
+    {
+     "code": "NO_RECONNECTION_NO_NEW_PVI_REQUIRED",
+     "label": "No reconnection no new PVI required"
+    },
+    {
+     "code": "NON_PV_TARGET_ACHIEVED",
+     "label": "Non PV target achieved"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED_ABORTED",
+     "label": "Failed aborted"
+    }
+   ]
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

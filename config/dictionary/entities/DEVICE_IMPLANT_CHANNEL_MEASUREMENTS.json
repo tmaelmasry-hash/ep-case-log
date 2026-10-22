@@ -1,0 +1,81 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_IMPLANT_CHANNEL_MEASUREMENTS",
+ "pk": "implant_channel_measurement_id",
+ "parentFk": [
+  "device_implant_id"
+ ],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "INHERITS_PARENT",
+ "fields": [
+  {
+   "name": "device_implant_id",
+   "label": "Device implant",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICE_IMPLANTS",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "channel",
+   "label": "Channel",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINGLE_CHAMBER",
+     "label": "Single chamber"
+    },
+    {
+     "code": "ATRIAL",
+     "label": "Atrial"
+    },
+    {
+     "code": "VENTRICULAR",
+     "label": "Ventricular"
+    }
+   ],
+   "rule": "R; a single-chamber leadless system has exactly one SINGLE_CHAMBER row, a dual-chamber system has one ATRIAL and one VENTRICULAR row, and no other combination is valid"
+  },
+  {
+   "name": "acute_sensing_mv",
+   "label": "Acute sensing",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "mV",
+   "rule": "RC"
+  },
+  {
+   "name": "acute_capture_threshold_v",
+   "label": "Acute capture threshold",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "V",
+   "rule": "RC"
+  },
+  {
+   "name": "pulse_width_ms",
+   "label": "Pulse width",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "RC"
+  },
+  {
+   "name": "acute_impedance_ohm",
+   "label": "Acute impedance",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "Ω",
+   "rule": "RC"
+  }
+ ]
+}

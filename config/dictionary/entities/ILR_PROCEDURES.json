@@ -1,0 +1,147 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "ILR_PROCEDURES",
+ "pk": "ilr_procedure_id",
+ "parentFk": [
+  "procedure_id",
+  "device_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "ilr_action",
+   "label": "ILR action",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "IMPLANT",
+     "label": "Implant"
+    },
+    {
+     "code": "EXPLANT",
+     "label": "Explant"
+    },
+    {
+     "code": "REPLACE",
+     "label": "Replace"
+    }
+   ],
+   "rule": "R; one row per physical event"
+  },
+  {
+   "name": "prior_device_id",
+   "label": "Prior device",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "C for REPLACE"
+  },
+  {
+   "name": "ilr_indication",
+   "label": "ILR indication",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "UNEXPLAINED_SYNCOPE",
+     "label": "Unexplained syncope"
+    },
+    {
+     "code": "PALPITATIONS",
+     "label": "Palpitations"
+    },
+    {
+     "code": "CRYPTOGENIC_STROKE_AF_DETECTION",
+     "label": "Cryptogenic stroke AF detection"
+    },
+    {
+     "code": "AF_BURDEN",
+     "label": "AF burden"
+    },
+    {
+     "code": "POSTABLATION_MONITORING",
+     "label": "Postablation monitoring"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC for IMPLANT/REPLACE"
+  },
+  {
+   "name": "implant_r_wave_mv",
+   "label": "Implant r wave",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "mV",
+   "rule": "C if measured for IMPLANT/REPLACE"
+  },
+  {
+   "name": "explant_reason",
+   "label": "Explant reason",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DIAGNOSIS_REACHED",
+     "label": "Diagnosis reached"
+    },
+    {
+     "code": "BATTERY",
+     "label": "Battery"
+    },
+    {
+     "code": "INFECTION",
+     "label": "Infection"
+    },
+    {
+     "code": "ELECTIVE",
+     "label": "Elective"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C for EXPLANT/REPLACE"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

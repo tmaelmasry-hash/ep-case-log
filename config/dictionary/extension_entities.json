@@ -1,0 +1,12 @@
+{
+  "_note": "Operational extension entities (not in the clinical dictionary; plan §8 / core_dataset.json). Rendered like dictionary entities. Never exported as clinical columns.",
+  "EXT_PROCEDURE_REVIEW": {
+    "pk": "procedure_review_id",
+    "parentFk": ["procedure_id"],
+    "fields": [
+      { "name": "complications_reviewed", "label": "Complications reviewed", "type": "enum",
+        "codes": [ { "code": "NONE_DOCUMENTED", "label": "None documented" }, { "code": "PRESENT", "label": "Present" }, { "code": "NOT_REVIEWED", "label": "Not reviewed" } ],
+        "req": "R", "help": "Present → add at least one complication with category, relatedness and outcome." }
+    ]
+  }
+}

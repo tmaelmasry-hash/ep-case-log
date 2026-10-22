@@ -194,18 +194,15 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
 
 export function SaveIndicator() {
   const { saveStatus } = useStore();
-  let text = '';
-  let cls = '';
-  if (saveStatus === 'saving') text = 'Saving…';
-  else if (saveStatus === 'error') {
-    text = 'Save failed';
-    cls = 'err';
-  } else if (saveStatus === 'saved') {
-    text = 'Saved';
-    cls = 'ok';
-  }
+  const map: Record<string, [string, string]> = {
+    saving: ['Saving…', ''],
+    saved: ['Saved', 'ok'],
+    error: ['Not saved', 'err'],
+    offline: ['No connection · will retry', 'warn'],
+  };
+  const [text, cls] = map[saveStatus] ?? ['', ''];
   return (
-    <span className={`save-ind ${cls}`} title={cls === 'ok' ? 'All changes saved on this device' : undefined} data-testid="save-indicator" aria-live="polite">
+    <span className={`save-ind ${cls}`} data-testid="save-indicator" aria-live="polite">
       {text}
     </span>
   );

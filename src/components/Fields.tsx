@@ -1,0 +1,253 @@
+// Field controls built from the dictionary type of each field (ported from EP Workspace public/js/components/fields.js,
+// drawn in the approved EP Log style): short choices as a segmented control or pills, long lists as a dropdown.
+import { useEffect, useRef, useState } from 'react';
+import { codeLabel, editable, formFields, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
+import { dict } from '../lib/dict';
+import type { DecodedRow } from '../../shared/caseTypes.ts';
+
+const PILL_MAX = 8;
+
+function shortLabels(f: FormField, codes: string[], max: number) {
+  return codes.every((c) => codeLabel(f, c).length <= max);
+}
+
+type Kind = 'segmented' | 'pills' | 'select' | 'multi' | 'date' | 'datetime' | 'number' | 'text' | 'longtext' | 'fk' | 'none';
+
+export function controlKind(f: FormField, row: DecodedRow | null): Kind {
+  switch (f.type) {
+    case 'enum':
+    case 'lookup':
+    case 'boolean_unknown': {
+      const codes = offeredCodes(f, row);
+      if (codes.length <= 3 && codes.reduce((n, c) => n + codeLabel(f, c).length, 0) <= 26) return 'segmented';
+      if (codes.length <= PILL_MAX && shortLabels(f, codes, 26)) return 'pills';
+      return 'select';
+    }
+    case 'boolean':
+      return 'segmented';
+    case 'lookup_array':
+      return 'multi';
+    case 'date':
+      return 'date';
+    case 'datetime':
+      return 'datetime';
+    case 'integer':
+    case 'decimal':
+      return 'number';
+    case 'string':
+      // Free-text notes get a text box; names and short values a single line.
+      return (f.maxLength ?? 0) > 120 || /(note|reference|description|comment|details|specify)/.test(f.name) ? 'longtext' : 'text';
+    case 'fk':
+      return 'fk';
+    default:
+      return 'none';
+  }
+}
+
+/** Text and number inputs keep what is typed and save it on leaving the field or after a short pause. */
+function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unknown; onCommit: (v: string | null) => void; kind: 'number' | 'text' | 'longtext'; f: FormField }) {
+  const [text, setText] = useState(value === null || value === undefined ? '' : String(value));
+  const focused = useRef(false);
+  const timer = useRef<number | undefined>(undefined);
+  const last = useRef(text);
+  useEffect(() => {
+    if (!focused.current) {
+      const t = value === null || value === undefined ? '' : String(value);
+      setText(t);
+      last.current = t;
+    }
+  }, [value]);
+  const commit = (t: string) => {
+    window.clearTimeout(timer.current);
+    if (t === last.current) return;
+    last.current = t;
+    onCommit(t.trim() === '' ? null : t);
+  };
+  const common = {
+    id,
+    value: text,
+    onFocus: () => (focused.current = true),
+    onBlur: () => {
+      focused.current = false;
+      commit(text);
+    },
+    onChange: (e: { target: { value: string } }) => {
+      setText(e.target.value);
+      window.clearTimeout(timer.current);
+      const t = e.target.value;
+      timer.current = window.setTimeout(() => commit(t), 900);
+    },
+    autoComplete: 'off',
+    'aria-label': f.label,
+  };
+  if (kind === 'longtext') return <textarea className="ios-text" rows={2} maxLength={f.maxLength} {...common} />;
+  return (
+    <span className="with-unit">
+      <input className="ios-value" placeholder="Enter" inputMode={kind === 'number' ? (f.type === 'integer' ? 'numeric' : 'decimal') : 'text'} maxLength={f.maxLength} {...common} />
+      {f.unit && <span className="muted small">{f.unit}</span>}
+    </span>
+  );
+}
+
+export interface FkOption {
+  value: string;
+  label: string;
+}
+
+export function FieldRow({
+  def,
+  f,
+  row,
+  rowId,
+  onChange,
+  error,
+  otherError,
+  fkOptions,
+  readOnly,
+}: {
+  def: EntityDef;
+  f: FormField;
+  row: DecodedRow | null;
+  rowId: string;
+  onChange: (field: string, value: unknown, key?: string) => void;
+  error?: string;
+  otherError?: string;
+  fkOptions?: FkOption[];
+  readOnly?: boolean;
+}) {
+  const value = row?.[f.name] ?? null;
+  const kind = controlKind(f, row);
+  const id = `f-${def.entity}-${f.name}-${rowId}`.replace(/[^A-Za-z0-9_-]/g, '_');
+  const star = dict.core.has(`${def.entity}.${f.name}`);
+  const ro = readOnly || !editable(def, f);
+  const lab = (
+    <span className="lab">
+      {f.label}
+      {star && <span className="req" title="Core field"> *</span>}
+    </span>
+  );
+  const holdsOther = value === 'OTHER' || (Array.isArray(value) && value.includes('OTHER'));
+  const other = holdsOther && !ro && def.fields.some((x) => x.name === 'other_specify_json') && (
+    <div className="other-specify">
+      <TypedInput id={`${id}-other`} kind="text" f={{ ...f, label: `${f.label}: Other — specify`, maxLength: 160 }} value={(row?.other_specify_json as Record<string, string> | null)?.[f.name] ?? ''} onCommit={(t) => onChange('other_specify_json', t ?? '', f.name)} />
+      {otherError && <span className="field-error" role="alert">{otherError}</span>}
+    </div>
+  );
+  const err = error && (
+    <span className="field-error" role="alert">
+      {error}
+    </span>
+  );
+
+  if (ro) {
+    const shown = f.codes ? (Array.isArray(value) ? value.map((c) => codeLabel(f, c)).join(', ') : codeLabel(f, value)) : f.type === 'boolean' && value !== null ? (value ? 'Yes' : 'No') : value === null ? '' : String(value);
+    return (
+      <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
+        {lab}
+        <span className="val">{shown || '—'}</span>
+      </div>
+    );
+  }
+
+  if (kind === 'segmented' || kind === 'pills' || kind === 'multi') {
+    const codes = f.type === 'boolean' ? ['true', 'false'] : f.type === 'lookup_array' ? (f.codes ?? []).map((c) => c.code) : offeredCodes(f, row);
+    const labelOf = (c: string) => (f.type === 'boolean' ? (c === 'true' ? 'Yes' : 'No') : codeLabel(f, c));
+    const isOn = (c: string) => (f.type === 'boolean' ? value !== null && String(value) === c : Array.isArray(value) ? value.includes(c) : value === c);
+    const pick = (c: string) => {
+      if (kind === 'multi') {
+        const cur = Array.isArray(value) ? (value as string[]) : [];
+        onChange(f.name, cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]);
+      } else if (f.type === 'boolean') onChange(f.name, isOn(c) ? null : c === 'true');
+      else onChange(f.name, isOn(c) ? null : c);
+    };
+    if (f.parent_field && !codes.length) {
+      return (
+        <div className="frow stack" data-field={`${def.entity}.${f.name}`}>
+          {lab}
+          <span className="hint">Choose the {def.fields.find((x) => x.name === f.parent_field)?.label.toLowerCase() ?? 'parent field'} first.</span>
+        </div>
+      );
+    }
+    return (
+      <div className="frow stack" data-field={`${def.entity}.${f.name}`}>
+        {lab}
+        <div className={kind === 'segmented' ? 'mini-seg' : 'pill-set'} role={kind === 'multi' ? 'group' : 'radiogroup'} aria-label={f.label} id={id}>
+          {codes.map((c) => (
+            <button key={c} type="button" role={kind === 'multi' ? undefined : 'radio'} aria-checked={kind === 'multi' ? undefined : isOn(c)} aria-pressed={kind === 'multi' ? isOn(c) : undefined} className={isOn(c) ? 'on' : ''} onClick={() => pick(c)}>
+              {labelOf(c)}
+            </button>
+          ))}
+        </div>
+        {err}
+        {other}
+      </div>
+    );
+  }
+
+  let control;
+  if (kind === 'select' || kind === 'fk') {
+    const options: FkOption[] = kind === 'fk' ? (fkOptions ?? []) : offeredCodes(f, row).map((c) => ({ value: c, label: codeLabel(f, c) }));
+    control = (
+      <select id={id} className="ios-select" aria-label={f.label} value={value === null ? '' : String(value)} onChange={(e) => onChange(f.name, e.target.value || null)}>
+        <option value="">{kind === 'fk' && !options.length ? 'Nothing to link yet' : 'Select'}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  } else if (kind === 'date' || kind === 'datetime') {
+    control = <input id={id} className="ios-value" type={kind === 'date' ? 'date' : 'datetime-local'} aria-label={f.label} value={value === null ? '' : String(value)} onChange={(e) => onChange(f.name, e.target.value || null)} />;
+  } else if (kind === 'number' || kind === 'text') {
+    control = <TypedInput id={id} kind={kind} f={f} value={value} onCommit={(t) => onChange(f.name, t)} />;
+  } else if (kind === 'longtext') {
+    return (
+      <div className="frow stack" data-field={`${def.entity}.${f.name}`}>
+        {lab}
+        <TypedInput id={id} kind="longtext" f={f} value={value} onCommit={(t) => onChange(f.name, t)} />
+        {err}
+      </div>
+    );
+  } else {
+    return null;
+  }
+  return (
+    <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
+      <label htmlFor={id} className="lab-wrap">
+        {lab}
+      </label>
+      {control}
+      {err && <div className="frow-err">{err}</div>}
+      {other && <div className="frow-err">{other}</div>}
+    </div>
+  );
+}
+
+/** All form fields of one row of an entity, in dictionary order (core fields marked ★). */
+export function EntityFields({
+  entity,
+  row,
+  rowId,
+  onChange,
+  errorOf,
+  fkOptions,
+  readOnly,
+}: {
+  entity: string;
+  row: DecodedRow | null;
+  rowId: string;
+  onChange: (field: string, value: unknown, key?: string) => void;
+  errorOf: (field: string) => string | undefined;
+  fkOptions: (f: FormField) => FkOption[];
+  readOnly?: boolean;
+}) {
+  const def = dict.entities[entity];
+  return (
+    <div className="group">
+      {formFields(def).map((f) => (
+        <FieldRow key={f.name} def={def} f={f} row={row} rowId={rowId} onChange={onChange} error={errorOf(f.name)} otherError={errorOf(`other_specify_json:${f.name}`)} fkOptions={f.type === 'fk' ? fkOptions(f) : undefined} readOnly={readOnly} />
+      ))}
+    </div>
+  );
+}

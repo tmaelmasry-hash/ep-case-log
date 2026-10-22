@@ -1,228 +1,254 @@
+// Cases list (approved EP Log-style preview): group switcher, search, cases grouped by month of the episode start,
+// each row = date · MRN · age/sex, a chip per procedure, then No. · status.
 import { useMemo, useState } from 'react';
+import type { CaseSummary, ProcedureSummary } from '../../shared/caseTypes.ts';
+import { checkMrn } from '../../shared/mrn.ts';
+import { label, mrnRules } from '../lib/dict';
+import { api, ApiError } from '../lib/api';
+import { ageSex, fmtDate, fmtMonthKey, monthKey, todayISO } from '../lib/util';
+import { useAuth } from '../auth';
 import { useStore } from '../store';
-import { CATEGORIES, CATEGORY_COLOR, PROCEDURES, procCategory, procLabel, procSummary, type Category } from '../lib/catalog';
-import { caseCha, caseNeedsCha } from '../lib/cha';
-import type { CaseRec } from '../lib/types';
-import { fmtDate, fmtMonthKey, monthKey, patientLine } from '../lib/util';
 import { Icon } from '../components/Icon';
-import { ChipSelect, Empty, SaveIndicator, Sheet } from '../components/ui';
-import { CaseInfoSheet } from './CaseInfoSheet';
+import { Empty, SaveIndicator, Sheet } from '../components/ui';
 
-export interface CaseFilter {
-  categories: string[];
-  types: string[];
-  flags: string[];
-}
-const EMPTY_FILTER: CaseFilter = { categories: [], types: [], flags: [] };
-const FLAGS = ['Has complications', 'CHA₂DS₂-VASc missing', 'Has images'];
+const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
-export function matchesSearch(c: CaseRec, q: string): boolean {
-  if (!q) return true;
-  const hay = [c.mrn, c.date, fmtDate(c.date), c.notes, c.complicationNote, ...c.complications, ...c.procedures.flatMap((p) => [procLabel(p), procSummary(p), p.notes])]
-    .join(' ')
-    .toLowerCase();
-  return q
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((t) => hay.includes(t));
+export function procedureChip(p: ProcedureSummary): { text: string; cls: string } {
+  const comps = p.components.map((c) => label('PROCEDURE_COMPONENTS', 'component_type', c));
+  const type = p.type ? label('EP_PROCEDURES', 'primary_procedure_type', p.type) : null;
+  const text = type === 'Ablation' && comps.length ? `${comps.join(' + ')} Ablation` : [type, comps.length && type !== 'Ablation' ? comps.join(' + ') : null].filter(Boolean).join(' · ') || 'Procedure';
+  return { text, cls: (p.type && CHIP_CLASS[p.type]) || 'c-neutral' };
 }
 
-export function ProcChip({ label, category }: { label: string; category: Category }) {
+export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?: boolean; showGroup?: string }) {
   return (
-    <span className="proc-chip" style={{ ['--chip' as string]: CATEGORY_COLOR[category] }}>
-      {label}
-    </span>
-  );
-}
-
-export function ChaBadge({ c }: { c: CaseRec }) {
-  if (!caseNeedsCha(c)) return null;
-  const r = caseCha(c);
-  if (!r)
-    return (
-      <span className="cha-badge missing" title="CHA₂DS₂-VASc not recorded">
-        CHA₂DS₂-VASc ?
+    <a href={`#/cases/${c.case_id}`} className={`grow-row case-row${selected ? ' sel' : ''}`} data-testid="case-row" aria-current={selected ? 'true' : undefined}>
+      <span className="grow">
+        <span className="line1">
+          <b>{c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}</b>
+          <span className="muted">
+            {' '}
+            · {c.mrn}
+            {ageSex(c.age, c.sex) ? ` · ${ageSex(c.age, c.sex)}` : ''}
+          </span>
+        </span>
+        <span className="chips">
+          {c.procedures.length ? (
+            c.procedures.map((p) => {
+              const ch = procedureChip(p);
+              return (
+                <span key={p.id} className={`chip ${ch.cls}`}>
+                  {ch.text}
+                </span>
+              );
+            })
+          ) : (
+            <span className="chip c-neutral">MRN only</span>
+          )}
+        </span>
+        <span className="sub">
+          {showGroup ? `${showGroup} · ` : ''}No. {c.group_seq} · <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
+          {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
+        </span>
       </span>
-    );
-  return (
-    <span className="cha-badge" title={`CHA₂DS₂-VASc ${r.score} (CHA₂DS₂-VA ${r.vaScore})`}>
-      CHA₂DS₂-VASc {r.score}
-    </span>
-  );
-}
-
-export function CaseRow({ c, selected, imageCount }: { c: CaseRec; selected?: boolean; imageCount: number }) {
-  return (
-    <a href={`#/cases/${c.id}`} className={`row case-row${selected ? ' selected' : ''}`} data-testid="case-row" aria-current={selected ? 'true' : undefined}>
-      <div className="row-main">
-        <div className="row-title">
-          <b>{fmtDate(c.date)}</b>
-          <span className="muted">{patientLine(c.mrn, c.age, c.sex)}</span>
-        </div>
-        <div className="row-chips">
-          {c.procedures.length === 0 && <span className="muted small">No procedures yet</span>}
-          {c.procedures.map((p) => (
-            <ProcChip key={p.id} label={procLabel(p)} category={procCategory(p)} />
-          ))}
-        </div>
-      </div>
-      <div className="row-side">
-        <ChaBadge c={c} />
-        {c.complications.length > 0 && (
-          <span className="flag-badge" title="Complication recorded">
-            <Icon name="alert" size={14} /> {c.complications.length}
-          </span>
-        )}
-        {imageCount > 0 && (
-          <span className="muted small" title={`${imageCount} image(s)`}>
-            <Icon name="image" size={14} /> {imageCount}
-          </span>
-        )}
-        <Icon name="chevron" size={18} className="muted" />
-      </div>
+      <Icon name="chevron" size={16} className="muted" />
     </a>
   );
 }
 
-export function CasesView({ selectedId, nav, inboxCount }: { selectedId?: string; nav: (p: string) => void; inboxCount: number }) {
-  const { cases, images } = useStore();
-  const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<CaseFilter>(EMPTY_FILTER);
-  const [showFilter, setShowFilter] = useState(false);
-  const [showNew, setShowNew] = useState(false);
+function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => void; onCreated: (id: string) => void; defaultGroup: string }) {
+  const { groups, toast, refreshCases } = useStore();
+  const [mrn, setMrn] = useState('');
+  const [group, setGroup] = useState(defaultGroup);
+  const [date, setDate] = useState(todayISO());
+  const [err, setErr] = useState<{ field?: string; message: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const check = mrn ? checkMrn(mrn, mrnRules) : null;
 
-  const imgCount = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const i of images) if (i.caseId) m.set(i.caseId, (m.get(i.caseId) ?? 0) + 1);
-    return m;
-  }, [images]);
+  const submit = async () => {
+    if (!check?.ok) return setErr({ field: 'mrn', message: check?.error ?? 'Enter the MRN.' });
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await api<{ case_id: string; group_seq: number; warning: string | null }>('POST', '/api/cases', { mrn, group_id: group, episode_start_date: date });
+      await refreshCases();
+      toast({ message: `Case No. ${r.group_seq} created`, kind: 'success' });
+      onCreated(r.case_id);
+    } catch (e) {
+      const a = e as ApiError;
+      setErr({ field: a.field, message: a.message });
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Sheet title="New Case" onClose={onClose} onDone={submit} doneLabel="Create" doneDisabled={busy} testId="new-case-sheet">
+      <div className="group">
+        <div className="frow inline">
+          <label className="lab-wrap" htmlFor="new-mrn">
+            <span className="lab">MRN <span className="req">*</span></span>
+          </label>
+          <input id="new-mrn" className="ios-value" inputMode="numeric" autoComplete="off" placeholder="7 digits" value={mrn} onChange={(e) => setMrn(e.target.value)} autoFocus />
+        </div>
+        {groups.length > 1 && (
+          <div className="frow stack">
+            <span className="lab">Group</span>
+            <div className="mini-seg" role="radiogroup" aria-label="Group">
+              {groups.map((g) => (
+                <button key={g.group_id} type="button" role="radio" aria-checked={group === g.group_id} className={group === g.group_id ? 'on' : ''} onClick={() => setGroup(g.group_id)}>
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="frow inline">
+          <label className="lab-wrap" htmlFor="new-date">
+            <span className="lab">Episode start date <span className="req">*</span></span>
+          </label>
+          <input id="new-date" className="ios-value" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+      </div>
+      {check && !check.ok && mrn.length >= 7 && <p className="field-error">{check.error}</p>}
+      {check?.ok && check.warning && <p className="warn-text small">{check.warning}</p>}
+      {err && (
+        <p className="field-error" role="alert">
+          {err.message}
+        </p>
+      )}
+      <p className="muted small">A case is one episode of care. Add each procedure of the episode inside the case.</p>
+      <button className="btn primary block" onClick={submit} disabled={busy}>
+        {busy ? 'Creating…' : 'Create case'}
+      </button>
+    </Sheet>
+  );
+}
+
+export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: string) => void }) {
+  const { cases, groups, loadError, refreshCases } = useStore();
+  const { can } = useAuth();
+  const [group, setGroup] = useState<string>(() => {
+    try {
+      return localStorage.getItem('ep.group') ?? 'ALL';
+    } catch {
+      return 'ALL';
+    }
+  });
+  const [q, setQ] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const activeGroup = group === 'ALL' || groups.some((g) => g.group_id === group) ? group : 'ALL';
+  const pickGroup = (g: string) => {
+    setGroup(g);
+    try {
+      localStorage.setItem('ep.group', g);
+    } catch {
+      /* storage blocked */
+    }
+  };
 
   const filtered = useMemo(() => {
+    const term = q.replace(/\s+/g, '');
     return cases
-      .filter((c) => matchesSearch(c, q.trim()))
-      .filter((c) => !filter.categories.length || c.procedures.some((p) => filter.categories.includes(procCategory(p))))
-      .filter((c) => !filter.types.length || c.procedures.some((p) => filter.types.includes(p.type)))
-      .filter((c) => !filter.flags.includes(FLAGS[0]) || c.complications.length > 0)
-      .filter((c) => !filter.flags.includes(FLAGS[1]) || (caseNeedsCha(c) && !c.cha))
-      .filter((c) => !filter.flags.includes(FLAGS[2]) || (imgCount.get(c.id) ?? 0) > 0)
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  }, [cases, q, filter, imgCount]);
+      .filter((c) => activeGroup === 'ALL' || c.group_id === activeGroup)
+      .filter((c) => !term || c.mrn.includes(term))
+      .sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '') || b.group_seq - a.group_seq);
+  }, [cases, activeGroup, q]);
 
-  const groups = useMemo(() => {
-    const g: { month: string; items: CaseRec[] }[] = [];
+  const months = useMemo(() => {
+    const out: { key: string; items: CaseSummary[] }[] = [];
     for (const c of filtered) {
-      const m = monthKey(c.date);
-      if (!g.length || g[g.length - 1].month !== m) g.push({ month: m, items: [] });
-      g[g.length - 1].items.push(c);
+      const k = c.episode_start_date ? monthKey(c.episode_start_date) : 'none';
+      if (!out.length || out[out.length - 1].key !== k) out.push({ key: k, items: [] });
+      out[out.length - 1].items.push(c);
     }
-    return g;
+    return out;
   }, [filtered]);
 
-  const activeFilters = filter.categories.length + filter.types.length + filter.flags.length;
+  const gname = (id: string) => groups.find((g) => g.group_id === id)?.name ?? '';
+  const countIn = (id: string) => cases.filter((c) => c.group_id === id).length;
 
   return (
     <section className="view" aria-label="Cases">
-      <div className="toolbar">
-        <button className={`icon-btn${activeFilters ? ' active' : ''}`} aria-label={`Filter${activeFilters ? ` (${activeFilters} active)` : ''}`} onClick={() => setShowFilter(true)}>
-          <Icon name="filter" />
-          {activeFilters > 0 && <span className="dot-badge">{activeFilters}</span>}
-        </button>
-        <button className="icon-btn" aria-label={`Image inbox (${inboxCount})`} onClick={() => nav('inbox')}>
-          <Icon name="inbox" />
-          {inboxCount > 0 && <span className="dot-badge red">{inboxCount}</span>}
-        </button>
+      <div className="navbar">
         <span className="grow" />
-        <span className="narrow-only">
-          <SaveIndicator />
-        </span>
-        <button className="icon-btn accent" aria-label="New case" onClick={() => setShowNew(true)} data-testid="new-case">
-          <Icon name="plus" size={24} />
-        </button>
+        <SaveIndicator />
+        {can('case.create') && (
+          <button className="icon-btn accent" aria-label="New case" onClick={() => setShowNew(true)} data-testid="new-case" disabled={!groups.length}>
+            <Icon name="plus" size={26} />
+          </button>
+        )}
       </div>
       <h1 className="large-title">Cases</h1>
       <div className="search">
         <Icon name="search" size={18} />
-        <input type="search" placeholder="Search MRN, procedure, notes" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search cases" />
+        <input type="search" inputMode="numeric" placeholder="Search MRN" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN" />
       </div>
-      {activeFilters > 0 && (
-        <div className="active-filters">
-          {[...filter.categories, ...filter.types.map((t) => PROCEDURES.find((p) => p.type === t)?.label ?? t), ...filter.flags].map((f) => (
-            <span key={f} className="pill">
-              {f}
-            </span>
+      {groups.length > 1 && (
+        <div className="seg" role="radiogroup" aria-label="Group">
+          {groups.map((g) => (
+            <button key={g.group_id} type="button" role="radio" aria-checked={activeGroup === g.group_id} className={activeGroup === g.group_id ? 'on' : ''} onClick={() => pickGroup(g.group_id)}>
+              {g.name} <small>{countIn(g.group_id)}</small>
+            </button>
           ))}
-          <button className="link" onClick={() => setFilter(EMPTY_FILTER)}>
-            Clear
+          <button type="button" role="radio" aria-checked={activeGroup === 'ALL'} className={activeGroup === 'ALL' ? 'on' : ''} onClick={() => pickGroup('ALL')}>
+            All
           </button>
         </div>
       )}
 
-      {cases.length === 0 ? (
-        <Empty icon="cases" title="No cases yet">
-          <p>Log your first procedure. Everything is saved on this device automatically.</p>
-          <button className="btn primary" onClick={() => setShowNew(true)}>
-            <Icon name="plus" size={18} /> New case
+      {loadError && (
+        <div className="notice-err" role="alert">
+          {loadError}{' '}
+          <button className="link strong" onClick={refreshCases}>
+            Try again
           </button>
+        </div>
+      )}
+
+      {!groups.length ? (
+        <Empty icon="patients" title="You are not in a group yet">
+          <p>Ask the Admin to add you to a group. Cases belong to groups.</p>
+        </Empty>
+      ) : cases.length === 0 ? (
+        <Empty icon="cases" title="No cases yet">
+          <p>A case is one episode of care. Create it with the MRN, then add its procedures.</p>
+          {can('case.create') && (
+            <button className="btn primary" onClick={() => setShowNew(true)}>
+              <Icon name="plus" size={18} /> New case
+            </button>
+          )}
         </Empty>
       ) : filtered.length === 0 ? (
         <Empty icon="search" title="No matching cases">
-          <p>Try a different search or clear the filters.</p>
+          <p>Try another MRN or group.</p>
         </Empty>
       ) : (
-        <div className="case-groups">
+        <>
           <p className="muted small count-line" data-testid="case-count">
             {filtered.length} case{filtered.length === 1 ? '' : 's'}
           </p>
-          {groups.map((g) => (
-            <div key={g.month} className="group">
-              <h2 className="group-head">
-                {fmtMonthKey(g.month)} <span className="muted">· {g.items.length}</span>
-              </h2>
-              <div className="card list">
-                {g.items.map((c) => (
-                  <CaseRow key={c.id} c={c} selected={c.id === selectedId} imageCount={imgCount.get(c.id) ?? 0} />
+          {months.map((m) => (
+            <div key={m.key}>
+              <h2 className="monthhead">{m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}</h2>
+              <div className="group">
+                {m.items.map((c) => (
+                  <CaseRow key={c.case_id} c={c} selected={c.case_id === selectedId} showGroup={activeGroup === 'ALL' && groups.length > 1 ? gname(c.group_id) : undefined} />
                 ))}
               </div>
             </div>
           ))}
-        </div>
+        </>
       )}
-
-      {showFilter && (
-        <Sheet title="Filter" onClose={() => setShowFilter(false)} onDone={() => setShowFilter(false)}>
-          <div className="form-group">
-            <h3 className="section-label">Category</h3>
-            <ChipSelect label="Category" options={CATEGORIES} value={filter.categories} onChange={(v) => setFilter({ ...filter, categories: v })} />
-          </div>
-          <div className="form-group">
-            <h3 className="section-label">Procedure</h3>
-            <div className="chips">
-              {PROCEDURES.map((p) => {
-                const on = filter.types.includes(p.type);
-                return (
-                  <button
-                    key={p.type}
-                    className={`chip-toggle${on ? ' on' : ''}`}
-                    aria-pressed={on}
-                    onClick={() => setFilter({ ...filter, types: on ? filter.types.filter((t) => t !== p.type) : [...filter.types, p.type] })}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="form-group">
-            <h3 className="section-label">Flags</h3>
-            <ChipSelect label="Flags" options={FLAGS} value={filter.flags} onChange={(v) => setFilter({ ...filter, flags: v })} />
-          </div>
-          <button className="btn" onClick={() => setFilter(EMPTY_FILTER)} disabled={!activeFilters}>
-            Clear all filters
-          </button>
-        </Sheet>
+      {showNew && (
+        <NewCaseSheet
+          defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id}
+          onClose={() => setShowNew(false)}
+          onCreated={(id) => {
+            setShowNew(false);
+            nav(`cases/${id}`);
+          }}
+        />
       )}
-      {showNew && <CaseInfoSheet onClose={() => setShowNew(false)} onCreated={(id) => nav(`cases/${id}/add`)} />}
     </section>
   );
 }

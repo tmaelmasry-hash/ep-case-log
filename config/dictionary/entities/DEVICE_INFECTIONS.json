@@ -1,0 +1,246 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_INFECTIONS",
+ "pk": "device_infection_id",
+ "parentFk": [
+  "device_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "lead_procedure_id",
+   "label": "Lead procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "LEAD_PROCEDURES",
+   "rule": "C"
+  },
+  {
+   "name": "infection_diagnosis_date",
+   "label": "Infection diagnosis date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "infection_classification",
+   "label": "Infection classification",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "REJECTED_ALTERNATIVE",
+     "label": "Rejected alternative"
+    },
+    {
+     "code": "SUPERFICIAL_INCISIONAL",
+     "label": "Superficial incisional"
+    },
+    {
+     "code": "POCKET_INFECTION_EROSION",
+     "label": "Pocket infection erosion"
+    },
+    {
+     "code": "BLOODSTREAM_INFECTION",
+     "label": "Bloodstream infection"
+    },
+    {
+     "code": "LEAD_ENDOCARDITIS",
+     "label": "Lead endocarditis"
+    },
+    {
+     "code": "VALVE_ENDOCARDITIS",
+     "label": "Valve endocarditis"
+    },
+    {
+     "code": "POSSIBLE_CIED_INFECTION",
+     "label": "Possible CIED infection"
+    }
+   ],
+   "rule": "RC; `REJECTED_ALTERNATIVE` records an assessment in which CIED infection was actively considered and excluded in favour of another diagnosis. It is a stored classification, not the absence of a row, because the exclusion is itself the clinical finding worth keeping"
+  },
+  {
+   "name": "infection_diagnostic_certainty",
+   "label": "Infection diagnostic certainty",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DEFINITE",
+     "label": "Definite"
+    },
+    {
+     "code": "POSSIBLE",
+     "label": "Possible"
+    },
+    {
+     "code": "REJECTED_ALTERNATIVE",
+     "label": "Rejected alternative"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "blood_culture_result",
+   "label": "Blood culture result",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NEGATIVE",
+     "label": "Negative"
+    },
+    {
+     "code": "POSITIVE",
+     "label": "Positive"
+    },
+    {
+     "code": "NOT_DONE",
+     "label": "Not done"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "organism_code",
+   "label": "Organism code",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "STAPH_AUREUS_METHICILLIN_SENSITIVE",
+     "label": "Staph aureus methicillin sensitive"
+    },
+    {
+     "code": "STAPH_AUREUS_METHICILLIN_RESISTANT",
+     "label": "Staph aureus methicillin resistant"
+    },
+    {
+     "code": "COAGULASE_NEGATIVE_STAPHYLOCOCCUS",
+     "label": "Coagulase negative staphylococcus"
+    },
+    {
+     "code": "STREPTOCOCCUS_SPECIES",
+     "label": "Streptococcus species"
+    },
+    {
+     "code": "ENTEROCOCCUS_SPECIES",
+     "label": "Enterococcus species"
+    },
+    {
+     "code": "GRAM_NEGATIVE_BACILLI",
+     "label": "Gram negative bacilli"
+    },
+    {
+     "code": "ANAEROBE",
+     "label": "Anaerobe"
+    },
+    {
+     "code": "FUNGAL_INCLUDING_CANDIDA",
+     "label": "Fungal including Candida"
+    },
+    {
+     "code": "MYCOBACTERIAL",
+     "label": "Mycobacterial"
+    },
+    {
+     "code": "POLYMICROBIAL",
+     "label": "Polymicrobial"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "NOT_IDENTIFIED",
+     "label": "Not identified"
+    }
+   ],
+   "rule": "C if positive"
+  },
+  {
+   "name": "vegetation_present",
+   "label": "Vegetation present",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "complete_system_removal",
+   "label": "Complete system removal",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C **exclusively by the frozen classification matrix below, which is the single authority**. No other text in this document states a removal rule; every rule elsewhere defers to the matrix. In summary: NOT_APPLICABLE for REJECTED_ALTERNATIVE and for SUPERFICIAL_INCISIONAL; required (YES or NO) for a DEFINITE non-superficial CIED system infection; optional for POSSIBLE certainty and for POSSIBLE_CIED_INFECTION. Cross-validated against LEAD_PROCEDURES.lead_management_type COMPLETE_SYSTEM_EXPLANT; disagreement is a data-quality ERROR"
+  },
+  {
+   "name": "antibiotic_course_days",
+   "label": "Antibiotic course",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "days",
+   "rule": "C"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

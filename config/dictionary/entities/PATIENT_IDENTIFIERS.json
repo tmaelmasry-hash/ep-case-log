@@ -1,0 +1,46 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "PATIENT_IDENTIFIERS",
+ "pk": "patient_id",
+ "parentFk": [],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "UNIVERSAL_PATIENT",
+ "fields": [
+  {
+   "name": "mrn",
+   "label": "MRN",
+   "type": "string",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 240,
+   "rule": "R; normalize for comparison; never relationship key"
+  },
+  {
+   "name": "full_name",
+   "label": "Full name",
+   "type": "string",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 240,
+   "rule": "RC in identifiable clinical mode"
+  },
+  {
+   "name": "date_of_birth",
+   "label": "Date of birth",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R; export age, never DOB"
+  },
+  {
+   "name": "merged_into_patient_id",
+   "label": "Merged into patient",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "PATIENTS",
+   "rule": "C if duplicate is merged"
+  }
+ ]
+}

@@ -1,4 +1,5 @@
 import type { Role } from '../auth/capabilities.ts';
+import type { CaseRecord } from '../../shared/caseTypes.ts';
 
 export interface User {
   user_id: string;
@@ -38,7 +39,7 @@ export interface Activity extends ActivityInput {
   at: string;
 }
 
-/** Storage boundary. Phase 1: users, groups, activity. Cases join in phase 2; the Google Sheet store implements the same interface in phase 4. */
+/** Storage boundary: users, groups, activity, cases. The Google Sheet store implements the same interface in phase 4. */
 export interface RegistryStore {
   readonly kind: 'memory' | 'file';
   getUser(id: string): Promise<User | null>;
@@ -50,4 +51,10 @@ export interface RegistryStore {
   createGroup(g: Group): Promise<void>;
   appendActivity(entries: ActivityInput[]): Promise<void>;
   listActivity(): Promise<Activity[]>;
+  /** Next case number in a group (never reused). */
+  allocateSeq(groupId: string): Promise<number>;
+  listCases(): Promise<CaseRecord[]>;
+  getCase(id: string): Promise<CaseRecord | null>;
+  /** Insert or replace a whole case. */
+  putCase(rec: CaseRecord): Promise<void>;
 }

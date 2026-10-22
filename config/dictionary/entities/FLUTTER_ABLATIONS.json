@@ -1,0 +1,256 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "FLUTTER_ABLATIONS",
+ "pk": "flutter_ablation_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "flutter_type",
+   "label": "Flutter type",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TYPICAL_CTI",
+     "label": "Typical CTI"
+    },
+    {
+     "code": "REVERSE_TYPICAL_CTI",
+     "label": "Reverse typical CTI"
+    },
+    {
+     "code": "ATYPICAL_RA",
+     "label": "Atypical RA"
+    },
+    {
+     "code": "ATYPICAL_LA",
+     "label": "Atypical LA"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "flutter_circuit_or_isthmus",
+   "label": "Flutter circuit or isthmus",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CAVOTRICUSPID_ISTHMUS",
+     "label": "Cavotricuspid isthmus"
+    },
+    {
+     "code": "RA_FREE_WALL",
+     "label": "RA free wall"
+    },
+    {
+     "code": "RA_INCISIONAL",
+     "label": "RA incisional"
+    },
+    {
+     "code": "PERIMITRAL",
+     "label": "Perimitral"
+    },
+    {
+     "code": "LA_ROOF",
+     "label": "LA roof"
+    },
+    {
+     "code": "LA_ANTERIOR",
+     "label": "LA anterior"
+    },
+    {
+     "code": "LA_POSTERIOR",
+     "label": "LA posterior"
+    },
+    {
+     "code": "LA_SEPTAL",
+     "label": "LA septal"
+    },
+    {
+     "code": "CORONARY_SINUS_RELATED",
+     "label": "Coronary sinus related"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "C for atypical flutter"
+  },
+  {
+   "name": "ablation_energy",
+   "label": "Ablation energy",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RF",
+     "label": "RF"
+    },
+    {
+     "code": "CRYO",
+     "label": "Cryo"
+    },
+    {
+     "code": "PFA",
+     "label": "PFA"
+    },
+    {
+     "code": "LASER",
+     "label": "Laser"
+    },
+    {
+     "code": "ETHANOL",
+     "label": "Ethanol"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC; the authoritative energy source for the FLUTTER component, and the sole input to the derived `PROCEDURE_COMPONENTS.energy_source` for that component. Applicable once ablation was performed; not applicable to a diagnostic-only or cancelled session"
+  },
+  {
+   "name": "cti_ablation_performed",
+   "label": "CTI ablation performed",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "bidirectional_cti_block",
+   "label": "Bidirectional CTI block",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "NOT_TESTED",
+     "label": "Not tested"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C if CTI ablated"
+  },
+  {
+   "name": "atypical_flutter_target",
+   "label": "Atypical flutter target",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CTI_LINE",
+     "label": "CTI line"
+    },
+    {
+     "code": "MITRAL_ISTHMUS_LINE",
+     "label": "Mitral isthmus line"
+    },
+    {
+     "code": "LA_ROOF_LINE",
+     "label": "LA roof line"
+    },
+    {
+     "code": "LA_ANTERIOR_LINE",
+     "label": "LA anterior line"
+    },
+    {
+     "code": "RA_FREE_WALL_LINE",
+     "label": "RA free wall line"
+    },
+    {
+     "code": "SCAR_ISTHMUS",
+     "label": "Scar isthmus"
+    },
+    {
+     "code": "FOCAL_SOURCE",
+     "label": "Focal source"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "acute_flutter_endpoint",
+   "label": "Acute flutter endpoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TERMINATION_AND_BLOCK",
+     "label": "Termination and block"
+    },
+    {
+     "code": "NONINDUCIBLE",
+     "label": "Noninducible"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

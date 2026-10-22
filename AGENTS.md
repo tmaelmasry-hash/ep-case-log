@@ -4,7 +4,7 @@ Offline-first personal logbook for cardiac electrophysiology procedures. React 1
 
 This file is the single source of truth for agents. `CLAUDE.md` imports it.
 
-> **Merge in progress (EP Workspace features into this app).** Read `docs/MERGE_PLAN.md` first: owner decisions, build order and phase status. Where this file and MERGE_PLAN differ, MERGE_PLAN wins. Phase 1 is done: `server/` is now the registry server (sign-in, Admin/Member, users); the old sync server and `lib/sync.ts` were removed. Cases are still in browser IndexedDB until phase 2.
+> **Merge in progress (EP Workspace features into this app).** Read `docs/MERGE_PLAN.md` first: owner decisions, build order and phase status. Where this file and MERGE_PLAN differ, MERGE_PLAN wins. Phases 1–2 are done: `server/` is the registry server (sign-in, Admin/Member, users, cases). Cases are server-side, one case = one EP_EPISODE with several EP_PROCEDURES; all clinical fields come from `config/dictionary/` (never edit) arranged by `config/case_layout.json`; shared logic in `shared/`. The old local-only modules (IndexedDB store, catalog, images, backup) described below were removed in phase 2.
 
 ## Commands
 

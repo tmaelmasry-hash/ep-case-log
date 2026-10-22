@@ -1,0 +1,254 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "LAB_RESULTS",
+ "pk": "lab_result_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": false,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES"
+  },
+  {
+   "name": "lab_date",
+   "label": "Lab date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD"
+  },
+  {
+   "name": "lab_context",
+   "label": "Lab context",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "BASELINE",
+     "label": "Baseline"
+    },
+    {
+     "code": "PREPROCEDURE",
+     "label": "Preprocedure"
+    },
+    {
+     "code": "DISCHARGE",
+     "label": "Discharge"
+    },
+    {
+     "code": "FOLLOWUP",
+     "label": "Followup"
+    },
+    {
+     "code": "UNSCHEDULED",
+     "label": "Unscheduled"
+    }
+   ]
+  },
+  {
+   "name": "hemoglobin_g_dl",
+   "label": "Hemoglobin",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "g/dL"
+  },
+  {
+   "name": "wbc_10e9_l",
+   "label": "WBC",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "×10⁹/L"
+  },
+  {
+   "name": "platelets_10e9_l",
+   "label": "Platelets",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "×10⁹/L"
+  },
+  {
+   "name": "sodium_mmol_l",
+   "label": "Sodium",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "potassium_mmol_l",
+   "label": "Potassium",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "magnesium_mmol_l",
+   "label": "Magnesium",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "creatinine_umol_l",
+   "label": "Creatinine",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "µmol/L"
+  },
+  {
+   "name": "egfr_ml_min_1_73m2",
+   "label": "EGFR",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mL/min/1.73m²"
+  },
+  {
+   "name": "alt_u_l",
+   "label": "ALT",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "U/L"
+  },
+  {
+   "name": "ast_u_l",
+   "label": "AST",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "U/L"
+  },
+  {
+   "name": "total_bilirubin_umol_l",
+   "label": "Total bilirubin",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "µmol/L"
+  },
+  {
+   "name": "tsh_miu_l",
+   "label": "TSH",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mIU/L"
+  },
+  {
+   "name": "hba1c_pct",
+   "label": "HBA1C",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "%"
+  },
+  {
+   "name": "total_cholesterol_mmol_l",
+   "label": "Total cholesterol",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "ldl_mmol_l",
+   "label": "LDL",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "hdl_mmol_l",
+   "label": "HDL",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "triglycerides_mmol_l",
+   "label": "Triglycerides",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "mmol/L"
+  },
+  {
+   "name": "troponin_assay",
+   "label": "Troponin assay",
+   "type": "enum",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HS_TROPONIN_T",
+     "label": "HS troponin t"
+    },
+    {
+     "code": "HS_TROPONIN_I",
+     "label": "HS troponin I"
+    },
+    {
+     "code": "CONVENTIONAL",
+     "label": "Conventional"
+    }
+   ]
+  },
+  {
+   "name": "troponin_ng_l",
+   "label": "Troponin",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "ng/L"
+  },
+  {
+   "name": "bnp_pg_ml",
+   "label": "BNP",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "pg/mL"
+  },
+  {
+   "name": "nt_probnp_pg_ml",
+   "label": "NT probnp",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "pg/mL"
+  },
+  {
+   "name": "inr",
+   "label": "INR",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD"
+  }
+ ]
+}

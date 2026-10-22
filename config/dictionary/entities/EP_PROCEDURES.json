@@ -1,0 +1,525 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "EP_PROCEDURES",
+ "pk": "procedure_id",
+ "parentFk": [
+  "episode_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "procedure_duration_min",
+  "procedure_invasiveness",
+  "same_session_component_types",
+  "overall_acute_result",
+  "d30_major_complication_state"
+ ],
+ "activation": "ENCOUNTER_ANCHOR",
+ "fields": [
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_EPISODES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "baseline_clinical_snapshot_id",
+   "label": "Baseline clinical snapshot",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "CLINICAL_PROFILE_SNAPSHOTS",
+   "rule": "C while the procedure is DRAFT: a DRAFT or UNVERIFIED same-patient snapshot may be linked so that a contemporaneous or emergency case can be entered as it happens. R to finalize any started procedure, and at finalization the linked snapshot must be same-patient, VERIFIED, FINAL or LOCKED, dated on or before the site-local procedure start date, and within clinical_snapshot_max_age_days"
+  },
+  {
+   "name": "scheduled_date",
+   "label": "Scheduled date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for operational workflow"
+  },
+  {
+   "name": "procedure_start_datetime",
+   "label": "Procedure start datetime",
+   "type": "datetime",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC when started"
+  },
+  {
+   "name": "procedure_end_datetime",
+   "label": "Procedure end datetime",
+   "type": "datetime",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC when started; required to finalize a completed/partial/failed/aborted procedure"
+  },
+  {
+   "name": "primary_procedure_type",
+   "label": "Primary procedure type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "EPS",
+     "label": "EPS"
+    },
+    {
+     "code": "ABLATION",
+     "label": "Ablation"
+    },
+    {
+     "code": "CIED_IMPLANT",
+     "label": "CIED implant"
+    },
+    {
+     "code": "GENERATOR_CHANGE",
+     "label": "Generator change"
+    },
+    {
+     "code": "LEAD_REVISION",
+     "label": "Lead revision"
+    },
+    {
+     "code": "EXTRACTION",
+     "label": "Extraction"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "procedure_status",
+   "label": "Procedure status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SCHEDULED",
+     "label": "Scheduled"
+    },
+    {
+     "code": "IN_PROGRESS",
+     "label": "In progress"
+    },
+    {
+     "code": "COMPLETED",
+     "label": "Completed"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    },
+    {
+     "code": "ABORTED",
+     "label": "Aborted"
+    },
+    {
+     "code": "CANCELLED_BEFORE_START",
+     "label": "Cancelled before start"
+    }
+   ],
+   "rule": "R; IN_PROGRESS cannot be FINAL"
+  },
+  {
+   "name": "cancellation_or_failure_reason",
+   "label": "Cancellation or failure reason",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PATIENT_DECLINED",
+     "label": "Patient declined"
+    },
+    {
+     "code": "PATIENT_UNFIT_ON_DAY",
+     "label": "Patient unfit on day"
+    },
+    {
+     "code": "ACTIVE_INFECTION",
+     "label": "Active infection"
+    },
+    {
+     "code": "ANTICOAGULATION_ISSUE",
+     "label": "Anticoagulation issue"
+    },
+    {
+     "code": "THROMBUS_DETECTED",
+     "label": "Thrombus detected"
+    },
+    {
+     "code": "ANATOMY_UNSUITABLE",
+     "label": "Anatomy unsuitable"
+    },
+    {
+     "code": "VASCULAR_ACCESS_FAILURE",
+     "label": "Vascular access failure"
+    },
+    {
+     "code": "EQUIPMENT_UNAVAILABLE_OR_FAILURE",
+     "label": "Equipment unavailable or failure"
+    },
+    {
+     "code": "HEMODYNAMIC_INSTABILITY",
+     "label": "Hemodynamic instability"
+    },
+    {
+     "code": "COMPLICATION_DURING_PROCEDURE",
+     "label": "Complication during procedure"
+    },
+    {
+     "code": "ARRHYTHMIA_NOT_INDUCIBLE",
+     "label": "Arrhythmia not inducible"
+    },
+    {
+     "code": "TARGET_NOT_IDENTIFIED",
+     "label": "Target not identified"
+    },
+    {
+     "code": "PHRENIC_OR_CONDUCTION_RISK",
+     "label": "Phrenic or conduction risk"
+    },
+    {
+     "code": "SCHEDULING_OR_LIST_OVERRUN",
+     "label": "Scheduling or list overrun"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "urgency",
+   "label": "Urgency",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ELECTIVE",
+     "label": "Elective"
+    },
+    {
+     "code": "URGENT",
+     "label": "Urgent"
+    },
+    {
+     "code": "EMERGENCY",
+     "label": "Emergency"
+    }
+   ],
+   "rule": "R; a planning attribute known before the procedure and therefore required in every status"
+  },
+  {
+   "name": "other_procedure_invasiveness",
+   "label": "Other procedure invasiveness",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "INVASIVE",
+     "label": "Invasive"
+    },
+    {
+     "code": "NON_INVASIVE",
+     "label": "Non invasive"
+    }
+   ],
+   "rule": "C; required only when primary_procedure_type is OTHER; the only stored input to procedure_invasiveness",
+   "required_when": {
+    "field": "primary_procedure_type",
+    "in": [
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "name": "care_setting",
+   "label": "Care setting",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "INPATIENT",
+     "label": "Inpatient"
+    },
+    {
+     "code": "OUTPATIENT",
+     "label": "Outpatient"
+    },
+    {
+     "code": "SAME_DAY",
+     "label": "Same day"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "discharge_date",
+   "label": "Discharge date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C; **`storage_mode = HYBRID`**. Its `hybrid_discriminator` and the literal canonical value of `hybrid_branches_json` are declared once, in **`CANON_HYBRID_V1` in Section 1.7**, and that literal JSON array — not the rendering in this section and not any prose table — is what is stored in `DATA_DICTIONARY`. Two total, mutually exclusive branches: `DERIVED_SAME_DAY` (writer SERVER, client_supply REJECT) and `EXPLICIT` (writer CLIENT, client_supply **ALLOW**). Requiredness is a **separate completeness rule**: a value is required before the applicable DISCHARGE `FOLLOW_UPS` row of an INVASIVE performed procedure can finalize, and draft or non-applicable states never fabricate one. Not required to finalize `EP_PROCEDURES`. Required to resolve `COMPLICATIONS.timing` beyond the predischarge bucket. Branch transitions T1–T6, including the `HYBRID_TRANSITION_CONFLICT` rejection of a disagreeing explicit value and the replacement-date requirement under a finalized dependent, are canonical in that block and every transition fixture is generated from it. The SITE-scoped `same_day_outpatient_discharge_derivation_enabled` policy is **immutable and effective-dated**: each procedure resolves the version effective at its own `procedure_start_datetime`, and a later version never retroactively changes the branch or the date of an already-started procedure",
+   "hybrid": true
+  },
+  {
+   "name": "first_or_redo",
+   "label": "First or redo",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "FIRST",
+     "label": "First"
+    },
+    {
+     "code": "REDO",
+     "label": "Redo"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "primary_operator_id",
+   "label": "Primary operator",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "USERS",
+   "rule": "C while SCHEDULED, because the operator may not yet be assigned; RC once procedure_start_datetime exists and required to finalize any started procedure. Never required for CANCELLED_BEFORE_START"
+  },
+  {
+   "name": "anesthesia",
+   "label": "Anesthesia",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LOCAL",
+     "label": "Local"
+    },
+    {
+     "code": "MINIMAL",
+     "label": "Minimal"
+    },
+    {
+     "code": "MODERATE",
+     "label": "Moderate"
+    },
+    {
+     "code": "DEEP",
+     "label": "Deep"
+    },
+    {
+     "code": "GENERAL",
+     "label": "General"
+    }
+   ],
+   "rule": "RC once procedural start has occurred; conditionally inapplicable and excluded from the completeness denominator for SCHEDULED and CANCELLED_BEFORE_START"
+  },
+  {
+   "name": "electroanatomic_mapping_used",
+   "label": "Electroanatomic mapping used",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for ablation"
+  },
+  {
+   "name": "mapping_system",
+   "label": "Mapping system",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "CARTO",
+     "label": "Carto"
+    },
+    {
+     "code": "ENSITE",
+     "label": "Ensite"
+    },
+    {
+     "code": "RHYTHMIA",
+     "label": "Rhythmia"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C if used"
+  },
+  {
+   "name": "intracardiac_echo_used",
+   "label": "Intracardiac echo used",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for ablation"
+  },
+  {
+   "name": "transseptal_access",
+   "label": "Transseptal access",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for left atrial procedure"
+  },
+  {
+   "name": "periprocedural_anticoagulation_strategy",
+   "label": "Periprocedural anticoagulation strategy",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "UNINTERRUPTED",
+     "label": "Uninterrupted"
+    },
+    {
+     "code": "MINIMALLY_INTERRUPTED",
+     "label": "Minimally interrupted"
+    },
+    {
+     "code": "INTERRUPTED",
+     "label": "Interrupted"
+    },
+    {
+     "code": "NOT_ON_OAC",
+     "label": "Not on OAC"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "fluoroscopy_used",
+   "label": "Fluoroscopy used",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC once procedural start has occurred; conditionally inapplicable and excluded from the completeness denominator for SCHEDULED and CANCELLED_BEFORE_START"
+  },
+  {
+   "name": "fluoroscopy_time_min",
+   "label": "Fluoroscopy time",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "min",
+   "rule": "C if used"
+  },
+  {
+   "name": "dose_area_product_gy_cm2",
+   "label": "Dose area product",
+   "type": "decimal",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "Gy·cm²",
+   "rule": "O if available"
+  },
+  {
+   "name": "contrast_used",
+   "label": "Contrast used",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC once procedural start has occurred; conditionally inapplicable and excluded from the completeness denominator for SCHEDULED and CANCELLED_BEFORE_START"
+  },
+  {
+   "name": "contrast_volume_ml",
+   "label": "Contrast volume",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "mL",
+   "rule": "C if contrast used"
+  },
+  {
+   "name": "postprocedure_disposition",
+   "label": "Postprocedure disposition",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HOME",
+     "label": "Home"
+    },
+    {
+     "code": "WARD",
+     "label": "Ward"
+    },
+    {
+     "code": "ICU",
+     "label": "ICU"
+    },
+    {
+     "code": "TRANSFER",
+     "label": "Transfer"
+    },
+    {
+     "code": "DEATH",
+     "label": "Death"
+    }
+   ],
+   "rule": "RC to finalize an applicable performed procedure that has ended, meaning procedure_status COMPLETED, PARTIAL, FAILED, or ABORTED. Conditionally inapplicable while SCHEDULED or IN_PROGRESS and for CANCELLED_BEFORE_START: in those states the field is excluded from the completeness denominator by proven conditional logic and is left blank. No placeholder or NOT_APPLICABLE value is written, and blank in those states is not counted as missing"
+  },
+  {
+   "name": "procedure_report_reference",
+   "label": "Procedure report reference",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "O"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

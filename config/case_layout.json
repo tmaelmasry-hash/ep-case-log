@@ -1,0 +1,361 @@
+{
+ "_note": "Arranges the dictionary entities for this app's case model (owner D4: case = EP_EPISODE with one or more EP_PROCEDURES). scope: case = one or more rows per case; procedure = rows belong to one EP_PROCEDURES row; nest_under = rows inside a parent row. module = shown for a procedure when one of its PROCEDURE_COMPONENTS has these component types (or when it already has data). auto_parent = link filled automatically to the case's single row of that entity. later = not shown yet (built in that phase). Only arranges; never adds fields or codes.",
+ "entities": {
+  "PATIENT_IDENTIFIERS": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Identifiers"
+  },
+  "PATIENTS": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Registry & demographics"
+  },
+  "EP_EPISODES": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Episode & pilgrimage"
+  },
+  "ARRHYTHMIA_INDICATIONS": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Diagnosis & indication"
+  },
+  "CLINICAL_PROFILE_SNAPSHOTS": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Baseline risk profile"
+  },
+  "EP_PROCEDURES": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Procedure"
+  },
+  "PROCEDURE_COMPONENTS": {
+   "scope": "procedure",
+   "cardinality": "multi",
+   "label": "Procedure components"
+  },
+  "DIAGNOSTIC_EPS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Diagnostic EPS",
+   "module": [
+    "DIAGNOSTIC_EPS"
+   ]
+  },
+  "SVT_ABLATIONS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "SVT ablation",
+   "module": [
+    "AVNRT",
+    "AVRT_WPW",
+    "AT_SVT"
+   ]
+  },
+  "AF_ABLATIONS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "AF ablation",
+   "module": [
+    "AF"
+   ]
+  },
+  "FLUTTER_ABLATIONS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Flutter ablation",
+   "module": [
+    "FLUTTER"
+   ]
+  },
+  "VENTRICULAR_ABLATIONS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Ventricular ablation",
+   "module": [
+    "PVC",
+    "VT_VF"
+   ]
+  },
+  "AVJ_ABLATIONS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "AV junction ablation",
+   "module": [
+    "AVJ_ABLATION"
+   ]
+  },
+  "DEVICE_IMPLANTS": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Device implant",
+   "module": [
+    "DEVICE_IMPLANT"
+   ],
+   "auto_parent": {
+    "device_id": "DEVICES"
+   }
+  },
+  "DEVICE_IMPLANT_CHANNEL_MEASUREMENTS": {
+   "cardinality": "multi",
+   "label": "Leadless channel measurements",
+   "nest_under": {
+    "entity": "DEVICE_IMPLANTS",
+    "fk": "device_implant_id"
+   }
+  },
+  "CRT_CSP_PROCEDURES": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "CRT / conduction-system pacing",
+   "module": [
+    "CRT_CSP"
+   ]
+  },
+  "ILR_PROCEDURES": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "ILR procedure",
+   "module": [
+    "ILR"
+   ],
+   "auto_parent": {
+    "device_id": "DEVICES"
+   }
+  },
+  "LEAD_PROCEDURES": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Lead revision / extraction",
+   "module": [
+    "LEAD_MANAGEMENT"
+   ],
+   "auto_parent": {
+    "device_id": "DEVICES"
+   }
+  },
+  "LEAD_PROCEDURE_ITEMS": {
+   "cardinality": "multi",
+   "label": "Leads handled",
+   "nest_under": {
+    "entity": "LEAD_PROCEDURES",
+    "fk": "lead_procedure_id"
+   }
+  },
+  "EXT_PROCEDURE_REVIEW": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "Complications review"
+  },
+  "COMPLICATIONS": {
+   "scope": "procedure",
+   "cardinality": "multi",
+   "label": "Complication"
+  },
+  "ECG_STUDIES": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "ECG"
+  },
+  "LAB_RESULTS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Lab result"
+  },
+  "MEDICATION_RECORDS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Medication"
+  },
+  "ECHO_STUDIES": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Echocardiography"
+  },
+  "RHYTHM_MONITORING": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Holter / rhythm monitoring"
+  },
+  "ADVANCED_IMAGING": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "CMR / CT / TEE"
+  },
+  "CORONARY_ANGIOGRAPHY": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Coronary angiography"
+  },
+  "TILT_TESTS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Tilt-table test"
+  },
+  "DEVICES": {
+   "scope": "case",
+   "cardinality": "single",
+   "label": "Device"
+  },
+  "DEVICE_LEADS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Lead"
+  },
+  "DEVICE_LEAD_CONNECTIONS": {
+   "cardinality": "multi",
+   "label": "Lead connections",
+   "nest_under": {
+    "entity": "DEVICES",
+    "fk": "device_id"
+   }
+  },
+  "DEVICE_LEAD_STATUS_EVENTS": {
+   "cardinality": "multi",
+   "label": "Lead status events",
+   "nest_under": {
+    "entity": "DEVICE_LEADS",
+    "fk": "lead_id"
+   }
+  },
+  "DEVICE_INTERROGATIONS": {
+   "cardinality": "multi",
+   "label": "Device checks",
+   "nest_under": {
+    "entity": "DEVICES",
+    "fk": "device_id"
+   }
+  },
+  "DEVICE_CHECK_CHANNELS": {
+   "cardinality": "multi",
+   "label": "Check channels",
+   "nest_under": {
+    "entity": "DEVICE_INTERROGATIONS",
+    "fk": "device_check_id"
+   }
+  },
+  "DEVICE_INFECTIONS": {
+   "cardinality": "multi",
+   "label": "Device infections",
+   "nest_under": {
+    "entity": "DEVICES",
+    "fk": "device_id"
+   }
+  },
+  "FOLLOW_UPS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Follow-up visit",
+   "later": "phase 7"
+  },
+  "OUTCOME_EVENTS": {
+   "scope": "case",
+   "cardinality": "multi",
+   "label": "Outcome event",
+   "later": "phase 7"
+  }
+ },
+ "groups": [
+  {
+   "id": "history",
+   "label": "Patient & history",
+   "rows": [
+    {
+     "id": "patient",
+     "label": "Patient",
+     "icon": "user",
+     "entities": [
+      "PATIENT_IDENTIFIERS",
+      "PATIENTS"
+     ]
+    },
+    {
+     "id": "episode",
+     "label": "Episode & pilgrimage",
+     "icon": "clip",
+     "entities": [
+      "EP_EPISODES"
+     ]
+    },
+    {
+     "id": "diagnosis",
+     "label": "Diagnosis & indication",
+     "icon": "heart",
+     "entities": [
+      "ARRHYTHMIA_INDICATIONS"
+     ]
+    },
+    {
+     "id": "risk",
+     "label": "Baseline risk profile",
+     "icon": "alert",
+     "entities": [
+      "CLINICAL_PROFILE_SNAPSHOTS"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "studies",
+   "label": "Studies & follow-up",
+   "rows": [
+    {
+     "id": "ecg",
+     "label": "ECG",
+     "icon": "ecg",
+     "entities": [
+      "ECG_STUDIES"
+     ]
+    },
+    {
+     "id": "labs",
+     "label": "Labs",
+     "icon": "flask",
+     "entities": [
+      "LAB_RESULTS"
+     ]
+    },
+    {
+     "id": "meds",
+     "label": "Medications",
+     "icon": "pill",
+     "entities": [
+      "MEDICATION_RECORDS"
+     ]
+    },
+    {
+     "id": "imaging",
+     "label": "Echo, Holter & imaging",
+     "icon": "echo",
+     "entities": [
+      "ECHO_STUDIES",
+      "RHYTHM_MONITORING",
+      "ADVANCED_IMAGING",
+      "CORONARY_ANGIOGRAPHY",
+      "TILT_TESTS"
+     ]
+    },
+    {
+     "id": "devices",
+     "label": "Devices",
+     "icon": "chip",
+     "entities": [
+      "DEVICES",
+      "DEVICE_LEADS"
+     ]
+    },
+    {
+     "id": "followup",
+     "label": "Timeline & follow-up",
+     "icon": "cal",
+     "entities": [
+      "FOLLOW_UPS",
+      "OUTCOME_EVENTS"
+     ]
+    }
+   ]
+  }
+ ]
+}

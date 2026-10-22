@@ -1,0 +1,323 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "RHYTHM_MONITORING",
+ "pk": "monitor_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_PROCEDURES",
+   "rule": "C; optional clinical context, validated to the same patient"
+  },
+  {
+   "name": "monitor_type",
+   "label": "Monitor type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HOLTER",
+     "label": "Holter"
+    },
+    {
+     "code": "PATCH",
+     "label": "Patch"
+    },
+    {
+     "code": "EVENT",
+     "label": "Event"
+    },
+    {
+     "code": "EXTERNAL_LOOP",
+     "label": "External loop"
+    },
+    {
+     "code": "MOBILE_TELEMETRY",
+     "label": "Mobile telemetry"
+    },
+    {
+     "code": "WEARABLE",
+     "label": "Wearable"
+    },
+    {
+     "code": "ILR",
+     "label": "ILR"
+    },
+    {
+     "code": "CIED",
+     "label": "CIED"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "start_datetime",
+   "label": "Start datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "end_datetime",
+   "label": "End datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "analyzable_duration_hours",
+   "label": "Analyzable duration",
+   "type": "decimal",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "unit": "h",
+   "rule": "R"
+  },
+  {
+   "name": "predominant_rhythm",
+   "label": "Predominant rhythm",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINUS",
+     "label": "Sinus"
+    },
+    {
+     "code": "SINUS_BRADYCARDIA",
+     "label": "Sinus bradycardia"
+    },
+    {
+     "code": "SINUS_TACHYCARDIA",
+     "label": "Sinus tachycardia"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "AFL",
+     "label": "AFL"
+    },
+    {
+     "code": "AT",
+     "label": "AT"
+    },
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "JUNCTIONAL",
+     "label": "Junctional"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "ASYSTOLE_OR_PAUSE",
+     "label": "Asystole or pause"
+    },
+    {
+     "code": "ATRIAL_PACED",
+     "label": "Atrial paced"
+    },
+    {
+     "code": "VENTRICULAR_PACED",
+     "label": "Ventricular paced"
+    },
+    {
+     "code": "AV_SEQUENTIAL_PACED",
+     "label": "AV sequential paced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "target_arrhythmia_detected",
+   "label": "Target arrhythmia detected",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "af_afl_at_burden_pct",
+   "label": "AF AFL at burden",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C when reported"
+  },
+  {
+   "name": "pvc_burden_pct",
+   "label": "PVC burden",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C for PVC/VA"
+  },
+  {
+   "name": "significant_pause_or_av_block",
+   "label": "Significant pause or AV block",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for bradycardia/syncope"
+  },
+  {
+   "name": "longest_pause_sec",
+   "label": "Longest pause",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "s",
+   "rule": "C if a pause is present"
+  },
+  {
+   "name": "nsvt_or_vt_detected",
+   "label": "NSVT or VT detected",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "nsvt_episode_count",
+   "label": "NSVT episode count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C if reported"
+  },
+  {
+   "name": "longest_vt_beats",
+   "label": "Longest VT",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "beats",
+   "rule": "C if reported"
+  },
+  {
+   "name": "symptom_rhythm_correlation",
+   "label": "Symptom rhythm correlation",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "POSITIVE",
+     "label": "Positive"
+    },
+    {
+     "code": "NEGATIVE",
+     "label": "Negative"
+    },
+    {
+     "code": "NO_SYMPTOMS",
+     "label": "No symptoms"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "monitor_conclusion",
+   "label": "Monitor conclusion",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "DIAGNOSTIC_TARGET",
+     "label": "Diagnostic target"
+    },
+    {
+     "code": "OTHER_ARRHYTHMIA",
+     "label": "Other arrhythmia"
+    },
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "NONDIAGNOSTIC",
+     "label": "Nondiagnostic"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "report_reference",
+   "label": "Report reference",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "O"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

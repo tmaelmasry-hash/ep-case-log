@@ -1,0 +1,456 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+ "pk": "clinical_snapshot_id",
+ "parentFk": [
+  "patient_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "bmi"
+ ],
+ "activation": "UNIVERSAL_PATIENT",
+ "fields": [
+  {
+   "name": "patient_id",
+   "label": "Patient",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "PATIENTS",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "episode_id",
+   "label": "Episode",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "EP_EPISODES",
+   "rule": "C"
+  },
+  {
+   "name": "snapshot_date",
+   "label": "Snapshot date",
+   "type": "date",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "snapshot_context",
+   "label": "Snapshot context",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ENROLLMENT",
+     "label": "Enrollment"
+    },
+    {
+     "code": "PREPROCEDURE",
+     "label": "Preprocedure"
+    },
+    {
+     "code": "FOLLOWUP",
+     "label": "Followup"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "supersedes_snapshot_id",
+   "label": "Supersedes snapshot",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "CLINICAL_PROFILE_SNAPSHOTS",
+   "rule": "C"
+  },
+  {
+   "name": "height_cm",
+   "label": "Height",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "cm",
+   "rule": "RC when measured/reconfirmed; one decimal"
+  },
+  {
+   "name": "weight_kg",
+   "label": "Weight",
+   "type": "decimal",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "kg",
+   "rule": "RC for ENROLLMENT/PREPROCEDURE; one decimal"
+  },
+  {
+   "name": "hypertension",
+   "label": "Hypertension",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "diabetes",
+   "label": "Diabetes",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "coronary_artery_disease_or_prior_mi",
+   "label": "Coronary artery disease or prior MI",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "vascular_disease",
+   "label": "Vascular disease",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; frozen score definition: prior myocardial infarction, peripheral arterial disease, or aortic plaque; do not infer from nonspecific CAD alone"
+  },
+  {
+   "name": "heart_failure",
+   "label": "Heart failure",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "cardiomyopathy_type",
+   "label": "Cardiomyopathy type",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "ISCHEMIC",
+     "label": "Ischemic"
+    },
+    {
+     "code": "DILATED_NONISCHEMIC",
+     "label": "Dilated nonischemic"
+    },
+    {
+     "code": "HYPERTROPHIC",
+     "label": "Hypertrophic"
+    },
+    {
+     "code": "ARRHYTHMOGENIC",
+     "label": "Arrhythmogenic"
+    },
+    {
+     "code": "INFILTRATIVE_INFLAMMATORY",
+     "label": "Infiltrative inflammatory"
+    },
+    {
+     "code": "CONGENITAL",
+     "label": "Congenital"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "ckd_status",
+   "label": "CKD status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "CKD_NOT_DIALYSIS",
+     "label": "CKD not dialysis"
+    },
+    {
+     "code": "DIALYSIS",
+     "label": "Dialysis"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R; deliberately coarse for release 1. Renal risk adjustment is correspondingly coarse and this limitation is recorded in EP_REGISTRY_SPEC.md. CKD stages and any laboratory value remain excluded by Section 2.26"
+  },
+  {
+   "name": "prior_stroke_tia_systemic_embolism",
+   "label": "Prior stroke TIA systemic embolism",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "significant_valve_disease",
+   "label": "Significant valve disease",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "congenital_heart_disease",
+   "label": "Congenital heart disease",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "prior_cardiac_surgery",
+   "label": "Prior cardiac surgery",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "prior_ep_ablation",
+   "label": "Prior EP ablation",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "existing_cied",
+   "label": "Existing CIED",
+   "type": "boolean_unknown",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "thyroid_disease",
+   "label": "Thyroid disease",
+   "type": "boolean_unknown",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "obstructive_sleep_apnea",
+   "label": "Obstructive sleep apnea",
+   "type": "boolean_unknown",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ]
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

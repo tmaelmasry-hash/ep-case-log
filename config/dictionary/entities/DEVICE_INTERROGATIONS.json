@@ -1,0 +1,886 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DEVICE_INTERROGATIONS",
+ "pk": "device_check_id",
+ "parentFk": [
+  "device_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "time_to_diagnosis_days"
+ ],
+ "activation": "OPTIONAL_LINKED",
+ "fields": [
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "DEVICES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "check_datetime",
+   "label": "Check datetime",
+   "type": "datetime",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "check_type",
+   "label": "Check type",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "IN_PERSON",
+     "label": "In person"
+    },
+    {
+     "code": "SCHEDULED_REMOTE",
+     "label": "Scheduled remote"
+    },
+    {
+     "code": "ALERT_REMOTE",
+     "label": "Alert remote"
+    },
+    {
+     "code": "PERIOPERATIVE",
+     "label": "Perioperative"
+    },
+    {
+     "code": "UNSCHEDULED",
+     "label": "Unscheduled"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "review_period_start_status",
+   "label": "Review period start status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "EXACT",
+     "label": "Exact"
+    },
+    {
+     "code": "SINCE_LAST_CHECK",
+     "label": "Since last check"
+    },
+    {
+     "code": "CUMULATIVE_UNKNOWN_START",
+     "label": "Cumulative unknown start"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R when counts/burden are reported"
+  },
+  {
+   "name": "review_period_start_datetime",
+   "label": "Review period start datetime",
+   "type": "datetime",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for EXACT; interval ends at check_datetime"
+  },
+  {
+   "name": "battery_status",
+   "label": "Battery status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "ERI",
+     "label": "ERI"
+    },
+    {
+     "code": "EOL",
+     "label": "EOL"
+    },
+    {
+     "code": "ADVISORY",
+     "label": "Advisory"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "estimated_longevity_months",
+   "label": "Estimated longevity months",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C if available"
+  },
+  {
+   "name": "underlying_rhythm",
+   "label": "Underlying rhythm",
+   "type": "lookup",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINUS",
+     "label": "Sinus"
+    },
+    {
+     "code": "SINUS_BRADYCARDIA",
+     "label": "Sinus bradycardia"
+    },
+    {
+     "code": "SINUS_TACHYCARDIA",
+     "label": "Sinus tachycardia"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "AFL",
+     "label": "AFL"
+    },
+    {
+     "code": "AT",
+     "label": "AT"
+    },
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "JUNCTIONAL",
+     "label": "Junctional"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "ASYSTOLE_OR_PAUSE",
+     "label": "Asystole or pause"
+    },
+    {
+     "code": "ATRIAL_PACED",
+     "label": "Atrial paced"
+    },
+    {
+     "code": "VENTRICULAR_PACED",
+     "label": "Ventricular paced"
+    },
+    {
+     "code": "AV_SEQUENTIAL_PACED",
+     "label": "AV sequential paced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "**R for a check on a pacing-capable system**, where `NOT_ASSESSED` is the correct stored value if the underlying rhythm was not evaluated at this visit — so the field is always answered and never silently blank. **Not applicable, and excluded from the completeness denominator, for ILR and monitoring-only systems.** \"Whenever assessed\" is withdrawn as a predicate: a value that is present because someone happened to look is indistinguishable from a missing one"
+  },
+  {
+   "name": "pacemaker_dependent",
+   "label": "Pacemaker dependent",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "UNCERTAIN",
+     "label": "Uncertain"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "programmed_mode",
+   "label": "Programmed mode",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AAI",
+     "label": "AAI"
+    },
+    {
+     "code": "AAIR",
+     "label": "AAIR"
+    },
+    {
+     "code": "VVI",
+     "label": "VVI"
+    },
+    {
+     "code": "VVIR",
+     "label": "VVIR"
+    },
+    {
+     "code": "VDD",
+     "label": "VDD"
+    },
+    {
+     "code": "VDDR",
+     "label": "VDDR"
+    },
+    {
+     "code": "DDI",
+     "label": "DDI"
+    },
+    {
+     "code": "DDIR",
+     "label": "DDIR"
+    },
+    {
+     "code": "DDD",
+     "label": "DDD"
+    },
+    {
+     "code": "DDDR",
+     "label": "DDDR"
+    },
+    {
+     "code": "AOO",
+     "label": "AOO"
+    },
+    {
+     "code": "VOO",
+     "label": "VOO"
+    },
+    {
+     "code": "DOO",
+     "label": "DOO"
+    },
+    {
+     "code": "ODO",
+     "label": "ODO"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC for pacing-capable devices"
+  },
+  {
+   "name": "lower_rate_bpm",
+   "label": "Lower rate",
+   "type": "integer",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "unit": "bpm",
+   "rule": "RC for pacing-capable devices"
+  },
+  {
+   "name": "atrial_pacing_pct",
+   "label": "Atrial pacing",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C by device type"
+  },
+  {
+   "name": "rv_pacing_pct",
+   "label": "RV pacing",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C by device type"
+  },
+  {
+   "name": "effective_resynchronization_or_csp_pacing_pct",
+   "label": "Effective resynchronization or CSP pacing",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C for CRT/CSP; device-class-neutral longitudinal source"
+  },
+  {
+   "name": "conduction_system_capture_status",
+   "label": "Conduction system capture status",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CONFIRMED",
+     "label": "Confirmed"
+    },
+    {
+     "code": "NOT_CONFIRMED",
+     "label": "Not confirmed"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for CSP-capable systems"
+  },
+  {
+   "name": "paced_qrs_ms",
+   "label": "Paced QRS",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "C; applicable to a check on a CRT- or CSP-capable system, and **required when `conduction_system_capture_status` is CONFIRMED or `effective_resynchronization_or_csp_pacing_pct` is recorded** — the two states in which a paced QRS is both obtainable and interpretable. Optional on other CRT/CSP checks and **not applicable** to a pacing-only, ILR, or monitoring-only system, where it is excluded from the completeness denominator. Blank on an applicable check means **not measured at this visit** and is a missingness observation, never a normal value; it never blocks finalization of the check"
+  },
+  {
+   "name": "channel_assessment_scope",
+   "label": "Channel assessment scope",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ALL_CHANNELS",
+     "label": "All channels"
+    },
+    {
+     "code": "ABNORMAL_ONLY",
+     "label": "Abnormal only"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "unlisted_channels_assessed_normal",
+   "label": "Unlisted channels assessed normal",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C when channel_assessment_scope is ABNORMAL_ONLY",
+   "required_when": {
+    "field": "channel_assessment_scope",
+    "in": [
+     "ABNORMAL_ONLY"
+    ]
+   }
+  },
+  {
+   "name": "lead_or_channel_overall_status",
+   "label": "Lead or channel overall status",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NORMAL",
+     "label": "Normal"
+    },
+    {
+     "code": "ABNORMAL_STABLE",
+     "label": "Abnormal stable"
+    },
+    {
+     "code": "ACTION_REQUIRED",
+     "label": "Action required"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "at_af_burden_pct",
+   "label": "AT AF burden",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C if available"
+  },
+  {
+   "name": "pvc_burden_pct",
+   "label": "PVC burden",
+   "type": "decimal",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "%",
+   "min": 0,
+   "max": 100,
+   "rule": "C when the device reports it; conditional by device class. Supplies the longitudinal PVC-burden endpoint for device-carrying patients without requiring a separate ambulatory monitor"
+  },
+  {
+   "name": "longest_at_af_episode_sec",
+   "label": "Longest at AF episode",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "s",
+   "rule": "C if available"
+  },
+  {
+   "name": "vt_vf_episode_count",
+   "label": "VT VF episode count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for ICD"
+  },
+  {
+   "name": "atp_delivered_count",
+   "label": "Atp delivered count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C"
+  },
+  {
+   "name": "appropriate_shock_count",
+   "label": "Appropriate shock count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C"
+  },
+  {
+   "name": "inappropriate_shock_count",
+   "label": "Inappropriate shock count",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C"
+  },
+  {
+   "name": "lowest_tachytherapy_zone_rate_bpm",
+   "label": "Lowest tachytherapy zone rate",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "bpm",
+   "rule": "C for therapy-enabled ICD-capable systems only; NOT_APPLICABLE for pacing-only, ILR, and monitoring-only configurations and for ICD-capable systems with tachytherapy disabled. Shock rates are programming-dependent, so without this single covariate the appropriate/inappropriate therapy endpoint is not interpretable across patients. This is one covariate, not the full programmed-zone dataset excluded by Section 2.26"
+  },
+  {
+   "name": "device_or_hf_alert",
+   "label": "Device or HF alert",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "LEAD_IMPEDANCE_ALERT",
+     "label": "Lead impedance alert"
+    },
+    {
+     "code": "SENSING_ALERT",
+     "label": "Sensing alert"
+    },
+    {
+     "code": "CAPTURE_THRESHOLD_ALERT",
+     "label": "Capture threshold alert"
+    },
+    {
+     "code": "SHOCK_IMPEDANCE_ALERT",
+     "label": "Shock impedance alert"
+    },
+    {
+     "code": "NONSUSTAINED_VT_ALERT",
+     "label": "Nonsustained VT alert"
+    },
+    {
+     "code": "VT_VF_EPISODE_ALERT",
+     "label": "VT VF episode alert"
+    },
+    {
+     "code": "ATRIAL_HIGH_RATE_ALERT",
+     "label": "Atrial high rate alert"
+    },
+    {
+     "code": "LOW_PACING_PERCENT_ALERT",
+     "label": "Low pacing percent alert"
+    },
+    {
+     "code": "BATTERY_ALERT",
+     "label": "Battery alert"
+    },
+    {
+     "code": "DEVICE_RESET_OR_MALFUNCTION",
+     "label": "Device reset or malfunction"
+    },
+    {
+     "code": "HF_DIAGNOSTIC_OR_THORACIC_IMPEDANCE_ALERT",
+     "label": "HF diagnostic or thoracic impedance alert"
+    },
+    {
+     "code": "ADVISORY_OR_RECALL",
+     "label": "Advisory or recall"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "programming_changed",
+   "label": "Programming changed",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "clinical_action",
+   "label": "Clinical action",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "OBSERVE",
+     "label": "Observe"
+    },
+    {
+     "code": "REPROGRAM",
+     "label": "Reprogram"
+    },
+    {
+     "code": "MEDICATION_REVIEW",
+     "label": "Medication review"
+    },
+    {
+     "code": "IMAGING",
+     "label": "Imaging"
+    },
+    {
+     "code": "REVISION_EXTRACTION",
+     "label": "Revision extraction"
+    },
+    {
+     "code": "URGENT_REVIEW",
+     "label": "Urgent review"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "next_check_due_date",
+   "label": "Next check due date",
+   "type": "date",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C when another review is planned"
+  },
+  {
+   "name": "event_trigger",
+   "label": "Event trigger",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "AUTOMATIC",
+     "label": "Automatic"
+    },
+    {
+     "code": "PATIENT_ACTIVATED",
+     "label": "Patient activated"
+    },
+    {
+     "code": "BOTH",
+     "label": "Both"
+    }
+   ],
+   "rule": "C for an ILR check reporting a detected event"
+  },
+  {
+   "name": "symptom_present",
+   "label": "Symptom present",
+   "type": "boolean",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "rule": "C for an ILR check reporting a detected event"
+  },
+  {
+   "name": "detected_rhythm",
+   "label": "Detected rhythm",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINUS",
+     "label": "Sinus"
+    },
+    {
+     "code": "SINUS_BRADYCARDIA",
+     "label": "Sinus bradycardia"
+    },
+    {
+     "code": "SINUS_TACHYCARDIA",
+     "label": "Sinus tachycardia"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "AFL",
+     "label": "AFL"
+    },
+    {
+     "code": "AT",
+     "label": "AT"
+    },
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "JUNCTIONAL",
+     "label": "Junctional"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "ASYSTOLE_OR_PAUSE",
+     "label": "Asystole or pause"
+    },
+    {
+     "code": "ATRIAL_PACED",
+     "label": "Atrial paced"
+    },
+    {
+     "code": "VENTRICULAR_PACED",
+     "label": "Ventricular paced"
+    },
+    {
+     "code": "AV_SEQUENTIAL_PACED",
+     "label": "AV sequential paced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "C for an ILR check reporting a detected event"
+  },
+  {
+   "name": "symptom_rhythm_correlation",
+   "label": "Symptom rhythm correlation",
+   "type": "enum",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "POSITIVE",
+     "label": "Positive"
+    },
+    {
+     "code": "NEGATIVE",
+     "label": "Negative"
+    },
+    {
+     "code": "NO_SYMPTOMS",
+     "label": "No symptoms"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    }
+   ],
+   "rule": "**R for an ILR check reporting a detected event**, where `NO_SYMPTOMS` and `INDETERMINATE` are both valid answers. **Optional and applicable on any other device check**, where blank means the correlation was not recorded at this visit and is a missingness observation, not a negative finding. It never blocks finalization of a non-ILR check"
+  },
+  {
+   "name": "diagnostic_endpoint_reached",
+   "label": "Diagnostic endpoint reached",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for ILR checks; authoritative source of the ILR diagnostic-yield endpoint"
+  },
+  {
+   "name": "management_changed",
+   "label": "Management changed",
+   "type": "boolean",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "rule": "RC for ILR checks"
+  },
+  {
+   "name": "management_action",
+   "label": "Management action",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONE",
+     "label": "None"
+    },
+    {
+     "code": "PACEMAKER",
+     "label": "Pacemaker"
+    },
+    {
+     "code": "ABLATION",
+     "label": "Ablation"
+    },
+    {
+     "code": "ANTICOAGULATION",
+     "label": "Anticoagulation"
+    },
+    {
+     "code": "MEDICATION",
+     "label": "Medication"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C when management_changed is true",
+   "required_when": {
+    "field": "management_changed",
+    "in": []
+   }
+  },
+  {
+   "name": "report_reference",
+   "label": "Report reference",
+   "type": "string",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "maxLength": 120,
+   "rule": "O"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

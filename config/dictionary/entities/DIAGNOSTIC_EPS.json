@@ -1,0 +1,442 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "DIAGNOSTIC_EPS",
+ "pk": "eps_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "ablation_performed_same_session"
+ ],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "eps_indication",
+   "label": "EPS indication",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "WIDE_COMPLEX_TACHYCARDIA",
+     "label": "Wide complex tachycardia"
+    },
+    {
+     "code": "SYNCOPE",
+     "label": "Syncope"
+    },
+    {
+     "code": "CONDUCTION_DISEASE",
+     "label": "Conduction disease"
+    },
+    {
+     "code": "SCD_RISK",
+     "label": "SCD risk"
+    },
+    {
+     "code": "ACCESSORY_PATHWAY_RISK",
+     "label": "Accessory pathway risk"
+    },
+    {
+     "code": "BRADYCARDIA",
+     "label": "Bradycardia"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "baseline_rhythm",
+   "label": "Baseline rhythm",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SINUS",
+     "label": "Sinus"
+    },
+    {
+     "code": "SINUS_BRADYCARDIA",
+     "label": "Sinus bradycardia"
+    },
+    {
+     "code": "SINUS_TACHYCARDIA",
+     "label": "Sinus tachycardia"
+    },
+    {
+     "code": "AF",
+     "label": "AF"
+    },
+    {
+     "code": "AFL",
+     "label": "AFL"
+    },
+    {
+     "code": "AT",
+     "label": "AT"
+    },
+    {
+     "code": "SVT",
+     "label": "SVT"
+    },
+    {
+     "code": "JUNCTIONAL",
+     "label": "Junctional"
+    },
+    {
+     "code": "VT",
+     "label": "VT"
+    },
+    {
+     "code": "VF",
+     "label": "VF"
+    },
+    {
+     "code": "ASYSTOLE_OR_PAUSE",
+     "label": "Asystole or pause"
+    },
+    {
+     "code": "ATRIAL_PACED",
+     "label": "Atrial paced"
+    },
+    {
+     "code": "VENTRICULAR_PACED",
+     "label": "Ventricular paced"
+    },
+    {
+     "code": "AV_SEQUENTIAL_PACED",
+     "label": "AV sequential paced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "UNKNOWN",
+     "label": "Unknown"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "clinical_arrhythmia_induced",
+   "label": "Clinical arrhythmia induced",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "induced_arrhythmia_type",
+   "label": "Induced arrhythmia type",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TYPICAL_AVNRT",
+     "label": "Typical AVNRT"
+    },
+    {
+     "code": "ATYPICAL_AVNRT",
+     "label": "Atypical AVNRT"
+    },
+    {
+     "code": "ORTHODROMIC_AVRT",
+     "label": "Orthodromic AVRT"
+    },
+    {
+     "code": "ANTIDROMIC_AVRT",
+     "label": "Antidromic AVRT"
+    },
+    {
+     "code": "PREEXCITED_AF",
+     "label": "Preexcited AF"
+    },
+    {
+     "code": "FOCAL_AT",
+     "label": "Focal AT"
+    },
+    {
+     "code": "MACROREENTRANT_AT",
+     "label": "Macroreentrant AT"
+    },
+    {
+     "code": "CTI_DEPENDENT_FLUTTER",
+     "label": "CTI dependent flutter"
+    },
+    {
+     "code": "NON_CTI_MACROREENTRANT_FLUTTER",
+     "label": "Non CTI macroreentrant flutter"
+    },
+    {
+     "code": "ATRIAL_FIBRILLATION",
+     "label": "Atrial fibrillation"
+    },
+    {
+     "code": "SINUS_NODE_DYSFUNCTION",
+     "label": "Sinus node dysfunction"
+    },
+    {
+     "code": "AV_CONDUCTION_DISEASE",
+     "label": "AV conduction disease"
+    },
+    {
+     "code": "IDIOPATHIC_VT",
+     "label": "Idiopathic VT"
+    },
+    {
+     "code": "SCAR_RELATED_VT",
+     "label": "Scar related VT"
+    },
+    {
+     "code": "BUNDLE_BRANCH_REENTRY_VT",
+     "label": "Bundle branch reentry VT"
+    },
+    {
+     "code": "POLYMORPHIC_VT_OR_VF",
+     "label": "Polymorphic VT or VF"
+    },
+    {
+     "code": "PVC_FOCUS",
+     "label": "PVC focus"
+    },
+    {
+     "code": "NO_ARRHYTHMIA_INDUCED",
+     "label": "No arrhythmia induced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C if induced"
+  },
+  {
+   "name": "mechanism_identified",
+   "label": "Mechanism identified",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "final_eps_diagnosis",
+   "label": "Final EPS diagnosis",
+   "type": "lookup",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TYPICAL_AVNRT",
+     "label": "Typical AVNRT"
+    },
+    {
+     "code": "ATYPICAL_AVNRT",
+     "label": "Atypical AVNRT"
+    },
+    {
+     "code": "ORTHODROMIC_AVRT",
+     "label": "Orthodromic AVRT"
+    },
+    {
+     "code": "ANTIDROMIC_AVRT",
+     "label": "Antidromic AVRT"
+    },
+    {
+     "code": "PREEXCITED_AF",
+     "label": "Preexcited AF"
+    },
+    {
+     "code": "FOCAL_AT",
+     "label": "Focal AT"
+    },
+    {
+     "code": "MACROREENTRANT_AT",
+     "label": "Macroreentrant AT"
+    },
+    {
+     "code": "CTI_DEPENDENT_FLUTTER",
+     "label": "CTI dependent flutter"
+    },
+    {
+     "code": "NON_CTI_MACROREENTRANT_FLUTTER",
+     "label": "Non CTI macroreentrant flutter"
+    },
+    {
+     "code": "ATRIAL_FIBRILLATION",
+     "label": "Atrial fibrillation"
+    },
+    {
+     "code": "SINUS_NODE_DYSFUNCTION",
+     "label": "Sinus node dysfunction"
+    },
+    {
+     "code": "AV_CONDUCTION_DISEASE",
+     "label": "AV conduction disease"
+    },
+    {
+     "code": "IDIOPATHIC_VT",
+     "label": "Idiopathic VT"
+    },
+    {
+     "code": "SCAR_RELATED_VT",
+     "label": "Scar related VT"
+    },
+    {
+     "code": "BUNDLE_BRANCH_REENTRY_VT",
+     "label": "Bundle branch reentry VT"
+    },
+    {
+     "code": "POLYMORPHIC_VT_OR_VF",
+     "label": "Polymorphic VT or VF"
+    },
+    {
+     "code": "PVC_FOCUS",
+     "label": "PVC focus"
+    },
+    {
+     "code": "NO_ARRHYTHMIA_INDUCED",
+     "label": "No arrhythmia induced"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R; authoritative mechanism source for the session"
+  },
+  {
+   "name": "accessory_pathway_present",
+   "label": "Accessory pathway present",
+   "type": "boolean",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "rule": "R"
+  },
+  {
+   "name": "accessory_pathway_location",
+   "label": "Accessory pathway location",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LEFT_FREE_WALL",
+     "label": "Left free wall"
+    },
+    {
+     "code": "RIGHT_FREE_WALL",
+     "label": "Right free wall"
+    },
+    {
+     "code": "SEPTAL",
+     "label": "Septal"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C if present; authoritative source"
+  },
+  {
+   "name": "significant_conduction_disease",
+   "label": "Significant conduction disease",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NOT_ASSESSED",
+     "label": "Not assessed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "postprocedure_noninducible",
+   "label": "Postprocedure noninducible",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "NOT_TESTED",
+     "label": "Not tested"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C; **applicable when and only when the derived `ablation_performed_same_session` is TRUE, and rejected as NOT_APPLICABLE otherwise.** The gate reads the derived value, which reads `PROCEDURE_COMPONENTS` — the single authoritative same-session source — so it can never be opened or closed by a stale hand-entered duplicate. It remains **supporting evidence only** and is never an endpoint source, per Section 2.11"
+  },
+  {
+   "name": "baseline_ah_ms",
+   "label": "Baseline ah",
+   "type": "integer",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "O research extension"
+  },
+  {
+   "name": "baseline_hv_ms",
+   "label": "Baseline hv",
+   "type": "integer",
+   "req": "O",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "O research extension"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

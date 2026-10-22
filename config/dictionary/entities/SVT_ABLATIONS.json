@@ -1,0 +1,370 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "SVT_ABLATIONS",
+ "pk": "svt_ablation_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "svt_mechanism",
+   "label": "SVT mechanism",
+   "type": "lookup",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "TYPICAL_AVNRT",
+     "label": "Typical AVNRT"
+    },
+    {
+     "code": "ATYPICAL_AVNRT",
+     "label": "Atypical AVNRT"
+    },
+    {
+     "code": "ORTHODROMIC_AVRT",
+     "label": "Orthodromic AVRT"
+    },
+    {
+     "code": "ANTIDROMIC_AVRT",
+     "label": "Antidromic AVRT"
+    },
+    {
+     "code": "PREEXCITED_AF",
+     "label": "Preexcited AF"
+    },
+    {
+     "code": "FOCAL_AT",
+     "label": "Focal AT"
+    },
+    {
+     "code": "MACROREENTRANT_AT",
+     "label": "Macroreentrant AT"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "subset": [
+    "TYPICAL_AVNRT",
+    "ATYPICAL_AVNRT",
+    "ORTHODROMIC_AVRT",
+    "ANTIDROMIC_AVRT",
+    "PREEXCITED_AF",
+    "FOCAL_AT",
+    "MACROREENTRANT_AT",
+    "OTHER"
+   ],
+   "rule": "RC; must equal DIAGNOSTIC_EPS.final_eps_diagnosis when both rows exist for the same procedure"
+  },
+  {
+   "name": "accessory_pathway_manifestation",
+   "label": "Accessory pathway manifestation",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "MANIFEST",
+     "label": "Manifest"
+    },
+    {
+     "code": "CONCEALED",
+     "label": "Concealed"
+    },
+    {
+     "code": "INTERMITTENT",
+     "label": "Intermittent"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for AVRT/WPW"
+  },
+  {
+   "name": "accessory_pathway_location",
+   "label": "Accessory pathway location",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "LEFT_FREE_WALL",
+     "label": "Left free wall"
+    },
+    {
+     "code": "RIGHT_FREE_WALL",
+     "label": "Right free wall"
+    },
+    {
+     "code": "SEPTAL",
+     "label": "Septal"
+    },
+    {
+     "code": "MULTIPLE",
+     "label": "Multiple"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C for AVRT/WPW; must equal DIAGNOSTIC_EPS.accessory_pathway_location when both rows exist"
+  },
+  {
+   "name": "ap_conduction_direction_assessed",
+   "label": "Ap conduction direction assessed",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "ANTEGRADE",
+     "label": "Antegrade"
+    },
+    {
+     "code": "RETROGRADE",
+     "label": "Retrograde"
+    },
+    {
+     "code": "BOTH",
+     "label": "Both"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for AVRT/WPW"
+  },
+  {
+   "name": "at_chamber",
+   "label": "AT chamber",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RA",
+     "label": "RA"
+    },
+    {
+     "code": "LA",
+     "label": "LA"
+    },
+    {
+     "code": "CS",
+     "label": "CS"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for AT"
+  },
+  {
+   "name": "at_site_or_circuit",
+   "label": "AT site or circuit",
+   "type": "lookup",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "CRISTA_TERMINALIS",
+     "label": "Crista terminalis"
+    },
+    {
+     "code": "TRICUSPID_ANNULUS",
+     "label": "Tricuspid annulus"
+    },
+    {
+     "code": "CORONARY_SINUS_OSTIUM",
+     "label": "Coronary sinus ostium"
+    },
+    {
+     "code": "RA_APPENDAGE",
+     "label": "RA appendage"
+    },
+    {
+     "code": "RA_SEPTAL",
+     "label": "RA septal"
+    },
+    {
+     "code": "PULMONARY_VEIN",
+     "label": "Pulmonary vein"
+    },
+    {
+     "code": "MITRAL_ANNULUS",
+     "label": "Mitral annulus"
+    },
+    {
+     "code": "LA_ROOF_OR_POSTERIOR_WALL",
+     "label": "LA roof or posterior wall"
+    },
+    {
+     "code": "LA_APPENDAGE",
+     "label": "LA appendage"
+    },
+    {
+     "code": "LA_SEPTAL",
+     "label": "LA septal"
+    },
+    {
+     "code": "INCISIONAL_OR_SCAR_CIRCUIT",
+     "label": "Incisional or scar circuit"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C for AT"
+  },
+  {
+   "name": "ablation_target",
+   "label": "Ablation target",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "SLOW_PATHWAY",
+     "label": "Slow pathway"
+    },
+    {
+     "code": "ACCESSORY_PATHWAY",
+     "label": "Accessory pathway"
+    },
+    {
+     "code": "AT_FOCUS",
+     "label": "AT focus"
+    },
+    {
+     "code": "AT_ISTHMUS",
+     "label": "AT isthmus"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "ablation_energy",
+   "label": "Ablation energy",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "RF",
+     "label": "RF"
+    },
+    {
+     "code": "CRYO",
+     "label": "Cryo"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "acute_svt_endpoint",
+   "label": "Acute SVT endpoint",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "NONINDUCIBLE",
+     "label": "Noninducible"
+    },
+    {
+     "code": "SLOW_PATHWAY_MODIFICATION",
+     "label": "Slow pathway modification"
+    },
+    {
+     "code": "ACCESSORY_PATHWAY_CONDUCTION_ABOLISHED",
+     "label": "Accessory pathway conduction abolished"
+    },
+    {
+     "code": "AT_TERMINATED_NONINDUCIBLE",
+     "label": "AT terminated noninducible"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "FAILED",
+     "label": "Failed"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "endpoint_confirmation",
+   "label": "Endpoint confirmation",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PACING",
+     "label": "Pacing"
+    },
+    {
+     "code": "ADENOSINE",
+     "label": "Adenosine"
+    },
+    {
+     "code": "BOTH",
+     "label": "Both"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

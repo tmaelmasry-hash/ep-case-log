@@ -1,0 +1,304 @@
+{
+ "_generated": "by `npm run gen:forms` from dictionary/form_schema.json — do not edit; put label fixes in config/labels.json",
+ "entity": "CRT_CSP_PROCEDURES",
+ "pk": "crt_csp_id",
+ "parentFk": [
+  "procedure_id"
+ ],
+ "otherCapable": true,
+ "virtual": [
+  "device_implant_present",
+  "strategy_capture_threshold_v",
+  "strategy_pulse_width_ms"
+ ],
+ "activation": "PROCEDURE_COMPONENT",
+ "fields": [
+  {
+   "name": "procedure_id",
+   "label": "Procedure",
+   "type": "fk",
+   "req": "R",
+   "role": "REQUIRED_PARENT_FK",
+   "target": "EP_PROCEDURES",
+   "rule": "R",
+   "auto": true
+  },
+  {
+   "name": "device_id",
+   "label": "Device",
+   "type": "fk",
+   "req": "UNSPECIFIED",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICES",
+   "rule": "**C, not R.** Required **only when a device exists for this strategy** — that is, when a generator was already implanted before this session, or when one was actually implanted during it, evidenced by a `DEVICE_IMPLANTS` row on the same procedure. A **failed de-novo attempt in which no generator was implanted has no device to name**, and the field is left blank rather than pointing at fictitious hardware. Where present it is validated to the same patient and site"
+  },
+  {
+   "name": "cpp_strategy",
+   "label": "Cpp strategy",
+   "type": "enum",
+   "req": "RC",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "BIV_CRT",
+     "label": "BIV CRT"
+    },
+    {
+     "code": "HBP",
+     "label": "HBP"
+    },
+    {
+     "code": "LBBAP",
+     "label": "LBBAP"
+    },
+    {
+     "code": "HOT_CRT",
+     "label": "HOT CRT"
+    },
+    {
+     "code": "LOT_CRT",
+     "label": "LOT CRT"
+    }
+   ],
+   "rule": "RC"
+  },
+  {
+   "name": "cpp_indication",
+   "label": "Cpp indication",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HF_DYSSYNCHRONY",
+     "label": "HF dyssynchrony"
+    },
+    {
+     "code": "ANTICIPATED_SUBSTANTIAL_RV_PACING",
+     "label": "Anticipated substantial RV pacing"
+    },
+    {
+     "code": "PACING_INDUCED_CM",
+     "label": "Pacing induced cm"
+    },
+    {
+     "code": "FAILED_PRIOR_CRT",
+     "label": "Failed prior CRT"
+    },
+    {
+     "code": "AVJ_ABLATION_STRATEGY",
+     "label": "AVJ ablation strategy"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "implant_intent",
+   "label": "Implant intent",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "PRIMARY",
+     "label": "Primary"
+    },
+    {
+     "code": "RESCUE_AFTER_FAILED_LV_LEAD",
+     "label": "Rescue after failed LV lead"
+    },
+    {
+     "code": "UPGRADE",
+     "label": "Upgrade"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "baseline_echo_id",
+   "label": "Baseline echo",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "ECHO_STUDIES",
+   "rule": "C; required only for the HF indications listed under baseline_nyha_class"
+  },
+  {
+   "name": "baseline_ecg_id",
+   "label": "Baseline ECG",
+   "type": "fk",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "target": "ECG_STUDIES",
+   "rule": "R"
+  },
+  {
+   "name": "baseline_nyha_class",
+   "label": "Baseline NYHA class",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "I",
+     "label": "I"
+    },
+    {
+     "code": "II",
+     "label": "II"
+    },
+    {
+     "code": "III",
+     "label": "III"
+    },
+    {
+     "code": "IV",
+     "label": "IV"
+    }
+   ],
+   "rule": "C; required only when cpp_indication is HF_DYSSYNCHRONY, PACING_INDUCED_CM, or FAILED_PRIOR_CRT. Not applicable to a bradycardia-indication conduction-system pacing case, where NYHA is not the reason for the implant"
+  },
+  {
+   "name": "strategy_implant_success",
+   "label": "Strategy implant success",
+   "type": "enum",
+   "req": "R",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "PARTIAL",
+     "label": "Partial"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    }
+   ],
+   "rule": "R"
+  },
+  {
+   "name": "csp_target",
+   "label": "CSP target",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "HIS",
+     "label": "His"
+    },
+    {
+     "code": "LEFT_BUNDLE_BRANCH_AREA",
+     "label": "Left bundle branch area"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for CSP"
+  },
+  {
+   "name": "conduction_system_capture_documented",
+   "label": "Conduction system capture documented",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "YES",
+     "label": "Yes"
+    },
+    {
+     "code": "NO",
+     "label": "No"
+    },
+    {
+     "code": "INDETERMINATE",
+     "label": "Indeterminate"
+    },
+    {
+     "code": "NOT_APPLICABLE",
+     "label": "Not applicable"
+    }
+   ],
+   "rule": "C for CSP"
+  },
+  {
+   "name": "final_paced_qrs_ms",
+   "label": "Final paced QRS",
+   "type": "integer",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "unit": "ms",
+   "rule": "C; required only when strategy_implant_success is YES or PARTIAL, meaning an applicable lead or channel was implanted and captured. A failed strategy with no implanted lead finalizes without it and no value is fabricated",
+   "required_when": {
+    "field": "strategy_implant_success",
+    "in": [
+     "YES",
+     "PARTIAL"
+    ]
+   }
+  },
+  {
+   "name": "csp_or_lv_lead_id",
+   "label": "CSP or LV lead",
+   "type": "fk",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "target": "DEVICE_LEADS",
+   "rule": "C; required only when strategy_implant_success is YES or PARTIAL for a lead-based strategy. Identifies the DEVICE_LEADS row carrying the acute capture threshold and pulse width. Not applicable when no strategy lead was implanted"
+  },
+  {
+   "name": "failed_strategy_reason",
+   "label": "Failed strategy reason",
+   "type": "enum",
+   "req": "C",
+   "role": "CLINICAL_FIELD",
+   "codes": [
+    {
+     "code": "VENOUS_ANATOMY",
+     "label": "Venous anatomy"
+    },
+    {
+     "code": "HIGH_THRESHOLD",
+     "label": "High threshold"
+    },
+    {
+     "code": "PHRENIC_STIMULATION",
+     "label": "Phrenic stimulation"
+    },
+    {
+     "code": "NO_CAPTURE",
+     "label": "No capture"
+    },
+    {
+     "code": "INSTABILITY",
+     "label": "Instability"
+    },
+    {
+     "code": "OTHER",
+     "label": "Other"
+    }
+   ],
+   "rule": "C if partial/failed"
+  },
+  {
+   "name": "other_specify_json",
+   "label": "Other specify json",
+   "type": "json_object",
+   "req": "R",
+   "role": "OTHER_SPECIFY",
+   "maxValueLength": 160,
+   "auto_other": true
+  }
+ ]
+}

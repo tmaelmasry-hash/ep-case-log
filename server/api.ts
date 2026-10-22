@@ -6,6 +6,7 @@ import type { AppContext } from './context.ts';
 import { HttpError, Reply, Router, type Req } from './http.ts';
 import { adminRoutes } from './routes/admin.ts';
 import { authRoutes } from './routes/auth.ts';
+import { caseRoutes } from './routes/cases.ts';
 
 const PUBLIC = [/^\/api\/health$/, /^\/api\/auth\/login$/];
 /** Reachable while a temporary password must still be changed. */
@@ -24,6 +25,7 @@ export function buildRouter(ctx: AppContext): Router {
   app.get('/api/health', async () => ({ ok: true, store: ctx.store.kind, time: ctx.now().toISOString() }));
   authRoutes(app);
   adminRoutes(app);
+  caseRoutes(app);
   return app;
 }
 

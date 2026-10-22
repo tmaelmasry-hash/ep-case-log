@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon';
 import { Empty, SaveIndicator, Sheet } from '../components/ui';
 import { GroupNameDialog } from './AdminSheets';
 import { BulkAddSheet } from './BulkAdd';
+import { FollowupBell } from './FollowupBell';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
@@ -190,7 +191,7 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
 
 export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: string) => void }) {
   const { cases, groups, loadError, refreshCases } = useStore();
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const [group, setGroup] = useState<string>(() => {
     try {
       return localStorage.getItem('ep.group') ?? 'ALL';
@@ -238,6 +239,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       <div className="navbar">
         <span className="grow" />
         <SaveIndicator />
+        {me?.features?.followup_bell && <FollowupBell />}
         {can('case.import') && (
           <button className="icon-btn accent" aria-label="Bulk add MRNs" title="Bulk add MRNs" onClick={() => setBulk(true)} data-testid="bulk-add" disabled={!groups.length}>
             <Icon name="list" size={24} />

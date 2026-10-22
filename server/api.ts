@@ -8,6 +8,7 @@ import { adminRoutes } from './routes/admin.ts';
 import { authRoutes } from './routes/auth.ts';
 import { bulkRoutes } from './routes/bulk.ts';
 import { dashboardRoutes } from './routes/dashboard.ts';
+import { followupRoutes } from './routes/followups.ts';
 import { exportRoutes } from './routes/exports.ts';
 import { aiRoutes } from './routes/ai.ts';
 import { caseRoutes } from './routes/cases.ts';
@@ -32,6 +33,7 @@ export function buildRouter(ctx: AppContext): Router {
   caseRoutes(app);
   bulkRoutes(app);
   dashboardRoutes(app);
+  followupRoutes(app);
   exportRoutes(app);
   aiRoutes(app);
   return app;

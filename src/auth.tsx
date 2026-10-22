@@ -9,6 +9,8 @@ export interface Me {
   capabilities: string[];
   must_change_password: boolean;
   groups: string[];
+  /** Switches from config/site.json (follow-up bell is off unless the Admin turns it on). */
+  features?: { followup_bell: boolean };
 }
 
 type State = { status: 'loading' } | { status: 'signedOut'; notice?: string } | { status: 'offline'; message: string } | { status: 'signedIn'; me: Me };
@@ -36,8 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadMe = useCallback(async () => {
     try {
-      const r = await api<{ user: Me }>('GET', '/api/auth/me');
-      setState({ status: 'signedIn', me: r.user });
+      const r = await api<{ user: Me; features?: Me['features'] }>('GET', '/api/auth/me');
+      setState({ status: 'signedIn', me: { ...r.user, features: r.features } });
     } catch (e) {
       const err = e as ApiError;
       if (err.status === 401) setState({ status: 'signedOut' });

@@ -27,6 +27,7 @@ export function authRoutes(app: Router) {
     return {
       user: { id: u.userId, username: u.username, name: u.name, role: u.role, capabilities: capabilitiesOf(u.role), must_change_password: u.mustChangePassword, groups: row?.groups ?? [] },
       csrf: u.csrf,
+      features: { followup_bell: !!ctx.config.site.followup_due?.enabled },
     };
   });
 

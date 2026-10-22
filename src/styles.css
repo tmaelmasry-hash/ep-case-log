@@ -2229,3 +2229,27 @@ table.dt .bar {
   cursor: pointer;
   padding: 6px 0;
 }
+
+/* Follow-up bell (phase 12, off by default) */
+.icon-btn.bell {
+  position: relative;
+}
+.icon-btn.bell .badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9px;
+  padding: 0 4px;
+  background: var(--danger, #d33);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+.overdue {
+  color: var(--danger, #d33);
+  font-weight: 600;
+}

@@ -3,6 +3,7 @@
 import { buildDictionary, type CaseLayout, type CoreSpec, type Dictionary, type RawEntity } from '../shared/dictionary.ts';
 import type { MrnConfig } from '../shared/mrn.ts';
 import { checkDashConfig, type DashConfig } from './domain/dashboard.ts';
+import { checkFollowupConfig, type FollowupRule } from './domain/followups.ts';
 
 export interface Site {
   timezone: string;
@@ -10,6 +11,7 @@ export interface Site {
   registry_basis_default: string;
   dashboard: DashConfig;
   ai: AiConfig;
+  followup_due?: FollowupRule;
 }
 
 export interface AiProviderConfig {
@@ -63,6 +65,7 @@ export function buildAppConfig(raw: RawConfig): AppConfig {
     throw new Error('config/site.json registry_basis_default is not a dictionary code');
   }
   checkDashConfig(dict, site.dashboard);
+  checkFollowupConfig(dict, site.followup_due);
   return { dict, site, aiFixtures: raw.aiFixtures?.notes ?? [] };
 }
 

@@ -174,6 +174,12 @@ export class FakeAppsScript implements Gateway {
     this.doPost = make(...Object.values(globals));
   }
 
+  /** A raw web-app request body (as sent over HTTP) → the parsed answer, exactly as Code.js gives it. */
+  post(body: string): { ok: boolean; result?: unknown; error?: string } {
+    this.calls++;
+    return JSON.parse(this.doPost({ postData: { contents: body } }).content);
+  }
+
   /** The same request the Worker sends; the answer parsed the same way. */
   async call(action: string, body: Record<string, unknown> = {}) {
     this.calls++;

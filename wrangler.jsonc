@@ -1,0 +1,14 @@
+// Cloudflare Worker for EP Case Log (phase 4). Secrets are set with `npx wrangler secret put NAME`, never here:
+// SESSION_SECRET, APPS_SCRIPT_URL, GATEWAY_SECRET. Deploy with `npm run deploy`.
+{
+  "name": "ep-case-log",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true }
+}

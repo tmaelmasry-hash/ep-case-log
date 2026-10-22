@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "types": ["node"]
+    "types": ["node"],
+    "resolveJsonModule": true
   },
-  "include": ["server", "scripts", "shared", "tests/server"]
+  "include": ["server", "scripts", "shared", "tests/server", "worker"]
 }

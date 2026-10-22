@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { extname, join, normalize, resolve } from 'node:path';
 import { buildRouter, handleApi } from './api.ts';
 import type { AppContext } from './context.ts';
+import { PAGE_HEADERS } from './headers.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -16,12 +17,6 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
-const PAGE_HEADERS: Record<string, string> = {
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'no-referrer',
-  'X-Frame-Options': 'DENY',
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
-};
 
 async function toRequest(req: IncomingMessage): Promise<Request> {
   const host = req.headers.host ?? 'localhost';

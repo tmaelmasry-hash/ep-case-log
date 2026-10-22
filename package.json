@@ -8,10 +8,16 @@
     "build": "tsc --noEmit && tsc -p tsconfig.server.json && vite build",
     "start": "node server/main.ts",
     "setup": "node scripts/setup.ts",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json",
+    "typecheck": "node scripts/build-config.ts && tsc --noEmit && tsc -p tsconfig.server.json",
     "test": "vitest run",
     "e2e": "playwright test",
-    "preview:e2e": "node server/main.ts --e2e"
+    "preview:e2e": "node server/main.ts --e2e",
+    "build:config": "node scripts/build-config.ts",
+    "worker:check": "npm run build && node scripts/build-config.ts && wrangler deploy --dry-run --outdir .wrangler/check",
+    "deploy": "npm run build && node scripts/build-config.ts && wrangler deploy",
+    "sheets": "node scripts/sheets.ts",
+    "e2e:worker": "npm run build && node scripts/build-config.ts && playwright test -c playwright.worker.config.ts",
+    "worker:secrets": "node scripts/worker-secrets.ts"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -26,7 +32,8 @@
     "fake-indexeddb": "6.0.1",
     "typescript": "5.8.3",
     "vite": "6.3.5",
-    "vitest": "3.1.4"
+    "vitest": "3.1.4",
+    "wrangler": "4.148.0"
   },
   "engines": {
     "node": ">=22.18"

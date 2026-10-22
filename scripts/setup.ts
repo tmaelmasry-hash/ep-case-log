@@ -1,11 +1,13 @@
-// One-time local setup:  npm run setup [-- --username <name>] [-- --reset-admin-password]
-// Creates .env with a random SESSION_SECRET (if missing), Groups 1–3, and the first Admin with a one-time password.
+// One-time setup:  npm run setup [-- --username <name>] [-- --reset-admin-password]
+// Creates .env with a random SESSION_SECRET (if missing), Groups 1–3, and the first Admin with a one-time password,
+// in the store named by .env STORE (file by default; sheets = the Google Sheet, after `npm run sheets -- setup`).
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { generatePassword, normalizeUsername, newUser, setPasswordByAdmin, usernameProblem } from '../server/auth/auth.ts';
 import { makeContext } from '../server/context.ts';
 import { loadConfig } from '../server/dictionary.ts';
 import { ensureDefaultGroups } from '../server/seed.ts';
-import { FileStore } from '../server/store/file.ts';
+import { storeFromEnv } from '../server/store/fromEnv.ts';
+import { loadDotEnv } from '../server/dotenv.ts';
 import { b64url, newId, randomBytes } from '../server/util.ts';
 
 const arg = (name: string) => {
@@ -21,10 +23,12 @@ if (!/^SESSION_SECRET=.{32,}/m.test(env)) {
 }
 env = readFileSync('.env', 'utf8');
 const secret = /^SESSION_SECRET=(.*)$/m.exec(env)![1].trim();
-const dataDir = /^DATA_DIR=(.*)$/m.exec(env)?.[1].trim() || 'data';
+loadDotEnv();
 
-const store = new FileStore(dataDir);
-const ctx = makeContext({ sessionSecret: secret, secureCookies: true }, store, loadConfig());
+const config = loadConfig();
+const store = storeFromEnv(config);
+console.log(`Store: ${store.kind}`);
+const ctx = makeContext({ sessionSecret: secret, secureCookies: true }, store, config);
 await ensureDefaultGroups(store);
 const groups = (await store.listGroups()).map((g) => g.group_id);
 const admins = (await store.listUsers()).filter((u) => u.role === 'ADMIN');

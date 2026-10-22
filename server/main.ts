@@ -1,20 +1,12 @@
 // Starts the local server.  npm start  (reads .env; see .env.example)
 // Test/preview mode:  node server/main.ts --e2e  (in-memory store with synthetic accounts; needs E2E_PASSWORD)
-import { existsSync, readFileSync } from 'node:fs';
 import { makeContext } from './context.ts';
 import { loadConfig } from './dictionary.ts';
+import { loadDotEnv } from './dotenv.ts';
 import { startServer } from './node.ts';
 import { seedTestUsers } from './seed.ts';
-import { FileStore } from './store/file.ts';
+import { storeFromEnv } from './store/fromEnv.ts';
 import { MemoryStore } from './store/memory.ts';
-
-function loadDotEnv(file = '.env') {
-  if (!existsSync(file)) return;
-  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
-    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
 
 loadDotEnv();
 const e2e = process.argv.includes('--e2e');
@@ -25,8 +17,9 @@ if (!secret) {
   console.error('SESSION_SECRET is not set. Run: npm run setup');
   process.exit(1);
 }
-const store = e2e || process.env.STORE === 'memory' ? new MemoryStore() : new FileStore(process.env.DATA_DIR || 'data');
-const ctx = makeContext({ sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0' }, store, loadConfig());
+const config = loadConfig();
+const store = e2e ? new MemoryStore() : storeFromEnv(config);
+const ctx = makeContext({ sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0' }, store, config);
 
 if (e2e) {
   const pw = process.env.E2E_PASSWORD;

@@ -20,6 +20,8 @@ export interface CaseMeta {
   group_seq: number;
   /** Data-collection status (exactly In progress / Completed). */
   collection_status: 'IN_PROGRESS' | 'COMPLETED';
+  /** First person who edited the case (dashboard "by collector"). */
+  collector_user_id?: string | null;
   completed_at?: string | null;
   completed_by?: string | null;
   reopen_reason?: string | null;

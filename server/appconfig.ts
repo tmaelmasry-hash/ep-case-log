@@ -2,11 +2,13 @@
 // Pure: Node reads the files from disk (server/dictionary.ts); the Cloudflare Worker imports them bundled.
 import { buildDictionary, type CaseLayout, type CoreSpec, type Dictionary, type RawEntity } from '../shared/dictionary.ts';
 import type { MrnConfig } from '../shared/mrn.ts';
+import { checkDashConfig, type DashConfig } from './domain/dashboard.ts';
 
 export interface Site {
   timezone: string;
   mrn: MrnConfig;
   registry_basis_default: string;
+  dashboard: DashConfig;
 }
 
 export interface RawConfig {
@@ -29,6 +31,7 @@ export function buildAppConfig(raw: RawConfig): AppConfig {
   if (!dict.entities.PATIENTS.fields.find((f) => f.name === 'registry_basis')?.codes?.some((c) => c.code === site.registry_basis_default)) {
     throw new Error('config/site.json registry_basis_default is not a dictionary code');
   }
+  checkDashConfig(dict, site.dashboard);
   return { dict, site };
 }
 

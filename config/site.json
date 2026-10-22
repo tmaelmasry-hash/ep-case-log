@@ -19,5 +19,64 @@
   },
   "_soft_rule_reason": "KAMC MRNs started at 100xxxx and currently reach 120xxxx. The soft rule warns but does not block, so 121xxxx will still be accepted when it appears. Update in Settings."
  },
- "registry_basis_default": "CLINICAL_QI"
+ "registry_basis_default": "CLINICAL_QI",
+ "dashboard": {
+  "_note": "Copied from EP Workspace config/site.json dashboard (owner-confirmed 16 Oct 2026, DECISIONS P6-13). Counts only. In this app the clinical counts are per procedure (case = episode with several procedures).",
+  "stale_days": 14,
+  "procedure_date_field": "EP_PROCEDURES.procedure_start_datetime",
+  "pilgrim_field": "EP_EPISODES.pilgrim_status",
+  "complications_field": "EXT_PROCEDURE_REVIEW.complications_reviewed",
+  "complications_present_code": "PRESENT",
+  "complications_reviewed_codes": [
+   "NONE_DOCUMENTED",
+   "PRESENT"
+  ],
+  "acute_success": {
+   "AF_ABLATION": {
+    "field": "AF_ABLATIONS.acute_af_endpoint",
+    "success": [
+     "COMPLETE_PVI_OR_REISOLATION",
+     "NO_RECONNECTION_NO_NEW_PVI_REQUIRED",
+     "NON_PV_TARGET_ACHIEVED"
+    ],
+    "not_counted": [],
+    "gate": "CANON_AF_ENDPOINT_V1"
+   },
+   "SVT_ABLATION": {
+    "field": "SVT_ABLATIONS.acute_svt_endpoint",
+    "success": [
+     "NONINDUCIBLE",
+     "ACCESSORY_PATHWAY_CONDUCTION_ABOLISHED",
+     "AT_TERMINATED_NONINDUCIBLE"
+    ],
+    "not_counted": []
+   },
+   "FLUTTER_ABLATION": {
+    "field": "FLUTTER_ABLATIONS.acute_flutter_endpoint",
+    "success": [
+     "TERMINATION_AND_BLOCK",
+     "NONINDUCIBLE"
+    ],
+    "not_counted": []
+   },
+   "VENTRICULAR_ABLATION": {
+    "field": "VENTRICULAR_ABLATIONS.acute_va_endpoint",
+    "success": [
+     "PVC_SUPPRESSED",
+     "CLINICAL_VT_NONINDUCIBLE",
+     "ALL_VT_NONINDUCIBLE"
+    ],
+    "not_counted": [
+     "NOT_TESTED"
+    ]
+   },
+   "DEVICES": {
+    "field": "DEVICE_IMPLANTS.acute_device_result",
+    "success": [
+     "SUCCESSFUL"
+    ],
+    "not_counted": []
+   }
+  }
+ }
 }

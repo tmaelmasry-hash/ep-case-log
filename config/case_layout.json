@@ -436,5 +436,14 @@
   "DEVICE_IMPLANTS": [
    "DEVICE_IMPLANT"
   ]
+ },
+ "category_labels": {
+  "_note": "Labels of the core categories (EP Workspace config/categories.json).",
+  "AF_ABLATION": "AF Ablation",
+  "SVT_ABLATION": "SVT Ablation",
+  "DEVICES": "Devices",
+  "FLUTTER_ABLATION": "Flutter Ablation",
+  "VENTRICULAR_ABLATION": "Ventricular Ablation",
+  "OTHER_EP": "Other EP / Not classified"
  }
 }

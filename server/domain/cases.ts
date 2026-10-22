@@ -373,6 +373,7 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
     rec.meta.updated_at = a.now;
     rec.meta.updated_by = a.userId;
     rec.meta.row_version++;
+    rec.meta.collector_user_id ??= a.userId;
   }
   return results;
 }

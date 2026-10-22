@@ -5,7 +5,7 @@ import { signIn } from './helpers';
 let seq = 0;
 /** A synthetic MRN unique to this run and project. */
 export function mrn(info: { project: { name: string } }, base: number) {
-  return String(base + (info.project.name === 'desktop' ? 0 : 50_000) + ++seq * 11 + Math.floor(Math.random() * 9));
+  return String(base + (info.project.name === 'desktop' ? 0 : 5_000) + ++seq * 11 + Math.floor(Math.random() * 9));
 }
 
 export async function open(page: Page, user = 'admin', hash = '#/cases') {

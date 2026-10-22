@@ -11,7 +11,7 @@ import { SettingsView } from './views/SettingsView';
 const TABS = [
   { key: 'cases', label: 'Cases', icon: 'cases' },
   { key: 'patients', label: 'Patients', icon: 'patients' },
-  { key: 'stats', label: 'Stats', icon: 'stats' },
+  { key: 'stats', label: 'Dashboard', icon: 'stats' },
   { key: 'settings', label: 'Settings', icon: 'settings' },
 ];
 

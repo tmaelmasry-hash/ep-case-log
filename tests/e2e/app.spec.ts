@@ -204,7 +204,7 @@ test('a Member sees only their group; another group\'s case looks not found', as
   await ctx.close();
 });
 
-test('patients and stats follow the cases', async ({ page }, info) => {
+test('patients and my work follow the cases', async ({ page }, info) => {
   const m = mrn(info);
   await open(page);
   await createCase(page, m, '2026-02-03');
@@ -218,7 +218,7 @@ test('patients and stats follow the cases', async ({ page }, info) => {
   await expect(page.getByRole('heading', { name: `MRN ${m}` })).toBeVisible();
   await expect(page.getByTestId('case-row')).toContainText('CIED implant');
   await page.goto('/#/stats');
-  await expect(page.getByTestId('by-type')).toContainText('CIED implant');
+  await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('core');
 });
 
 test('without the server the app says so clearly and recovers when it is back', async ({ page, context }) => {

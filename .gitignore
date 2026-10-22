@@ -9,3 +9,4 @@ ep-case-log-source.zip
 server/generated/
 .wrangler/
 .dev.vars
+dist-demo/

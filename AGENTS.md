@@ -16,6 +16,7 @@ npm run setup      # once: .env SESSION_SECRET, Groups 1–3, first Admin (one-t
 npm start          # node server/main.ts → app + /api on 127.0.0.1:8787 (Node ≥ 22.18 runs the TypeScript directly)
 npm test           # Vitest unit tests (tests/unit) — pure logic, no browser
 npm run e2e        # Playwright E2E (needs `npm run build` first; desktop + Pixel 7 profiles)
+npm run build:demo # one-page try-it demo (made-up data, server code runs in the page) → dist-demo/
 ```
 Run `npm run build && npm test && npm run e2e` before declaring a change done. The E2E suite starts `node server/main.ts --e2e` on :8790 (in-memory store, synthetic accounts admin / sara / newbie, password from `E2E_PASSWORD`).
 

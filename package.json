@@ -13,6 +13,7 @@
     "e2e": "playwright test",
     "preview:e2e": "node server/main.ts --e2e",
     "build:config": "node scripts/build-config.ts",
+    "build:demo": "node scripts/build-demo.ts",
     "worker:check": "npm run build && node scripts/build-config.ts && wrangler deploy --dry-run --outdir .wrangler/check",
     "deploy": "npm run build && node scripts/build-config.ts && wrangler deploy",
     "sheets": "node scripts/sheets.ts",

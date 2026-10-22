@@ -85,3 +85,15 @@ Owner decisions (step 2, phase 3): core fields are checked **for each procedure*
 - Owner steps and commands: `docs/DEPLOY.md` (`npm run sheets -- secret | init | setup`, `npm run setup`, `npm run worker:secrets`, `npm run deploy`).
 - Tests: server tests run twice (memory store, and Sheet store over the real Code.js on a fake spreadsheet) + `tests/server/sheets.test.ts`; browser tests run against the local server and against the Worker in Cloudflare's local runtime (`npm run e2e:worker`). A mutation check (writing whole rows instead of changed cells) makes the concurrency test fail.
 - Not done here: the real Google Sheet and Cloudflare deployment (owner's accounts; cleanup of test items first, `docs/ACCOUNTS_CLEANUP_HANDOFF.md`).
+
+## Phases 5–12 (built 22 Oct 2026; owner asked to finish all phases, test, try locally, then deploy last)
+- **5 MRN prompt + copy-forward:** POST /api/cases answers 409 MRN_HAS_CASES unless `new_case: true`; history sections marked `copy_forward` in `config/case_layout.json` are copied from the latest case of the same MRN and tagged "Copied" until edited.
+- **6 Bulk add MRNs:** `server/domain/bulk.ts`, `/api/imports` (claim → review → add), Imports tab; episode start date optional.
+- **7 Light follow-up:** FOLLOW_UPS / OUTCOME_EVENTS belong to a procedure (index event = that procedure); quick events.
+- **8 Patients + CHA₂DS₂-VASc + PDF report:** `shared/cha.ts` (V point = `vascular_disease` only, per D6 — owner to confirm), `CaseReport.tsx`.
+- **9 Dashboard + My work:** `server/domain/dashboard.ts`, rules in `config/site.json` → `dashboard`.
+- **10 Excel export:** `shared/xlsx.ts` (no dependency), `/api/exports` (whole registry for Admin, own group for Members); the Sheet store exports through Apps Script.
+- **11 AI Assistant:** `server/ai/*`, `server/routes/ai.ts`. Provider chosen by the Admin in Settings (Test AI by default; Claude/Gemini/OpenAI need an API key in `.env` / Worker secrets). Note de-identified before sending, never stored; values filled only into empty fields, marked "AI" and blocking Complete until accepted; conflicts never overwrite saved values. Test AI answers only the synthetic notes in `config/ai_fixtures.json`.
+- **12 Follow-up bell (off):** `server/domain/followups.ts`, `/api/followups`, `config/site.json` → `followup_due.enabled: false`. Switch on: set `true` and redeploy.
+- **Try-it demo:** `npm run build:demo` → `dist-demo/ep-case-log-demo.html`: the same app and server code running inside one page on made-up cases kept in that browser (`demo/`). Excel download and printing do not work inside the preview frame.
+- Tests at the end of phase 12: 150 server/unit tests (memory + Sheet store), 50 browser runs (desktop + phone), 50 browser runs against the Cloudflare Worker + fake Apps Script (all passing).

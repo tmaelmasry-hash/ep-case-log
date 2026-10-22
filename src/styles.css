@@ -2253,3 +2253,13 @@ table.dt .bar {
   color: var(--danger, #d33);
   font-weight: 600;
 }
+
+/* Try-it demo build only */
+.demo-panel p {
+  margin: 0 0 8px;
+}
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

@@ -2021,3 +2021,23 @@ textarea.box {
 .more-fields > summary {
   margin: 14px 0 6px;
 }
+
+/* ---------- Phase 8: CHA₂DS₂-VASc chip, report preview ---------- */
+.cha-chip {
+  margin-left: 8px;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+}
+.report-preview {
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 10px 0;
+  overflow-x: auto;
+}
+.report-block h3 {
+  margin-top: 8pt;
+}

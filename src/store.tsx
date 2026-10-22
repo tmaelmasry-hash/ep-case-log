@@ -25,6 +25,8 @@ interface Ctx {
   cases: CaseSummary[];
   /** Reloads the case list and the groups (their case counts). */
   refreshCases: () => Promise<void>;
+  /** Replaces one case's line in the list (after a save). */
+  upsertCase: (c: CaseSummary) => void;
   saveStatus: SaveStatus;
   setSaveStatus: (s: SaveStatus) => void;
   toasts: Toast[];
@@ -87,9 +89,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })();
   }, [refreshCases]);
 
+  const upsertCase = useCallback((c: CaseSummary) => setCases((list) => (list.some((x) => x.case_id === c.case_id) ? list.map((x) => (x.case_id === c.case_id ? c : x)) : [...list, c])), []);
+
   const value = useMemo<Ctx>(
-    () => ({ loaded, loadError, groups, cases, refreshCases, saveStatus, setSaveStatus, toasts, toast, dismissToast }),
-    [loaded, loadError, groups, cases, refreshCases, saveStatus, toasts, toast, dismissToast],
+    () => ({ loaded, loadError, groups, cases, refreshCases, upsertCase, saveStatus, setSaveStatus, toasts, toast, dismissToast }),
+    [loaded, loadError, groups, cases, refreshCases, upsertCase, saveStatus, toasts, toast, dismissToast],
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

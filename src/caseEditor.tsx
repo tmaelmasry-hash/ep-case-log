@@ -50,7 +50,7 @@ export function newId(entity: string): string {
 }
 
 export function useCaseEditor(caseId: string): CaseEditor {
-  const { setSaveStatus, toast, refreshCases } = useStore();
+  const { setSaveStatus, toast, upsertCase } = useStore();
   const [detail, setDetail] = useState<CaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -123,7 +123,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
       const failed = r.results.filter((x) => !x.ok);
       setSaveStatus(failed.length ? 'error' : 'saved');
       if (failed.length && failed.some((x) => x.kind !== 'change')) toast({ message: failed[0].message ?? 'Some changes were not saved.', kind: 'error' });
-      if (ops.some((o) => o.kind === 'create' || o.kind === 'remove' || (o.kind === 'change' && (o.entity === 'EP_PROCEDURES' || o.entity === 'EP_EPISODES' || o.entity === 'PATIENTS' || o.entity === 'PATIENT_IDENTIFIERS')))) refreshCases();
+      upsertCase(r.case.summary);
     } catch (e) {
       const err = e as ApiError;
       if (err.status === 404 || err.status === 409) {
@@ -140,7 +140,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
       inFlight.current = null;
       if (queueRef.current.length > ops.length && retry.current === 0) timer.current = window.setTimeout(() => flush(), 50);
     }
-  }, [caseId, reload, refreshCases, setSaveStatus, toast]);
+  }, [caseId, reload, upsertCase, setSaveStatus, toast]);
 
   const push = useCallback(
     (ops: Op[], delay = 250) => {
@@ -218,10 +218,14 @@ export function useCaseEditor(caseId: string): CaseEditor {
     [push],
   );
 
-  const replace = useCallback((d: CaseDetail) => {
-    setDetail(d);
-    setErrors({});
-  }, []);
+  const replace = useCallback(
+    (d: CaseDetail) => {
+      setDetail(d);
+      setErrors({});
+      upsertCase(d.summary);
+    },
+    [upsertCase],
+  );
 
   const slot = useCallback((entity: string, scopeId: string) => slotId(idPrefix(dict.entities[entity].pk), entity, scopeId), []);
 

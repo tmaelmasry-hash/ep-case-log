@@ -13,6 +13,8 @@ import { Icon } from '../components/Icon';
 import { Confirm, Empty, SaveIndicator, Sheet } from '../components/ui';
 import { EntityFields, type FkOption, type NaInfo } from '../components/Fields';
 import { api, ApiError } from '../lib/api';
+import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
+import { CaseReport, PrintPortal } from './CaseReport';
 
 // ── readiness shared by every sheet of the open case ──
 interface CaseCtx {
@@ -859,7 +861,61 @@ function FollowUpSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void })
   );
 }
 
+function ChaSheet({ cha, onClose, onGo }: { cha: ChaResult; onClose: () => void; onGo: (section: string) => void }) {
+  return (
+    <Sheet title="CHA₂DS₂-VASc" closeLabel="Close" onClose={onClose} onDone={onClose} testId="cha-sheet">
+      <div className="summary">
+        <div>
+          <b>{cha.score ?? '—'}</b>
+          {cha.score === null ? 'incomplete' : 'points'}
+        </div>
+      </div>
+      <div className="group">
+        {cha.items.map((i) => (
+          <div key={i.key} className="grow-row">
+            <span className="grow">{i.label}</span>
+            <span className={i.points === null ? 'muted small' : 'small'}>{i.points === null ? 'not known' : `+${i.points}`}</span>
+          </div>
+        ))}
+      </div>
+      <p className="note">Computed from the saved fields (baseline risk profile, date of birth on the episode date, sex at birth); never stored. No number until every item is Yes or No and age and sex are known.</p>
+      <div className="group">
+        <button className="grow-row" onClick={() => onGo('risk')}>
+          <span className="grow">Open baseline risk profile</span>
+          <Icon name="chevron" size={16} className="muted" />
+        </button>
+        <button className="grow-row" onClick={() => onGo('patient')}>
+          <span className="grow">Open patient (date of birth, sex)</span>
+          <Icon name="chevron" size={16} className="muted" />
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+function ReportSheet({ ed, readiness, onClose }: { ed: CaseEditor; readiness: Readiness; onClose: () => void }) {
+  const d = ed.detail!;
+  const print = () => {
+    api('POST', `/api/cases/${d.meta.case_id}/printed`, {}).catch(() => undefined);
+    window.print();
+  };
+  return (
+    <Sheet title="Case Report" closeLabel="Close" onClose={onClose} onDone={print} doneLabel="Print" testId="report-sheet" wide>
+      <p className="muted small">Saved values only, with the dictionary labels. Print, or choose “Save as PDF” in the print window.</p>
+      <div className="report-preview">
+        <CaseReport d={d} rows={ed.rows} readiness={readiness} />
+      </div>
+      <button className="btn primary block" onClick={print}>
+        Print / Save as PDF
+      </button>
+      <PrintPortal d={d} rows={ed.rows} readiness={readiness} />
+    </Sheet>
+  );
+}
+
 type OpenSheet =
+  | { kind: 'cha' }
+  | { kind: 'report' }
   | { kind: 'followup' }
   | { kind: 'procedure'; id: string; focus?: string }
   | { kind: 'section'; title: string; entities: string[]; focus?: string }
@@ -891,6 +947,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const { rows: rowsOf } = ed;
   const allRows = useMemo(() => Object.fromEntries(Object.keys(dict.entities).map((e) => [e, rowsOf(e)])), [rowsOf]);
   const readiness = useMemo(() => evaluateReadiness(dict, allRows, ed.notAvailable), [allRows, ed.notAvailable]);
+  const cha = useMemo(() => (chaRelevant(allRows) ? cha2ds2vasc(allRows) : null), [allRows]);
   const caseCtx = useMemo<CaseCtx>(
     () => ({ readiness, checks: new Map(readiness.checks.map((c) => [c.key, c])), askNa: (entity, field, pid) => setNa({ entity, field, pid }) }),
     [readiness],
@@ -1010,6 +1067,11 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <span className={`status ${completed ? 's-done' : 's-prog'}`} data-testid="case-status">
               {completed ? 'Completed' : 'In progress'}
             </span>
+            {cha && (
+              <button className="chip c-neutral cha-chip" onClick={() => setSheet({ kind: 'cha' })} data-testid="cha-chip">
+                CHA₂DS₂-VASc {cha.score === null ? 'incomplete' : cha.score}
+              </button>
+            )}
           </div>
           <div className="progress-row" data-testid="core-progress">
             <span>
@@ -1127,6 +1189,15 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             </span>
             <Icon name="chevron" size={16} className="muted" />
           </button>
+          {can('report.pdf') && (
+            <button className="grow-row" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row">
+              <span className="row-ic">
+                <Icon name="doc" size={22} />
+              </span>
+              <span className="grow">Case report (PDF)</span>
+              <Icon name="chevron" size={16} className="muted" />
+            </button>
+          )}
         </div>
 
         {can('case.delete') && !completed && (
@@ -1153,6 +1224,17 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} focus={sheet.focus} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'additional' && <AdditionalSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'report' && <ReportSheet ed={ed} readiness={readiness} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'cha' && cha && (
+          <ChaSheet
+            cha={cha}
+            onClose={() => setSheet(null)}
+            onGo={(id) => {
+              const row = dict.layout.groups.flatMap((g) => g.rows).find((r) => r.id === id)!;
+              setSheet({ kind: 'section', title: row.label, entities: row.entities });
+            }}
+          />
+        )}
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {na && naField && (

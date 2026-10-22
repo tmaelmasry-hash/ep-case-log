@@ -53,6 +53,13 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
           {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
           {c.core?.total ? ` · core ${c.core.done}/${c.core.total}` : ''}
         </span>
+        {c.cha?.shown && (
+          <span className="chips">
+            <span className="chip c-neutral" data-testid="cha-list-chip">
+              CHA₂DS₂-VASc {c.cha.score === null ? 'incomplete' : c.cha.score}
+            </span>
+          </span>
+        )}
       </span>
       <Icon name="chevron" size={16} className="muted" />
     </a>

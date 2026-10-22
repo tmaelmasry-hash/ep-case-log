@@ -172,6 +172,14 @@ export function caseRoutes(app: Router) {
     return { items: historyItems(dict, rec, nameOf) };
   });
 
+  /** Records that the case report was printed / saved as PDF (who and which case; no values). */
+  app.post('/api/cases/:id/printed', async (req) => {
+    const u = requireCap(req, 'report.pdf');
+    const rec = await requireCase(req, req.params.id);
+    await store.appendActivity([{ actor: u.userId, action: 'report.pdf', detail: { case_id: rec.meta.case_id } }]);
+    return { ok: true };
+  });
+
   /** Moves a case to the recycle bin. */
   app.post('/api/cases/:id/delete', async (req) => {
     const u = requireCap(req, 'case.delete');

@@ -81,6 +81,8 @@ export interface CaseDetail {
   copied: Record<string, string>;
   history_count: number;
   users: { id: string; name: string }[];
+  /** The case's line in the case list, so the list follows each save without reloading. */
+  summary: CaseSummary;
 }
 
 export interface HistoryItem {
@@ -112,6 +114,8 @@ export interface CaseSummary {
   age: number | null;
   procedures: ProcedureSummary[];
   core: Tally;
+  /** CHA₂DS₂-VASc display (never stored): shown for AF / flutter care; score null = incomplete. */
+  cha: { shown: boolean; score: number | null };
   updated_at: string;
 }
 

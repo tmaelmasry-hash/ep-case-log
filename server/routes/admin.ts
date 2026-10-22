@@ -168,7 +168,7 @@ export function adminRoutes(app: Router) {
     type D = Record<string, any>;
     const kindOf = (a: string, d: D): string => {
       if (a === 'case.edit') return !d.fields?.length && !d.removed?.length && !d.additional && d.added?.length ? 'ADD' : !d.fields?.length && !d.added?.length && !d.additional && d.removed?.length ? 'REMOVE' : 'EDIT';
-      return ({ 'case.create': 'NEW CASE', 'case.delete': 'DELETE', 'case.restore': 'RESTORE', 'case.complete': 'COMPLETE', 'case.reopen': 'REOPEN', 'auth.login': 'SIGN IN', 'auth.password_changed': 'PASSWORD', 'auth.lockout': 'LOCKED', 'import.mrns': 'BULK ADD' } as D)[a] ?? 'ADMIN';
+      return ({ 'case.create': 'NEW CASE', 'case.delete': 'DELETE', 'case.restore': 'RESTORE', 'case.complete': 'COMPLETE', 'case.reopen': 'REOPEN', 'auth.login': 'SIGN IN', 'auth.password_changed': 'PASSWORD', 'auth.lockout': 'LOCKED', 'import.mrns': 'BULK ADD', 'report.pdf': 'PDF' } as D)[a] ?? 'ADMIN';
     };
     const parts = (a: string, d: D): string[] => {
       switch (a) {
@@ -177,6 +177,7 @@ export function adminRoutes(app: Router) {
         case 'case.complete':
           return d.core ? [`core ${d.core}`] : [];
         case 'case.create':
+        case 'report.pdf':
         case 'case.delete':
         case 'case.restore':
         case 'case.reopen':

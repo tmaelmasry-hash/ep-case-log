@@ -3,6 +3,7 @@
 import { codeLabel, displayValue, editable, hasValue, type Dictionary, type EntityDef } from '../../shared/dictionary.ts';
 import { FieldError, decodeValue, encodeValue, mergeOtherSpecify } from '../../shared/validate.ts';
 import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../../shared/readiness.ts';
+import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import {
   ID_RE,
   ageOn,
@@ -495,6 +496,7 @@ export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, u
     copied: rec.copied ?? {},
     history_count: rec.history?.length ?? 0,
     users,
+    summary: summarize(dict, rec),
   };
 }
 
@@ -528,6 +530,10 @@ export function summarize(dict: Dictionary, rec: CaseRecord): CaseSummary {
     age: ageOn(ident?.date_of_birth, start),
     procedures,
     core: (({ done, total }) => ({ done, total }))(readinessOf(dict, rec)),
+    cha: (() => {
+      const rows = decodeRows(dict, rec);
+      return { shown: chaRelevant(rows), score: cha2ds2vasc(rows).score };
+    })(),
     updated_at: rec.meta.updated_at,
   };
 }

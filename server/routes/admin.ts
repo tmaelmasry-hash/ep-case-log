@@ -4,7 +4,6 @@ import { generatePassword, newUser, normalizeUsername, passwordProblem, setPassw
 import { badRequest, conflict, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { User } from '../store/types.ts';
 import { newId, nowIso } from '../util.ts';
-import { loadConfig } from '../dictionary.ts';
 
 export function adminRoutes(app: Router) {
   const { ctx } = app;
@@ -154,7 +153,7 @@ export function adminRoutes(app: Router) {
    *  person to one case within two minutes are one line. */
   app.get('/api/admin/activity', async (req) => {
     requireCap(req, 'audit.view');
-    const { dict } = loadConfig();
+    const { dict } = ctx.config;
     const limit = Math.min(Math.max(Number(req.query.limit) || 300, 1), 1000);
     const [log, users, cases, groups] = await Promise.all([store.listActivity(), store.listUsers(), store.listCases(), store.listGroups()]);
     const who = new Map(users.map((u) => [u.user_id, u.display_name]));

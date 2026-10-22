@@ -41,7 +41,7 @@ export interface Activity extends ActivityInput {
 
 /** Storage boundary: users, groups, activity, cases. The Google Sheet store implements the same interface in phase 4. */
 export interface RegistryStore {
-  readonly kind: 'memory' | 'file';
+  readonly kind: 'memory' | 'file' | 'sheets';
   getUser(id: string): Promise<User | null>;
   findUserByUsername(username: string): Promise<User | null>;
   listUsers(): Promise<User[]>;
@@ -56,6 +56,7 @@ export interface RegistryStore {
   allocateSeq(groupId: string): Promise<number>;
   listCases(): Promise<CaseRecord[]>;
   getCase(id: string): Promise<CaseRecord | null>;
-  /** Insert or replace a whole case. */
-  putCase(rec: CaseRecord): Promise<void>;
+  /** Saves a case. With `base` (the case as this request read it, or null for a new case) only the cells that
+   *  changed from base are written, so concurrent saves of different fields all survive. Without it: whole case. */
+  putCase(rec: CaseRecord, base?: CaseRecord | null): Promise<void>;
 }

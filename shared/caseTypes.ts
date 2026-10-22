@@ -44,6 +44,8 @@ export interface AdditionalInfo {
 
 /** One line of a case's own history: who, when, and the value before → after (shown only inside the case). */
 export interface HistoryEntry {
+  /** Stable id (stores update a merged line in place). Older entries may lack it. */
+  id?: string;
   at: string;
   by: string;
   kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore';

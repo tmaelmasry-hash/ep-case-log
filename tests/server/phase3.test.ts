@@ -7,7 +7,8 @@ import { loadConfig } from '../../server/dictionary.ts';
 import { expectedSlot, readinessOf } from '../../server/domain/cases.ts';
 import type { Router } from '../../server/http.ts';
 import { seedTestUsers } from '../../server/seed.ts';
-import { MemoryStore } from '../../server/store/memory.ts';
+import type { RegistryStore } from '../../server/store/types.ts';
+import { makeTestStore } from './storeFactory.ts';
 import { idPrefix } from '../../shared/caseTypes.ts';
 import { offeredCodes } from '../../shared/dictionary.ts';
 import { naKey } from '../../shared/readiness.ts';
@@ -15,7 +16,7 @@ import { naKey } from '../../shared/readiness.ts';
 const PW = 'synthetic-pass-123';
 const ORIGIN = 'http://app.test';
 let app: Router;
-let store: MemoryStore;
+let store: RegistryStore;
 let clock: Date;
 const { dict } = loadConfig();
 const rid = (entity: string) => `${idPrefix(dict.entities[entity].pk)}_${crypto.randomUUID()}`;
@@ -47,9 +48,9 @@ class Client {
 let groups: { group_id: string; name: string }[];
 
 beforeEach(async () => {
-  store = new MemoryStore();
+  store = await makeTestStore();
   clock = new Date('2026-10-22T08:00:00Z');
-  const ctx = makeContext({ sessionSecret: 'test-secret-0123456789-0123456789-abcdef', secureCookies: true }, store, () => clock);
+  const ctx = makeContext({ sessionSecret: 'test-secret-0123456789-0123456789-abcdef', secureCookies: true }, store, loadConfig(), () => clock);
   app = buildRouter(ctx);
   await seedTestUsers(store, PW, [
     { username: 'admin', name: 'Test Admin', role: 'ADMIN', groupIndex: [0, 1, 2] },

@@ -109,7 +109,7 @@ export function addHistory(rec: CaseRecord, e: Omit<HistoryEntry, 'at' | 'by'>, 
     if (JSON.stringify(last.old ?? null) === JSON.stringify(last.new ?? null)) list.pop();
     return;
   }
-  list.push({ at: a.now, by: a.userId, ...e });
+  list.push({ id: `hist_${crypto.randomUUID()}`, at: a.now, by: a.userId, ...e });
 }
 
 /** The procedure a row belongs to (null for case-level rows). */

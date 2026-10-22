@@ -1,4 +1,5 @@
 import type { CaseRecord } from '../../shared/caseTypes.ts';
+import { applyPatch, diffCase } from './patch.ts';
 import type { Activity, ActivityInput, Group, RegistryStore, User } from './types.ts';
 
 export interface StoreData {
@@ -101,10 +102,11 @@ export class MemoryStore implements RegistryStore {
     return c ? this.clone(c) : null;
   }
 
-  async putCase(rec: CaseRecord) {
+  async putCase(rec: CaseRecord, base?: CaseRecord | null) {
     const i = this.data.cases.findIndex((x) => x.meta.case_id === rec.meta.case_id);
-    if (i >= 0) this.data.cases[i] = this.clone(rec);
-    else this.data.cases.push(this.clone(rec));
+    const next = base === undefined ? this.clone(rec) : applyPatch(i >= 0 ? this.data.cases[i] : null, this.clone(diffCase(base, rec)));
+    if (i >= 0) this.data.cases[i] = next;
+    else this.data.cases.push(next);
     await this.persist();
   }
 }

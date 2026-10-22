@@ -1,4 +1,5 @@
 // Server tests for phase 1 (sign-in, sessions, guard, Admin/Member rights). Synthetic accounts only.
+import { loadConfig } from '../../server/dictionary.ts';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildRouter, handleApi } from '../../server/api.ts';
 import { generatePassword, hashPassword, verifyPassword } from '../../server/auth/auth.ts';
@@ -6,14 +7,15 @@ import { can } from '../../server/auth/capabilities.ts';
 import { makeContext, type AppContext } from '../../server/context.ts';
 import type { Router } from '../../server/http.ts';
 import { seedTestUsers } from '../../server/seed.ts';
-import { MemoryStore } from '../../server/store/memory.ts';
+import type { RegistryStore } from '../../server/store/types.ts';
+import { makeTestStore } from './storeFactory.ts';
 
 const PW = 'synthetic-pass-123';
 const ORIGIN = 'http://app.test';
 let clock: Date;
 let ctx: AppContext;
 let app: Router;
-let store: MemoryStore;
+let store: RegistryStore;
 
 /** A tiny browser: keeps cookies and the CSRF token between calls. */
 class Client {
@@ -47,8 +49,8 @@ class Client {
 
 beforeEach(async () => {
   clock = new Date('2026-10-22T08:00:00Z');
-  store = new MemoryStore();
-  ctx = makeContext({ sessionSecret: 'test-secret-0123456789-0123456789-abcdef', secureCookies: true }, store, () => clock);
+  store = await makeTestStore();
+  ctx = makeContext({ sessionSecret: 'test-secret-0123456789-0123456789-abcdef', secureCookies: true }, store, loadConfig(), () => clock);
   app = buildRouter(ctx);
   await seedTestUsers(store, PW, [
     { username: 'admin', name: 'Test Admin', role: 'ADMIN', groupIndex: [0, 1, 2] },

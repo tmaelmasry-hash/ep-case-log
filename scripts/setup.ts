@@ -3,6 +3,7 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { generatePassword, normalizeUsername, newUser, setPasswordByAdmin, usernameProblem } from '../server/auth/auth.ts';
 import { makeContext } from '../server/context.ts';
+import { loadConfig } from '../server/dictionary.ts';
 import { ensureDefaultGroups } from '../server/seed.ts';
 import { FileStore } from '../server/store/file.ts';
 import { b64url, newId, randomBytes } from '../server/util.ts';
@@ -23,7 +24,7 @@ const secret = /^SESSION_SECRET=(.*)$/m.exec(env)![1].trim();
 const dataDir = /^DATA_DIR=(.*)$/m.exec(env)?.[1].trim() || 'data';
 
 const store = new FileStore(dataDir);
-const ctx = makeContext({ sessionSecret: secret, secureCookies: true }, store);
+const ctx = makeContext({ sessionSecret: secret, secureCookies: true }, store, loadConfig());
 await ensureDefaultGroups(store);
 const groups = (await store.listGroups()).map((g) => g.group_id);
 const admins = (await store.listUsers()).filter((u) => u.role === 'ADMIN');

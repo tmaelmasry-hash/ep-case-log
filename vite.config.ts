@@ -35,5 +35,12 @@ function precache(): Plugin {
 export default defineConfig({
   plugins: [react(), precache()],
   server: { proxy: { '/api': 'http://localhost:8787' } },
-  test: { environment: 'node', include: ['tests/unit/**/*.test.ts', 'tests/server/**/*.test.ts'] },
+  test: {
+    environment: 'node',
+    // Server tests run twice: in-memory store, and the Google Sheet store over the real apps-script/Code.js (fake sheet).
+    workspace: [
+      { extends: true, test: { name: 'memory', include: ['tests/unit/**/*.test.ts', 'tests/server/**/*.test.ts'] } },
+      { extends: true, test: { name: 'sheets', include: ['tests/server/**/*.test.ts'], env: { TEST_STORE: 'sheets' } } },
+    ],
+  },
 } as never);

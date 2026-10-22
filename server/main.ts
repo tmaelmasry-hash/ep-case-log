@@ -2,6 +2,7 @@
 // Test/preview mode:  node server/main.ts --e2e  (in-memory store with synthetic accounts; needs E2E_PASSWORD)
 import { existsSync, readFileSync } from 'node:fs';
 import { makeContext } from './context.ts';
+import { loadConfig } from './dictionary.ts';
 import { startServer } from './node.ts';
 import { seedTestUsers } from './seed.ts';
 import { FileStore } from './store/file.ts';
@@ -25,7 +26,7 @@ if (!secret) {
   process.exit(1);
 }
 const store = e2e || process.env.STORE === 'memory' ? new MemoryStore() : new FileStore(process.env.DATA_DIR || 'data');
-const ctx = makeContext({ sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0' }, store);
+const ctx = makeContext({ sessionSecret: secret, secureCookies: process.env.SECURE_COOKIES !== '0' }, store, loadConfig());
 
 if (e2e) {
   const pw = process.env.E2E_PASSWORD;

@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "serve": "node server/sync-server.mjs",
+    "build": "tsc --noEmit && tsc -p tsconfig.server.json && vite build",
+    "start": "node server/main.ts",
+    "setup": "node scripts/setup.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "preview:e2e": "node server/main.ts --e2e"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
+    "@types/node": "22.15.21",
     "@types/react": "18.3.23",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "4.4.1",
@@ -24,5 +27,8 @@
     "typescript": "5.8.3",
     "vite": "6.3.5",
     "vitest": "3.1.4"
+  },
+  "engines": {
+    "node": ">=22.18"
   }
 }

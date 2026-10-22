@@ -1,4 +1,5 @@
 import { useStore } from './store';
+import { useAuth } from './auth';
 import { Icon } from './components/Icon';
 import { SaveIndicator, Toasts, useHashRoute, useMediaQuery } from './components/ui';
 import { CasesView } from './views/CasesView';
@@ -17,6 +18,7 @@ const TABS = [
 
 export function App() {
   const { loaded, fatal, images } = useStore();
+  const { me } = useAuth();
   const [route, nav] = useHashRoute();
   const wide = useMediaQuery('(min-width: 960px)');
   const tab = route[0];
@@ -93,6 +95,11 @@ export function App() {
         {wide && (
           <div className="tabbar-foot">
             <SaveIndicator />
+            {me && (
+              <div className="muted small" data-testid="sidebar-user">
+                {me.name} · {me.role === 'ADMIN' ? 'Admin' : 'Member'}
+              </div>
+            )}
           </div>
         )}
       </nav>

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { buildBackup, casesToCsv, parseBackup } from '../lib/backup';
-import { pingServer } from '../lib/sync';
 import type { BackupFile } from '../lib/types';
 import { downloadBlob, fmtDateTime, todayISO } from '../lib/util';
 import { Icon } from '../components/Icon';
 import { Confirm } from '../components/ui';
+import { useAuth } from '../auth';
+import { AccountSection, UsersSection } from './AccountSettings';
 
 function useStorageEstimate(dep: unknown) {
   const [est, setEst] = useState<{ usage: number; quota: number; persisted: boolean } | null>(null);
@@ -24,20 +25,12 @@ const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 export function SettingsView() {
   const s = useStore();
-  const { cases, images, lastBackup, syncConfig, syncState, syncing } = s;
+  const { can } = useAuth();
+  const { cases, images, lastBackup } = s;
   const [pendingImport, setPendingImport] = useState<BackupFile | null>(null);
   const [erase, setErase] = useState(false);
-  const [url, setUrl] = useState(syncConfig.url);
-  const [token, setToken] = useState(syncConfig.token);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const est = useStorageEstimate(cases.length + images.length);
-
-  useEffect(() => {
-    setUrl(syncConfig.url);
-    setToken(syncConfig.token);
-  }, [syncConfig.url, syncConfig.token]);
 
   const exportJson = async () => {
     const all = await s.exportAll();
@@ -60,34 +53,13 @@ export function SettingsView() {
     }
   };
 
-  const saveSync = async () => {
-    const u = url.trim();
-    if (u && !/^https?:\/\/[^\s/]+/i.test(u)) {
-      setUrlError('Enter a full URL, e.g. http://192.168.1.20:8787');
-      return;
-    }
-    setUrlError(null);
-    await s.saveSyncConfig({ ...syncConfig, url: u, token: token.trim() });
-    s.toast({ message: u ? 'Sync settings saved' : 'Sync turned off', kind: 'success' });
-  };
-
-  const test = async () => {
-    setTesting(true);
-    try {
-      const r = await pingServer({ url: url.trim(), token: token.trim(), auto: false });
-      s.toast({ message: `Connected · server holds ${r.records} records`, kind: 'success' });
-    } catch (e) {
-      s.toast({ message: (e as Error).message, kind: 'error' });
-    } finally {
-      setTesting(false);
-    }
-  };
-
   const daysSinceBackup = lastBackup ? Math.floor((Date.now() - lastBackup) / 86_400_000) : null;
 
   return (
     <section className="view" aria-label="Settings">
       <h1 className="large-title">Settings</h1>
+      <AccountSection />
+      {can('users.manage') && <UsersSection />}
 
       <h2 className="section-label">Backup &amp; export</h2>
       <div className="card list">
@@ -109,53 +81,6 @@ export function SettingsView() {
           <Icon name="doc" size={20} /> Export case log (.csv)
         </button>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden data-testid="import-input" onChange={(e) => (onImportFile(e.target.files?.[0]), (e.target.value = ''))} />
-      </div>
-
-      <h2 className="section-label">Sync</h2>
-      <div className="card form-card">
-        <p className="muted small">
-          Optional. Point every device at the same self-hosted sync server (included with this app) to keep them in step. Without a server, everything stays on this device.
-        </p>
-        <label className="field">
-          <span>Server URL</span>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://192.168.1.20:8787" inputMode="url" autoComplete="off" aria-invalid={!!urlError} />
-          {urlError && (
-            <span className="field-error" role="alert">
-              {urlError}
-            </span>
-          )}
-        </label>
-        <label className="field">
-          <span>Access token</span>
-          <input value={token} onChange={(e) => setToken(e.target.value)} type="password" autoComplete="off" placeholder="Same value as SYNC_TOKEN on the server" />
-        </label>
-        <label className="field inline">
-          <span>Sync automatically</span>
-          <span className="switch">
-            <input type="checkbox" checked={syncConfig.auto} onChange={(e) => s.saveSyncConfig({ ...syncConfig, auto: e.target.checked })} aria-label="Sync automatically" />
-            <span className="switch-ui" />
-          </span>
-        </label>
-        <div className="tool-row">
-          <button className="btn primary" onClick={saveSync}>
-            Save
-          </button>
-          <button className="btn" onClick={test} disabled={!url.trim() || testing}>
-            {testing ? 'Testing…' : 'Test connection'}
-          </button>
-          <button className="btn" onClick={() => s.runSync(true)} disabled={!syncConfig.url || syncing}>
-            <Icon name="refresh" size={18} /> {syncing ? 'Syncing…' : 'Sync now'}
-          </button>
-        </div>
-        <p className="small muted" data-testid="sync-status">
-          {!syncConfig.url
-            ? 'Sync is off.'
-            : syncState.lastError
-              ? `Last attempt failed: ${syncState.lastError}. Changes are kept on this device and will be sent later.`
-              : syncState.lastSyncAt
-                ? `Last synced ${fmtDateTime(syncState.lastSyncAt)}.`
-                : 'Not synced yet.'}
-        </p>
       </div>
 
       <h2 className="section-label">Storage</h2>
@@ -185,7 +110,7 @@ export function SettingsView() {
         <p className="muted small">
           Independent project; not affiliated with any other case-logging app. Not a medical record and not a decision-support tool. CHA₂DS₂-VASc / CHA₂DS₂-VA scores are computed from what you enter, for logging only.
         </p>
-        <p className="muted small">Data is stored in this browser's IndexedDB. Nothing leaves the device unless you configure a sync server or download a file.</p>
+        <p className="muted small">Data is stored in this browser's IndexedDB. Cases stay on this device until the registry store arrives in the next phases. Sign-in and accounts are on the registry server.</p>
       </div>
 
       {pendingImport && (
@@ -218,7 +143,7 @@ export function SettingsView() {
           message={
             <>
               This permanently removes {cases.length} cases and {images.length} images from this device. It cannot be undone.
-              {syncConfig.url ? ' Data already on the sync server is not deleted and will download again on the next sync.' : ''} Download a backup first if unsure.
+              {' '}Download a backup first if unsure.
             </>
           }
           confirmLabel="Erase everything"

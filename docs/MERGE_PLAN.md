@@ -46,3 +46,11 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 | V6 | Cases grouped by month (EP Log) with group segmented control above; row = date · MRN · age/sex, procedure chips, labelled CHA₂DS₂-VASc chip, No. · status · core progress. |
 
 **Step 3 approved (owner):** EP Log-style look (preview2, 5 screens: sign-in, cases list, case, procedure sheet, desktop) is the build target.
+
+## Phase 1 — server, sign-in, Admin/Member (built 22 Oct 2026)
+- Ported from EP Workspace (`server/auth/*`, `server/http.ts`, `server/api.ts`, `routes/auth.ts`, `routes/admin.ts`): PBKDF2-SHA256 (100k), signed HttpOnly SameSite=Lax cookie with session_epoch, CSRF = HMAC(session id), Origin check, lockout after 10 failures (15 min), IP throttle 30/15 min, forced password change, 12 h / 30 days ("Keep me signed in"), capability map A11. WebCrypto only (Cloudflare-ready).
+- Local store: `server/store/file.ts` (data/registry.json) behind the `RegistryStore` interface; Google Sheet store comes in phase 4.
+- UI: sign-in, choose-own-password, Settings → My account (change password, sign out with confirm), Settings → Users (Admin: add with generated or typed password, "send to the user" text, edit name/role/groups, new password, disable/enable, unlock).
+- Removed: EP Case Log's own sync server and sync client (D7). Consequence: the app now needs the server to open (no offline start).
+- Cases are still kept in each browser until phase 2 moves them to the server with the dictionary fields.
+- Tests: tests/server/auth.test.ts (21), browser tests tests/e2e/auth.spec.ts + existing flows signed in (22 runs over desktop + phone).

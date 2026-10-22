@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { clearAll, getAll, getMeta, getOne, putMany, setMeta } from './lib/db';
 import { mergeInto } from './lib/merge';
-import { loadSyncConfig, loadSyncState, syncNow, type SyncConfig, type SyncState } from './lib/sync';
 import type { CaseRec, ImageMeta, ImageRec } from './lib/types';
 import { uid } from './lib/util';
 
@@ -21,9 +20,6 @@ interface Ctx {
   images: ImageMeta[]; // excludes tombstones
   saveStatus: SaveStatus;
   lastBackup: number | null;
-  syncConfig: SyncConfig;
-  syncState: SyncState;
-  syncing: boolean;
   toasts: Toast[];
   toast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
@@ -38,8 +34,6 @@ interface Ctx {
   exportAll: () => Promise<{ cases: CaseRec[]; images: ImageRec[] }>;
   markBackedUp: () => Promise<void>;
   eraseAll: () => Promise<void>;
-  saveSyncConfig: (c: SyncConfig) => Promise<void>;
-  runSync: (manual?: boolean) => Promise<void>;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -59,16 +53,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [allImages, setAllImages] = useState<ImageMeta[]>([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastBackup, setLastBackup] = useState<number | null>(null);
-  const [syncConfig, setSyncConfig] = useState<SyncConfig>({ url: '', token: '', auto: true });
-  const [syncState, setSyncState] = useState<SyncState>({ lastSyncAt: null, lastSeq: 0, lastError: null });
-  const [syncing, setSyncing] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
   const pending = useRef(0);
-  const syncTimer = useRef<number | undefined>(undefined);
-  const syncCfgRef = useRef(syncConfig);
-  syncCfgRef.current = syncConfig;
-  const syncingRef = useRef(false);
 
   const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const toast = useCallback(
@@ -91,8 +78,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         await reload();
         setLastBackup((await getMeta<number>('lastBackup')) ?? null);
-        setSyncConfig(await loadSyncConfig());
-        setSyncState(await loadSyncState());
         navigator.storage?.persist?.().catch(() => undefined);
         setLoaded(true);
       } catch (e) {
@@ -100,46 +85,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     })();
   }, [reload]);
-
-  const runSync = useCallback(
-    async (manual = false) => {
-      const cfg = syncCfgRef.current;
-      if (!cfg.url || syncingRef.current) return;
-      if (!manual && (!cfg.auto || !navigator.onLine)) return;
-      syncingRef.current = true;
-      setSyncing(true);
-      try {
-        const r = await syncNow(cfg);
-        if (r.pulled) await reload();
-        if (manual) toast({ message: `Synced · ${r.pushed} sent, ${r.pulled} received`, kind: 'success' });
-      } catch (e) {
-        if (manual) toast({ message: (e as Error).message, kind: 'error' });
-      } finally {
-        setSyncState(await loadSyncState());
-        syncingRef.current = false;
-        setSyncing(false);
-      }
-    },
-    [reload, toast],
-  );
-
-  const scheduleSync = useCallback(() => {
-    window.clearTimeout(syncTimer.current);
-    syncTimer.current = window.setTimeout(() => runSync(false), 1500);
-  }, [runSync]);
-
-  // Periodic + reconnect sync.
-  useEffect(() => {
-    if (!loaded || !syncConfig.url || !syncConfig.auto) return;
-    runSync(false);
-    const iv = window.setInterval(() => runSync(false), 60_000);
-    const onOnline = () => runSync(false);
-    window.addEventListener('online', onOnline);
-    return () => {
-      window.clearInterval(iv);
-      window.removeEventListener('online', onOnline);
-    };
-  }, [loaded, syncConfig.url, syncConfig.auto, runSync]);
 
   /** Persist with visible status; in-memory state is already updated optimistically. */
   const persist = useCallback(
@@ -150,7 +95,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await putMany(store, recs);
         pending.current--;
         if (!pending.current) setSaveStatus('saved');
-        scheduleSync();
       } catch (e) {
         pending.current--;
         setSaveStatus('error');
@@ -158,7 +102,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         throw e;
       }
     },
-    [scheduleSync, toast],
+    [toast],
   );
 
   const casesRef = useRef(allCases);
@@ -286,29 +230,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const eraseAll = useCallback(async () => {
-    const cfg = syncCfgRef.current;
     await clearAll();
-    // Keep sync settings but reset the cursor so a later sync can restore server data.
-    await setMeta('syncConfig', cfg);
     setAllCases([]);
     setAllImages([]);
     setLastBackup(null);
-    setSyncState({ lastSyncAt: null, lastSeq: 0, lastError: null });
-  }, []);
-
-  const saveSyncConfig = useCallback(async (c: SyncConfig) => {
-    const prev = syncCfgRef.current;
-    await setMeta('syncConfig', c);
-    if (prev.url.replace(/\/+$/, '') !== c.url.replace(/\/+$/, '')) {
-      // New server: pull from the start and push everything we have.
-      const [cs, im] = await Promise.all([getAll<CaseRec>('cases'), getAll<ImageRec>('images')]);
-      await putMany('cases', cs.map((r) => ({ ...r, _dirty: 1 as const })));
-      await putMany('images', im.map((r) => ({ ...r, _dirty: 1 as const })));
-      await setMeta('syncState', { lastSyncAt: null, lastSeq: 0, lastError: null });
-      setSyncState({ lastSyncAt: null, lastSeq: 0, lastError: null });
-    }
-    syncCfgRef.current = c;
-    setSyncConfig(c);
   }, []);
 
   const value = useMemo<Ctx>(
@@ -319,9 +244,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       images: allImages.filter((i) => !i.deleted),
       saveStatus,
       lastBackup,
-      syncConfig,
-      syncState,
-      syncing,
       toasts,
       toast,
       dismissToast,
@@ -336,10 +258,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       exportAll,
       markBackedUp,
       eraseAll,
-      saveSyncConfig,
-      runSync,
     }),
-    [loaded, fatal, allCases, allImages, saveStatus, lastBackup, syncConfig, syncState, syncing, toasts, toast, dismissToast, createCase, updateCase, deleteCase, addImages, updateImage, deleteImage, getImage, importRecords, exportAll, markBackedUp, eraseAll, saveSyncConfig, runSync],
+    [loaded, fatal, allCases, allImages, saveStatus, lastBackup, toasts, toast, dismissToast, createCase, updateCase, deleteCase, addImages, updateImage, deleteImage, getImage, importRecords, exportAll, markBackedUp, eraseAll],
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

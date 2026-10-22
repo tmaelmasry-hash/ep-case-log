@@ -7,10 +7,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [['list']],
-  use: { baseURL: `http://localhost:${PORT}`, trace: 'retain-on-failure' },
+  use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'retain-on-failure' },
   webServer: {
-    command: `rm -rf .e2e-data && PORT=${PORT} DATA_DIR=.e2e-data SYNC_TOKEN=test-token node server/sync-server.mjs`,
-    url: `http://localhost:${PORT}/api/status`,
+    command: `PORT=${PORT} E2E_PASSWORD=${process.env.E2E_PASSWORD ?? 'synthetic-e2e-pass'} node server/main.ts --e2e`,
+    url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 20_000,
   },

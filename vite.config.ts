@@ -35,5 +35,5 @@ function precache(): Plugin {
 export default defineConfig({
   plugins: [react(), precache()],
   server: { proxy: { '/api': 'http://localhost:8787' } },
-  test: { environment: 'node', include: ['tests/unit/**/*.test.ts'] },
+  test: { environment: 'node', include: ['tests/unit/**/*.test.ts', 'tests/server/**/*.test.ts'] },
 } as never);

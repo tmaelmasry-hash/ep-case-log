@@ -193,7 +193,7 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
 }
 
 export function SaveIndicator() {
-  const { saveStatus, syncing, syncConfig, syncState } = useStore();
+  const { saveStatus } = useStore();
   let text = '';
   let cls = '';
   if (saveStatus === 'saving') text = 'Saving…';
@@ -203,11 +203,6 @@ export function SaveIndicator() {
   } else if (saveStatus === 'saved') {
     text = 'Saved';
     cls = 'ok';
-  }
-  if (syncing) text = 'Syncing…';
-  else if (syncConfig.url && syncState.lastError && saveStatus !== 'saving') {
-    text = 'Saved · sync pending';
-    cls = 'warn';
   }
   return (
     <span className={`save-ind ${cls}`} title={cls === 'ok' ? 'All changes saved on this device' : undefined} data-testid="save-indicator" aria-live="polite">

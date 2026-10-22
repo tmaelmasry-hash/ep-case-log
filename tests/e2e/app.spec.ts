@@ -1,11 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { signIn } from './helpers';
 
 const PNG = readFileSync('public/icon-512.png');
 const img = (name = 'scan.png') => ({ name, mimeType: 'image/png', buffer: PNG });
 
+
 async function open(page: Page, hash = '#/cases') {
   await page.goto('/' + hash);
+  const form = page.getByRole('form', { name: 'Sign in' });
+  const app = page.getByRole('navigation', { name: 'Main' });
+  await expect(form.or(app)).toBeVisible();
+  if (await form.isVisible()) await signIn(page);
   await expect(page.getByRole('heading', { name: /Cases|Stats|Settings|Patients|Image Inbox/ }).first()).toBeVisible();
 }
 
@@ -297,82 +303,16 @@ test('backup download, erase all (typed confirm), restore from backup', async ({
   await expect(page.getByTestId('case-row')).toContainText('Flutter Ablation');
 });
 
-test('works offline after first load (service worker)', async ({ page, context }) => {
+test('without the server the app says so clearly and recovers when it is back', async ({ page, context }) => {
   await open(page);
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
   await expect(page.getByText('No cases yet')).toBeVisible();
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
-  await newCase(page, 'OFF001', '50');
-  await page.getByTestId('procedure-picker').getByRole('button', { name: 'Cancel' }).click();
-  await page.goto('/#/cases');
-  await expect(page.getByTestId('case-row')).toContainText('OFF001');
+  await expect(page.getByRole('heading', { name: 'Cannot reach the registry server' })).toBeVisible();
   await context.setOffline(false);
-});
-
-test('sync between two devices through the sync server', async ({ browser, baseURL }, info) => {
-  const a = await browser.newContext({ ...info.project.use });
-  const b = await browser.newContext({ ...info.project.use });
-  const pa = await a.newPage();
-  const pb = await b.newPage();
-  const tag = `SYN${info.project.name.slice(0, 3).toUpperCase()}`;
-
-  for (const p of [pa, pb]) {
-    await open(p, '#/settings');
-    await p.getByPlaceholder('http://192.168.1.20:8787').fill(baseURL!);
-    await p.getByPlaceholder(/SYNC_TOKEN/).fill('wrong');
-    await p.getByRole('button', { name: 'Test connection' }).click();
-    await expect(p.getByText('Sync server rejected the access token')).toBeVisible();
-    await p.getByPlaceholder(/SYNC_TOKEN/).fill('test-token');
-    await p.getByRole('button', { name: 'Save', exact: true }).click();
-    await p.getByRole('button', { name: 'Test connection' }).click();
-    await expect(p.getByText(/Connected · server holds/)).toBeVisible();
-  }
-
-  await pa.goto('/#/cases');
-  await newCase(pa, tag + '1', '61');
-  await pa.getByTestId('procedure-picker').getByRole('button', { name: 'VT Ablation', exact: true }).click();
-  await pa.getByTestId('procedure-sheet').getByLabel('Substrate').selectOption('Ischemic');
-  await pa.getByTestId('procedure-sheet').getByRole('button', { name: 'Add procedure' }).click();
-  await pa.getByTestId('image-input').setInputFiles(img());
-  await pa.getByTestId('image-editor').getByRole('button', { name: 'Save' }).last().click();
-  await pa.goto('/#/settings');
-  await pa.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pa.getByText(/Synced · \d+ sent/)).toBeVisible();
-
-  await pb.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pb.getByText(/Synced · 0 sent, \d+ received/)).toBeVisible();
-  await pb.goto('/#/cases');
-  const row = pb.getByTestId('case-row').filter({ hasText: tag + '1' });
-  await expect(row).toContainText('VT Ablation');
-  await row.click();
-  await expect(pb.locator('.thumbs .thumb')).toHaveCount(1);
-
-  // Edit on B, delete propagates back to A.
-  await pb.getByLabel('Case notes').fill('edited on B');
-  await pb.getByLabel('Case notes').blur();
-  await pb.goto('/#/settings');
-  await pb.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pb.getByText(/Synced · [1-9]\d* sent/)).toBeVisible();
-  await pa.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pa.getByText(/received/).last()).toBeVisible();
-  await pa.goto('/#/cases');
-  await pa.getByTestId('case-row').filter({ hasText: tag + '1' }).click();
-  await expect(pa.getByLabel('Case notes')).toHaveValue('edited on B');
-  await pa.getByRole('button', { name: 'Delete case' }).click();
-  await pa.getByRole('alertdialog').getByRole('button', { name: 'Delete case' }).click();
-  await pa.goto('/#/settings');
-  await pa.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pa.getByText(/Synced · [1-9]\d* sent/)).toBeVisible();
-  await pb.getByRole('button', { name: 'Sync now' }).click();
-  await expect(pb.getByText(/received/).last()).toBeVisible();
-  await pb.goto('/#/cases');
-  await expect(pb.getByTestId('case-row').filter({ hasText: tag + '1' })).toHaveCount(0);
-
-  await a.close();
-  await b.close();
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
 });
 
 test('layout fits the viewport without horizontal scrolling', async ({ page }, info) => {

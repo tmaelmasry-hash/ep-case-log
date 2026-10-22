@@ -19,30 +19,26 @@ Independent implementation inspired by the *functionality* described in the publ
 - Auto-save on every change, save indicator, undo for deletes, confirmations for destructive actions.
 - **Optional sync** across devices via the bundled zero-dependency Node server (last-write-wins per record, deletes propagate).
 
-## Run
-Requires Node 18+ (tested with Node 22).
+## Run (merge phase 1: registry server with sign-in)
+Requires Node 22.18 or newer (the server is TypeScript run directly by Node).
 
 ```bash
 npm install
-npm run build
-npm run serve          # http://localhost:8787  (app + sync API)
+npm run build          # type-checks app + server, builds the app into dist/
+npm run setup          # once: creates .env (SESSION_SECRET), Groups 1–3 and the first Admin; prints a one-time password
+npm start              # http://127.0.0.1:8787  (app + /api)
 ```
-Options: `PORT=8787 HOST=0.0.0.0 SYNC_TOKEN=<secret> DATA_DIR=./data npm run serve`.
+Sign in as `admin` with the one-time password, choose your own, then add users in Settings → Users.
+Lost the Admin password: `npm run setup -- --reset-admin-password`.
 
-Development: `npm run dev` (Vite on :5173; `/api` proxied to :8787).
+Development: `npm start` in one terminal and `npm run dev` in another (Vite on :5173 proxies /api to :8787).
 
-### Install as an app
-Open the URL in Chrome/Edge (Windows/Android) → "Install app", or Safari (iOS) → Share → "Add to Home Screen".
-Note: service workers and the install prompt require **HTTPS or localhost**. To use phones on the LAN, put the server behind HTTPS (e.g. Caddy, a reverse proxy, or Tailscale Serve). Over plain HTTP on a LAN IP the app still works online but will not install or run offline.
-
-### Sync
-1. Run the server with `SYNC_TOKEN` set.
-2. On each device: Settings → Sync → Server URL + token → Save → Test connection.
-3. Syncs automatically on change (1.5 s debounce), every 60 s, and on reconnect; or "Sync now".
-Conflict rule: the most recently edited version of each case/image wins (device clocks should be roughly correct). Without a server, the app is fully local.
+Settings in `.env` (see `.env.example`): `PORT`, `HOST` (127.0.0.1 = this computer only), `STORE` (`file` | `memory`), `DATA_DIR`, `SECURE_COOKIES`.
+Session cookies are `Secure`: use the app on `localhost`/`127.0.0.1`, or over HTTPS. Other devices on the network need HTTPS in front of the server (phase 4 moves hosting to Cloudflare).
 
 ## Data storage & backup
-- **Device**: browser IndexedDB, database `ep-caselog` (stores `cases`, `images`, `meta`), per browser profile and origin. The app requests persistent storage; if not granted the browser may evict data under disk pressure.
+- **Accounts (server)**: `DATA_DIR/registry.json` (default `data/registry.json`): users (password hashes only), groups, activity log. Back it up by copying the file while the server is stopped.
+- **Device**, database `ep-caselog` (stores `cases`, `images`, `meta`), per browser profile and origin. The app requests persistent storage; if not granted the browser may evict data under disk pressure.
 - **Sync server**: `DATA_DIR/sync-db.json` (default `./data/sync-db.json`), written atomically. Back it up by copying that file.
 - **Backup**: Settings → "Download full backup" (`ep-caselog-backup-YYYY-MM-DD.json`). Restore: Settings → "Restore / merge from backup".
 - Data is unencrypted on disk and on the server. Follow your institution's policy on patient identifiers; prefer de-identified study numbers over real MRNs.

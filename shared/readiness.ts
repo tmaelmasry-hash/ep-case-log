@@ -186,10 +186,14 @@ export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>,
       mine.add(`${item.entity}.${item.field}`);
       evaluate(item, 'common', p._id);
     }
+    const types = rowsIn('PROCEDURE_COMPONENTS', p._id).map((c) => String(c.component_type));
+    const needs = dict.layout.core_item_requires_component ?? {};
     for (const id of procCats.get(p._id) ?? []) {
       for (const item of catItems(id)) {
         const k = `${item.entity}.${item.field}`;
         if (!isProcedureLevel(dict, item.entity) || mine.has(k)) continue;
+        const req = needs[item.entity];
+        if (Array.isArray(req) && !req.some((t) => types.includes(t))) continue;
         mine.add(k);
         evaluate(item, id, p._id);
       }

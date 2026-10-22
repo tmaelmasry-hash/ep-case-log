@@ -386,5 +386,11 @@
    "AVJ_ABLATION",
    "OTHER"
   ]
+ },
+ "core_item_requires_component": {
+  "_note": "Owner decision (phase 3, 22 Oct 2026): procedure-level core items of these entities apply only when the procedure has one of these component types (ILR or lead management alone do not need device implant fields).",
+  "DEVICE_IMPLANTS": [
+   "DEVICE_IMPLANT"
+  ]
  }
 }

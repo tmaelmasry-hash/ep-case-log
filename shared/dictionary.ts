@@ -57,6 +57,8 @@ export interface CaseLayout {
   groups: { id: string; label: string; rows: LayoutRow[] }[];
   /** core_dataset category → the component types that put a procedure in it (keys starting with _ are notes). */
   core_categories: Record<string, string[] | string>;
+  /** Procedure-level core items of an entity apply only with one of these component types (keys starting with _ are notes). */
+  core_item_requires_component?: Record<string, string[] | string>;
 }
 
 /** One item of config/dictionary/core_dataset.json (EP Workspace "Ready to complete?"). */

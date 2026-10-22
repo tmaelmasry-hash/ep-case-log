@@ -148,7 +148,9 @@ describe('readiness for each procedure', () => {
     const p2 = await addProcedure(sara, id, ['LEAD_MANAGEMENT']);
     const r = await readiness(id);
     expect(r.checks.filter((c) => c.key === 'DEVICES.current_device_type')).toHaveLength(1);
-    expect(r.checks.filter((c) => c.entity === 'DEVICE_IMPLANTS' && c.field === 'device_action').map((c) => c.procedure_id).sort()).toEqual([p1, p2].sort());
+    // Owner decision: device implant fields only for procedures with a Device implant component (not lead/ILR alone).
+    expect(r.checks.filter((c) => c.entity === 'DEVICE_IMPLANTS' && c.field === 'device_action').map((c) => c.procedure_id)).toEqual([p1]);
+    expect(r.byProcedure[p2].total).toBeLessThan(r.byProcedure[p1].total);
     // ICD prevention type only applies once the device is an ICD.
     expect(r.checks.find((c) => c.field === 'icd_prevention_type' && c.procedure_id === p1)!.state).toBe('not_applicable');
   });

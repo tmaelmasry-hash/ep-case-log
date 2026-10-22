@@ -279,6 +279,7 @@ export function EntityFields({
   naOf,
   onNa,
   copiedOf,
+  only,
 }: {
   entity: string;
   row: DecodedRow | null;
@@ -290,11 +291,14 @@ export function EntityFields({
   naOf?: (field: string) => NaInfo | undefined;
   onNa?: (field: string) => void;
   copiedOf?: (field: string) => string | undefined;
+  /** Show only these fields (in this order). */
+  only?: string[];
 }) {
   const def = dict.entities[entity];
+  const list = only ? only.map((n) => formFields(def).find((f) => f.name === n)).filter((f): f is FormField => !!f) : formFields(def);
   return (
     <div className="group">
-      {formFields(def).map((f) => (
+      {list.map((f) => (
         <FieldRow
           key={f.name}
           def={def}

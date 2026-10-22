@@ -1,5 +1,5 @@
 {
- "_note": "Arranges the dictionary entities for this app's case model (owner D4: case = EP_EPISODE with one or more EP_PROCEDURES). scope: case = one or more rows per case; procedure = rows belong to one EP_PROCEDURES row; nest_under = rows inside a parent row. module = shown for a procedure when one of its PROCEDURE_COMPONENTS has these component types (or when it already has data). auto_parent = link filled automatically to the case's single row of that entity. later = not shown yet (built in that phase). Only arranges; never adds fields or codes. copy_forward = history fields copied from the same MRN's latest case the user can see when a new case is added (EP Workspace sections.json copy_forward); copied values are marked 'Copied' until checked.",
+ "_note": "Arranges the dictionary entities for this app's case model (owner D4: case = EP_EPISODE with one or more EP_PROCEDURES). scope: case = one or more rows per case; procedure = rows belong to one EP_PROCEDURES row; nest_under = rows inside a parent row. module = shown for a procedure when one of its PROCEDURE_COMPONENTS has these component types (or when it already has data). auto_parent = link filled automatically to the case's single row of that entity. later = not shown yet (built in that phase). Only arranges; never adds fields or codes. copy_forward = history fields copied from the same MRN's latest case the user can see when a new case is added (EP Workspace sections.json copy_forward); copied values are marked 'Copied' until checked. primary_fields = shown first, the rest under More fields; quick_events = these dictionary event types as Yes + date inside each parent row (EP Workspace light follow-up, O7). Follow-ups and outcome events belong to one procedure (index_event = that EP_PROCEDURES row).",
  "entities": {
   "PATIENT_IDENTIFIERS": {
    "scope": "case",
@@ -271,16 +271,34 @@
    }
   },
   "FOLLOW_UPS": {
-   "scope": "case",
+   "scope": "procedure",
    "cardinality": "multi",
    "label": "Follow-up visit",
-   "later": "phase 7"
+   "primary_fields": [
+    "followup_timepoint",
+    "actual_followup_date",
+    "vital_status",
+    "current_rhythm",
+    "symptom_change",
+    "outcomes_reviewed_through_date"
+   ]
   },
   "OUTCOME_EVENTS": {
-   "scope": "case",
+   "scope": "procedure",
    "cardinality": "multi",
    "label": "Outcome event",
-   "later": "phase 7"
+   "quick_events": {
+    "under": "FOLLOW_UPS",
+    "fk": "followup_id",
+    "type_field": "event_type",
+    "date_field": "event_date",
+    "codes": [
+     "ARRHYTHMIA_RECURRENCE",
+     "HOSPITALIZATION",
+     "REPEAT_ABLATION",
+     "REPEAT_DEVICE_PROCEDURE"
+    ]
+   }
   }
  },
  "groups": [

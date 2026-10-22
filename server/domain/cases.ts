@@ -181,6 +181,11 @@ function placeRow(dict: Dictionary, rec: CaseRecord, def: EntityDef, id: string,
   }
   // Every procedure section keeps its procedure, also the extension that has no procedure_id field of its own.
   if (procedureId) v.procedure_id = procedureId;
+  // Follow-ups and outcome events: the dictionary's polymorphic index event is this procedure (phase 7).
+  if (procedureId && def.fields.some((f) => f.name === 'index_event_type') && def.fields.some((f) => f.name === 'index_event_id')) {
+    v.index_event_type = 'PROCEDURE';
+    v.index_event_id = procedureId;
+  }
   if (def.entity === 'EP_PROCEDURES') v.episode_id = rec.meta.episode_id;
   if (def.entity === 'PROCEDURE_COMPONENTS') {
     const seqs = liveRows(rec, 'PROCEDURE_COMPONENTS').filter((r) => r.procedure_id === procedureId).map((r) => Number(r.component_sequence) || 0);
@@ -219,6 +224,18 @@ function removeRow(dict: Dictionary, rec: CaseRecord, entity: string, id: string
   row._deleted = true;
   row._updated_at = a.now;
   row._updated_by = a.userId;
+  // Links from other rows to the removed one are cleared (their own values stay), e.g. an outcome event's follow-up.
+  for (const other of Object.values(dict.entities)) {
+    for (const f of other.fields) {
+      if (f.type !== 'fk' || f.target !== entity || f.auto || other.nest_under?.fk === f.name) continue;
+      for (const r of liveRows(rec, other.entity)) {
+        if (r[f.name] !== id) continue;
+        r[f.name] = null;
+        r._updated_at = a.now;
+        r._updated_by = a.userId;
+      }
+    }
+  }
   for (const child of Object.values(dict.entities)) {
     if (child.nest_under?.entity === entity) for (const k of liveRows(rec, child.entity).filter((r) => r[child.nest_under!.fk] === id)) removeRow(dict, rec, child.entity, k._id, a);
     if (entity === 'EP_PROCEDURES' && child.scope === 'procedure') for (const k of liveRows(rec, child.entity).filter((r) => r.procedure_id === id)) removeRow(dict, rec, child.entity, k._id, a);

@@ -1,7 +1,7 @@
 // Case page (approved EP Log-style preview): header card, then grouped rows; each row opens its form in a sheet.
 // Case = one EP_EPISODE; PROCEDURES lists the episode's EP_PROCEDURES, each with its components and modules.
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { codeLabel, displayValue, hasValue, offeredCodes, type FormField } from '../../shared/dictionary.ts';
+import { codeLabel, displayValue, formFields, hasValue, offeredCodes, type FormField } from '../../shared/dictionary.ts';
 import { ageOn, type CaseDetail, type DecodedRow, type HistoryItem } from '../../shared/caseTypes.ts';
 import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness, type Tally } from '../../shared/readiness.ts';
 import { dict, fieldOf, label } from '../lib/dict';
@@ -76,7 +76,7 @@ function useFk(ed: CaseEditor) {
 }
 
 /** One row of an entity as a form; creates the row on the first edit when it does not exist yet. */
-function RowForm({ ed, entity, rowId, parentId, row }: { ed: CaseEditor; entity: string; rowId: string; parentId?: string | null; row: DecodedRow | null }) {
+function RowForm({ ed, entity, rowId, parentId, row, only }: { ed: CaseEditor; entity: string; rowId: string; parentId?: string | null; row: DecodedRow | null; only?: string[] }) {
   const fk = useFk(ed);
   const c = useCase();
   const exists = !!row;
@@ -92,6 +92,7 @@ function RowForm({ ed, entity, rowId, parentId, row }: { ed: CaseEditor; entity:
       naOf={(field) => naInfo(c, entity, field, pid)}
       onNa={(field) => c.askNa(entity, field, pid)}
       copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
+      only={only}
       onChange={(field, value, key) => ed.setField(entity, rowId, field, value, { key, create: exists ? undefined : { parent_id: parentId ?? null } })}
     />
   );
@@ -366,7 +367,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
       {confirm === 'procedure' && (
         <Confirm
           title="Remove this procedure?"
-          message={`${procedureTitle(p, i)}, its components, procedure sections and complications will be removed from this case.`}
+          message={`${procedureTitle(p, i)}, its components, procedure sections, complications and follow-ups will be removed from this case.`}
           confirmLabel="Remove procedure"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
@@ -675,7 +676,191 @@ function CoreTally({ t }: { t?: Tally }) {
   return <b className={t.done === t.total ? 'core-ok' : 'core-miss'}>core {t.done}/{t.total}</b>;
 }
 
+// ── light follow-up (phase 7, EP Workspace O7) ──
+
+const FU = dict.entities.FOLLOW_UPS;
+const OE = dict.entities.OUTCOME_EVENTS;
+const QUICK = OE.quick_events!;
+
+function followUpTitle(r: DecodedRow, i: number): string {
+  const tp = r.followup_timepoint ? label('FOLLOW_UPS', 'followup_timepoint', String(r.followup_timepoint)) : `Follow-up ${i + 1}`;
+  return [tp, r.actual_followup_date ? fmtDate(String(r.actual_followup_date)) : null].filter(Boolean).join(' · ');
+}
+
+/** Yes + date for the quick event types, inside one follow-up visit. */
+function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
+  const [confirm, setConfirm] = useState<DecodedRow | null>(null);
+  const events = ed.rows('OUTCOME_EVENTS').filter((e) => e[QUICK.fk] === fu._id);
+  const typeField = fieldOf('OUTCOME_EVENTS', QUICK.type_field);
+  return (
+    <>
+      <h3 className="sechead">Events since the last visit</h3>
+      <div className="group" data-testid="quick-events">
+        {QUICK.codes.map((code) => {
+          const ev = events.find((e) => e[QUICK.type_field] === code);
+          const name = codeLabel(typeField, code);
+          return (
+            <div key={code} className="frow stack" data-quick={code}>
+              <span className="lab">{name}</span>
+              <div className="quick-line">
+                <div className="mini-seg" role="radiogroup" aria-label={name}>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!!ev}
+                    className={ev ? 'on' : ''}
+                    disabled={ed.readOnly}
+                    onClick={() => !ev && ed.addRow('OUTCOME_EVENTS', String(fu.procedure_id), { [QUICK.fk]: fu._id, [QUICK.type_field]: code })}
+                  >
+                    Yes
+                  </button>
+                  <button type="button" role="radio" aria-checked={!ev} className={!ev ? 'on' : ''} disabled={ed.readOnly} onClick={() => ev && setConfirm(ev)}>
+                    No
+                  </button>
+                </div>
+                {ev && (
+                  <input
+                    className="ios-value"
+                    type="date"
+                    aria-label={`${name}: date`}
+                    disabled={ed.readOnly}
+                    value={(ev[QUICK.date_field] as string) ?? ''}
+                    onChange={(e) => ed.setField('OUTCOME_EVENTS', ev._id, QUICK.date_field, e.target.value || null)}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {confirm && (
+        <Confirm
+          title="Remove this event?"
+          message="The event and its details will be removed from this case."
+          confirmLabel="Remove"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            ed.removeRow('OUTCOME_EVENTS', confirm._id);
+            setConfirm(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/** One follow-up visit: main fields first, quick events, then More fields and other events. */
+function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onClose: () => void }) {
+  const row = ed.rows('FOLLOW_UPS').find((r) => r._id === id) ?? null;
+  const [confirm, setConfirm] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
+  if (open) return <RowSheet ed={ed} entity="OUTCOME_EVENTS" id={open} onClose={() => setOpen(null)} />;
+  const same = row ? ed.rows('FOLLOW_UPS').filter((r) => r.procedure_id === row.procedure_id) : [];
+  const primary = FU.primary_fields ?? [];
+  const more = formFields(FU).map((f) => f.name).filter((n) => !primary.includes(n));
+  const events = row ? ed.rows('OUTCOME_EVENTS').filter((e) => e[QUICK.fk] === id) : [];
+  return (
+    <Sheet title={row ? followUpTitle(row, same.indexOf(row)) : 'Follow-up'} onClose={onClose} onDone={onClose} testId="followup-sheet">
+      {!row ? (
+        <p className="muted">This follow-up was removed.</p>
+      ) : (
+        <>
+          <RowForm ed={ed} entity="FOLLOW_UPS" rowId={id} row={row} only={primary} />
+          <QuickEvents ed={ed} fu={row} />
+          <details className="offer more-fields">
+            <summary>More fields</summary>
+            <RowForm ed={ed} entity="FOLLOW_UPS" rowId={id} row={row} only={more} />
+          </details>
+          <h3 className="sechead">Event details</h3>
+          <div className="group">
+            {events.map((e, k) => (
+              <button key={e._id} className="grow-row" onClick={() => setOpen(e._id)}>
+                <span className="grow">{rowTitle('OUTCOME_EVENTS', e, k)}</span>
+                <Icon name="chevron" size={16} className="muted" />
+              </button>
+            ))}
+            {!ed.readOnly && (
+              <button className="grow-row add" onClick={() => setOpen(ed.addRow('OUTCOME_EVENTS', String(row.procedure_id), { [QUICK.fk]: id }))}>
+                <Icon name="plus" size={18} /> Add another event
+              </button>
+            )}
+            {ed.readOnly && !events.length && <div className="grow-row muted">None</div>}
+          </div>
+          {!ed.readOnly && (
+            <button className="btn danger-text block" onClick={() => setConfirm(true)}>
+              <Icon name="trash" size={18} /> Remove this follow-up
+            </button>
+          )}
+        </>
+      )}
+      {confirm && (
+        <Confirm
+          title="Remove this follow-up?"
+          message="Its values will be removed. Events recorded with it stay in the case."
+          confirmLabel="Remove"
+          onCancel={() => setConfirm(false)}
+          onConfirm={() => {
+            setConfirm(false);
+            ed.removeRow('FOLLOW_UPS', id);
+            onClose();
+          }}
+        />
+      )}
+    </Sheet>
+  );
+}
+
+/** "Timeline & follow-up": follow-up visits and outcome events of each procedure. */
+function FollowUpSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void }) {
+  const [open, setOpen] = useState<{ entity: 'FOLLOW_UPS' | 'OUTCOME_EVENTS'; id: string } | null>(null);
+  if (open?.entity === 'FOLLOW_UPS') return <FollowUpRowSheet ed={ed} id={open.id} onClose={() => setOpen(null)} />;
+  if (open) return <RowSheet ed={ed} entity="OUTCOME_EVENTS" id={open.id} onClose={() => setOpen(null)} />;
+  const procs = ed.rows('EP_PROCEDURES');
+  return (
+    <Sheet title="Timeline & Follow-up" onClose={onClose} onDone={onClose} testId="followups-sheet">
+      {!procs.length && <p className="muted">Add a procedure first: each follow-up belongs to a procedure.</p>}
+      {procs.map((p) => {
+        const fus = ed.rows('FOLLOW_UPS').filter((r) => r.procedure_id === p._id);
+        const loose = ed.rows('OUTCOME_EVENTS').filter((e) => e.procedure_id === p._id && !e[QUICK.fk]);
+        return (
+          <div key={p._id}>
+            <h3 className="sechead">{procHeading(ed, p._id)}</h3>
+            <div className="group" data-testid="followup-list">
+              {fus.map((r, k) => (
+                <button key={r._id} className="grow-row" onClick={() => setOpen({ entity: 'FOLLOW_UPS', id: r._id })} data-testid="followup-row">
+                  <span className="grow">
+                    <span className="line1">{followUpTitle(r, k)}</span>
+                    <span className="sub">
+                      {[r.followup_completion_status ? label('FOLLOW_UPS', 'followup_completion_status', String(r.followup_completion_status)) : null, `${ed.rows('OUTCOME_EVENTS').filter((e) => e[QUICK.fk] === r._id).length} events`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                  <Icon name="chevron" size={16} className="muted" />
+                </button>
+              ))}
+              {loose.map((e, k) => (
+                <button key={e._id} className="grow-row" onClick={() => setOpen({ entity: 'OUTCOME_EVENTS', id: e._id })}>
+                  <span className="grow">{rowTitle('OUTCOME_EVENTS', e, k)}</span>
+                  <Icon name="chevron" size={16} className="muted" />
+                </button>
+              ))}
+              {!ed.readOnly && (
+                <button className="grow-row add" onClick={() => setOpen({ entity: 'FOLLOW_UPS', id: ed.addRow('FOLLOW_UPS', p._id) })}>
+                  <Icon name="plus" size={18} /> Add follow-up visit
+                </button>
+              )}
+              {ed.readOnly && !fus.length && !loose.length && <div className="grow-row muted">None</div>}
+            </div>
+          </div>
+        );
+      })}
+    </Sheet>
+  );
+}
+
 type OpenSheet =
+  | { kind: 'followup' }
   | { kind: 'procedure'; id: string; focus?: string }
   | { kind: 'section'; title: string; entities: string[]; focus?: string }
   | { kind: 'additional' }
@@ -900,7 +1085,13 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
                 const later = r.entities.map((e) => dict.entities[e].later).find(Boolean);
                 const t = readiness.bySection[r.id];
                 return (
-                  <button key={r.id} className="grow-row" disabled={!!later} onClick={() => setSheet({ kind: 'section', title: r.label, entities: r.entities })} data-testid={`section-${r.id}`}>
+                  <button
+                    key={r.id}
+                    className="grow-row"
+                    disabled={!!later}
+                    onClick={() => setSheet(r.id === 'followup' ? { kind: 'followup' } : { kind: 'section', title: r.label, entities: r.entities })}
+                    data-testid={`section-${r.id}`}
+                  >
                     <span className="row-ic">
                       <Icon name={r.icon} size={22} />
                     </span>
@@ -961,6 +1152,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {sheet?.kind === 'procedure' && <ProcedureSheet ed={ed} id={sheet.id} focus={sheet.focus} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} focus={sheet.focus} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'additional' && <AdditionalSheet ed={ed} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {na && naField && (

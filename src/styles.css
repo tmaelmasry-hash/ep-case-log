@@ -2009,3 +2009,15 @@ textarea.box {
   gap: 4px;
   white-space: nowrap;
 }
+.quick-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.quick-line .mini-seg {
+  min-width: 120px;
+}
+.more-fields > summary {
+  margin: 14px 0 6px;
+}

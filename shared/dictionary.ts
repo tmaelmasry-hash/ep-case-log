@@ -45,6 +45,10 @@ export interface LayoutEntity {
   later?: string;
   /** Fields copied from the same MRN's latest case into a new case (phase 5). */
   copy_forward?: string[];
+  /** Shown first; the other fields under "More fields" (phase 7, light follow-up). */
+  primary_fields?: string[];
+  /** These event types as Yes + date inside each row of `under` (phase 7). */
+  quick_events?: { under: string; fk: string; type_field: string; date_field: string; codes: string[] };
 }
 
 export interface LayoutRow {
@@ -124,6 +128,13 @@ export function buildDictionary(raw: RawDictionary): Dictionary {
     if (ent.nest_under && !entities[ent.nest_under.entity]) throw new Error(`${ent.entity}: nest_under names unknown entity`);
     for (const f of ent.copy_forward ?? []) if (!ent.fields.some((x) => x.name === f)) throw new Error(`${ent.entity}: copy_forward names unknown field ${f}`);
     if (ent.copy_forward && ent.cardinality !== 'single') throw new Error(`${ent.entity}: copy_forward needs a one-per-case section`);
+    for (const f of ent.primary_fields ?? []) if (!ent.fields.some((x) => x.name === f)) throw new Error(`${ent.entity}: primary_fields names unknown field ${f}`);
+    const q = ent.quick_events;
+    if (q) {
+      const tf = ent.fields.find((x) => x.name === q.type_field);
+      if (!entities[q.under] || !ent.fields.some((x) => x.name === q.fk && x.target === q.under) || !ent.fields.some((x) => x.name === q.date_field)) throw new Error(`${ent.entity}: quick_events layout error`);
+      for (const c of q.codes) if (!tf?.codes?.some((x) => x.code === c)) throw new Error(`${ent.entity}: quick_events code ${c} is not a dictionary code`);
+    }
     for (const t of ent.module ?? []) {
       const ok = entities.PROCEDURE_COMPONENTS?.fields.find((f) => f.name === 'component_type')?.codes?.some((c) => c.code === t);
       if (!ok) throw new Error(`${ent.entity}: module component type ${t} is not a dictionary code`);

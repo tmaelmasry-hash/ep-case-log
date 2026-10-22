@@ -315,13 +315,6 @@ describe('editing', () => {
     expect(late.data.results[0].ok).toBe(false);
   });
 
-  it('follow-up is not editable yet (phase 7)', async () => {
-    const sara = await Client.as('sara');
-    const id = await newCase(sara);
-    const r = await sara.call('PATCH', `/api/cases/${id}`, { creates: [{ entity: 'FOLLOW_UPS', id: rid('FOLLOW_UPS') }] });
-    expect(r.data.results[0].message).toMatch(/phase 7/);
-  });
-
   it('additional clinical information: add, edit, remove; activity keeps field names only', async () => {
     const sara = await Client.as('sara');
     const id = await newCase(sara);

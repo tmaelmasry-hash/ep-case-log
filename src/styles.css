@@ -2003,3 +2003,9 @@ textarea.box {
   background: var(--accent-soft);
   color: var(--accent);
 }
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}

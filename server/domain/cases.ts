@@ -58,7 +58,8 @@ export interface NewCaseInput {
   mrn: string;
   groupId: string;
   groupSeq: number;
-  episodeStart: string;
+  /** Bulk add may leave it empty for the collector to fill. */
+  episodeStart: string | null;
   enrollmentDate: string;
   registryBasis: string;
 }

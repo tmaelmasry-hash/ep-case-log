@@ -6,6 +6,7 @@ import type { AppContext } from './context.ts';
 import { HttpError, Reply, Router, type Req } from './http.ts';
 import { adminRoutes } from './routes/admin.ts';
 import { authRoutes } from './routes/auth.ts';
+import { bulkRoutes } from './routes/bulk.ts';
 import { caseRoutes } from './routes/cases.ts';
 
 const PUBLIC = [/^\/api\/health$/, /^\/api\/auth\/login$/];
@@ -26,6 +27,7 @@ export function buildRouter(ctx: AppContext): Router {
   authRoutes(app);
   adminRoutes(app);
   caseRoutes(app);
+  bulkRoutes(app);
   return app;
 }
 

@@ -39,6 +39,7 @@ export const SUPPORT_TABS: Record<string, string[]> = {
     'failed_logins', 'locked_until', 'created_at', 'created_by', 'updated_at', 'last_login_at'],
   Groups: ['group_id', 'name', 'sort_order', 'next_seq', 'is_deleted', 'created_at'],
   Activity: ['activity_id', 'at', 'actor', 'action', 'detail_json'],
+  Imports: ['import_job_id', 'idempotency_key', 'actor_user_id', 'group_id', 'list_fingerprint', 'status', 'total_rows', 'added', 'created_at', 'finished_at', 'items_json'],
 };
 
 export const col = (entity: string, field: string) => `${entity}__${field}`;

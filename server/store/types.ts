@@ -39,6 +39,29 @@ export interface Activity extends ActivityInput {
   at: string;
 }
 
+/** One bulk add of MRNs (phase 6): claimed once by its idempotency key, then saved with its results. */
+export interface ImportItem {
+  position: number;
+  mrn: string;
+  outcome: 'ADDED' | 'REPEATED' | 'ALREADY_HERE' | 'INVALID';
+  case_id: string | null;
+  group_seq: number | null;
+  message: string | null;
+}
+export interface ImportJob {
+  import_job_id: string;
+  idempotency_key: string;
+  actor_user_id: string;
+  group_id: string;
+  list_fingerprint: string;
+  status: 'RUNNING' | 'DONE';
+  total_rows: number;
+  added: number;
+  created_at: string;
+  finished_at: string | null;
+  items: ImportItem[];
+}
+
 /** Storage boundary: users, groups, activity, cases. The Google Sheet store implements the same interface in phase 4. */
 export interface RegistryStore {
   readonly kind: 'memory' | 'file' | 'sheets';
@@ -54,9 +77,17 @@ export interface RegistryStore {
   listActivity(): Promise<Activity[]>;
   /** Next case number in a group (never reused). */
   allocateSeq(groupId: string): Promise<number>;
+  /** Reserves n consecutive numbers; returns the first. */
+  allocateSeqs(groupId: string, n: number): Promise<number>;
   listCases(): Promise<CaseRecord[]>;
   getCase(id: string): Promise<CaseRecord | null>;
   /** Saves a case. With `base` (the case as this request read it, or null for a new case) only the cells that
    *  changed from base are written, so concurrent saves of different fields all survive. Without it: whole case. */
   putCase(rec: CaseRecord, base?: CaseRecord | null): Promise<void>;
+  /** Saves several new cases at once (bulk add). */
+  putNewCases(recs: CaseRecord[]): Promise<void>;
+  /** Records a bulk add under its idempotency key; false when that key was already used. */
+  claimImport(job: ImportJob): Promise<boolean>;
+  getImport(by: { key?: string; id?: string }): Promise<ImportJob | null>;
+  saveImport(job: ImportJob): Promise<void>;
 }

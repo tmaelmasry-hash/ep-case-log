@@ -7,7 +7,7 @@ import type { AppConfig } from '../appconfig.ts';
 import { readinessOf } from '../domain/cases.ts';
 import { diffCase, isEmptyPatch, type CasePatch } from './patch.ts';
 import { CASE_COLUMNS, ROW_META, SUPPORT_TABS, buildLayout, col, type SheetLayout } from './sheet-layout.ts';
-import type { Activity, ActivityInput, Group, RegistryStore, User } from './types.ts';
+import type { Activity, ActivityInput, Group, ImportJob, RegistryStore, User } from './types.ts';
 
 /** The Apps Script web app (or a test double with the same operations). */
 export interface Gateway {
@@ -162,9 +162,45 @@ export class SheetsStore implements RegistryStore {
   }
   /** Next case number in a group, counted under the script lock (never reused). */
   async allocateSeq(groupId: string) {
+    return this.allocateSeqs(groupId, 1);
+  }
+  async allocateSeqs(groupId: string, n: number) {
     this.groups = null;
-    const [r] = await this.batch([{ op: 'increment', tab: 'Groups', key: 'group_id', id: groupId, col: 'next_seq' }]);
+    const [r] = await this.batch([{ op: 'increment', tab: 'Groups', key: 'group_id', id: groupId, col: 'next_seq', by: n }]);
     return Number(r.value);
+  }
+
+  // ── bulk add jobs ──
+  private importCells(j: ImportJob): SheetRow {
+    const { items, ...rest } = j;
+    return { ...Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, toCell(v)])), items_json: JSON.stringify(items) };
+  }
+  private importFrom(r: SheetRow): ImportJob {
+    return {
+      import_job_id: String(r.import_job_id),
+      idempotency_key: String(r.idempotency_key),
+      actor_user_id: String(r.actor_user_id),
+      group_id: String(r.group_id),
+      list_fingerprint: String(r.list_fingerprint),
+      status: r.status === 'DONE' ? 'DONE' : 'RUNNING',
+      total_rows: num(r.total_rows),
+      added: num(r.added),
+      created_at: String(r.created_at),
+      finished_at: (fromCell(r.finished_at) as string | null) ?? null,
+      items: json(r.items_json, []),
+    };
+  }
+  async claimImport(job: ImportJob) {
+    const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'Imports', key: 'idempotency_key', row: this.importCells(job) }]);
+    return !!(r as { inserted?: boolean }).inserted;
+  }
+  async getImport(by: { key?: string; id?: string }) {
+    const [r] = await this.batch([{ op: 'read', tab: 'Imports', where: by.key ? { col: 'idempotency_key', in: [by.key] } : { col: 'import_job_id', in: [by.id] } }]);
+    const row = (r.rows ?? [])[0];
+    return row ? this.importFrom(row) : null;
+  }
+  async saveImport(job: ImportJob) {
+    await this.batch([{ op: 'update', tab: 'Imports', key: 'import_job_id', id: job.import_job_id, set: this.importCells(job) }]);
   }
 
   // ── activity (field names only, never values: the routes decide what goes in detail) ──
@@ -265,8 +301,19 @@ export class SheetsStore implements RegistryStore {
   /** Writes what changed from `base` (null = new case). Without base the stored copy is read first. */
   async putCase(rec: CaseRecord, base?: CaseRecord | null) {
     const before = base === undefined ? await this.getCase(rec.meta.case_id) : base;
+    const ops = this.caseOps(rec, before);
+    if (ops.length) await this.batch(ops);
+  }
+
+  /** New cases in one gateway call (bulk add). */
+  async putNewCases(recs: CaseRecord[]) {
+    const ops = recs.flatMap((r) => this.caseOps(r, null));
+    if (ops.length) await this.batch(ops);
+  }
+
+  private caseOps(rec: CaseRecord, before: CaseRecord | null): Op[] {
     const p: CasePatch = diffCase(before, rec);
-    if (isEmptyPatch(p)) return;
+    if (isEmptyPatch(p)) return [];
     const id = rec.meta.case_id;
     const ops: Op[] = [];
     const r = readinessOf(this.config.dict, rec);
@@ -296,6 +343,6 @@ export class SheetsStore implements RegistryStore {
     const newHist = p.history.filter((c) => c.created).map((c) => this.historyCells(id, c.set, true));
     if (newHist.length) ops.push({ op: 'append', tab: 'History', rows: newHist });
     for (const c of p.history.filter((x) => !x.created)) ops.push({ op: 'update', tab: 'History', key: 'id', id: c.id, set: this.historyCells(id, c.set, false) });
-    await this.batch(ops);
+    return ops;
   }
 }

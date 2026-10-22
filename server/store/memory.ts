@@ -1,12 +1,13 @@
 import type { CaseRecord } from '../../shared/caseTypes.ts';
 import { applyPatch, diffCase } from './patch.ts';
-import type { Activity, ActivityInput, Group, RegistryStore, User } from './types.ts';
+import type { Activity, ActivityInput, Group, ImportJob, RegistryStore, User } from './types.ts';
 
 export interface StoreData {
   users: User[];
   groups: Group[];
   activity: Activity[];
   cases: CaseRecord[];
+  imports?: ImportJob[];
 }
 
 export function emptyData(): StoreData {
@@ -85,12 +86,42 @@ export class MemoryStore implements RegistryStore {
   }
 
   async allocateSeq(groupId: string) {
+    return this.allocateSeqs(groupId, 1);
+  }
+
+  async allocateSeqs(groupId: string, n: number) {
     const g = this.data.groups.find((x) => x.group_id === groupId);
     if (!g) throw new Error('unknown group');
     const seq = g.next_seq;
-    g.next_seq++;
+    g.next_seq += n;
     await this.persist();
     return seq;
+  }
+
+  async putNewCases(recs: CaseRecord[]) {
+    for (const r of recs) this.data.cases.push(this.clone(r));
+    await this.persist();
+  }
+
+  async claimImport(job: ImportJob) {
+    const list = (this.data.imports ??= []);
+    if (list.some((j) => j.idempotency_key === job.idempotency_key)) return false;
+    list.push(this.clone(job));
+    await this.persist();
+    return true;
+  }
+
+  async getImport(by: { key?: string; id?: string }) {
+    const j = (this.data.imports ?? []).find((x) => (by.key ? x.idempotency_key === by.key : x.import_job_id === by.id));
+    return j ? this.clone(j) : null;
+  }
+
+  async saveImport(job: ImportJob) {
+    const list = (this.data.imports ??= []);
+    const i = list.findIndex((j) => j.import_job_id === job.import_job_id);
+    if (i >= 0) list[i] = this.clone(job);
+    else list.push(this.clone(job));
+    await this.persist();
   }
 
   async listCases() {

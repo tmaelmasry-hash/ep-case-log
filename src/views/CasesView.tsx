@@ -11,6 +11,7 @@ import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { Empty, SaveIndicator, Sheet } from '../components/ui';
 import { GroupNameDialog } from './AdminSheets';
+import { BulkAddSheet } from './BulkAdd';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
@@ -193,6 +194,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [addGroup, setAddGroup] = useState(false);
+  const [bulk, setBulk] = useState(false);
   const activeGroup = group === 'ALL' || groups.some((g) => g.group_id === group) ? group : 'ALL';
   const pickGroup = (g: string) => {
     setGroup(g);
@@ -229,6 +231,11 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       <div className="navbar">
         <span className="grow" />
         <SaveIndicator />
+        {can('case.import') && (
+          <button className="icon-btn accent" aria-label="Bulk add MRNs" title="Bulk add MRNs" onClick={() => setBulk(true)} data-testid="bulk-add" disabled={!groups.length}>
+            <Icon name="list" size={24} />
+          </button>
+        )}
         {can('case.create') && (
           <button className="icon-btn accent" aria-label="New case" onClick={() => setShowNew(true)} data-testid="new-case" disabled={!groups.length}>
             <Icon name="plus" size={26} />
@@ -257,6 +264,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           )}
         </div>
       )}
+      {bulk && <BulkAddSheet defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id} onClose={() => setBulk(false)} />}
       {addGroup && (
         <GroupNameDialog
           onClose={() => setAddGroup(false)}

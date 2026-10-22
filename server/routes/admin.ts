@@ -178,6 +178,9 @@ export function adminRoutes(app: Router) {
         case 'case.complete':
           return d.core ? [`core ${d.core}`] : [];
         case 'case.create':
+        case 'case.delete':
+        case 'case.restore':
+        case 'case.reopen':
           return [];
         case 'user.create':
           return [`User ${d.username ?? ''} added`];

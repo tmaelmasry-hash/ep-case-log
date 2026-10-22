@@ -3,11 +3,13 @@ export class ApiError extends Error {
   status: number;
   code: string;
   field?: string;
-  constructor(status: number, code: string, message: string, field?: string) {
+  details?: unknown;
+  constructor(status: number, code: string, message: string, field?: string, details?: unknown) {
     super(message);
     this.status = status;
     this.code = code;
     this.field = field;
+    this.details = details;
   }
 }
 
@@ -47,7 +49,7 @@ export async function api<T>(method: 'GET' | 'POST' | 'PATCH', path: string, bod
   if (!res.ok) {
     const err = (data as { error?: { code?: string; message?: string; details?: { field?: string } } } | null)?.error;
     if (res.status === 401 && path !== '/api/auth/login' && path !== '/api/auth/me') onSignedOut?.();
-    throw new ApiError(res.status, err?.code ?? 'HTTP_' + res.status, err?.message ?? `The server answered ${res.status}.`, err?.details?.field);
+    throw new ApiError(res.status, err?.code ?? 'HTTP_' + res.status, err?.message ?? `The server answered ${res.status}.`, err?.details?.field, err?.details);
   }
   const d = data as { csrf?: string } | null;
   if (d?.csrf) csrf = d.csrf;

@@ -17,6 +17,7 @@ export interface CasePatch {
   rows: Record<string, RowChange<StoredRow>[]>;
   additional: RowChange<AdditionalInfo>[];
   not_available: Record<string, NotAvailable | null>;
+  copied: Record<string, string | null>;
   history: RowChange<HistoryEntry>[];
 }
 
@@ -50,22 +51,26 @@ export function diffCase(base: CaseRecord | null, next: CaseRecord): CasePatch {
     const ch = diffList(base?.rows[entity] ?? [], list, (r) => r._id);
     if (ch.length) rows[entity] = ch;
   }
-  const na: CasePatch['not_available'] = {};
-  const nb = base?.not_available ?? {};
-  const nn = next.not_available ?? {};
-  for (const k of new Set([...Object.keys(nb), ...Object.keys(nn)])) if (!same(nb[k], nn[k])) na[k] = nn[k] ?? null;
+  const mapDiff = <T>(b: Record<string, T>, n: Record<string, T>) => {
+    const out: Record<string, T | null> = {};
+    for (const k of new Set([...Object.keys(b), ...Object.keys(n)])) if (!same(b[k], n[k])) out[k] = n[k] ?? null;
+    return out;
+  };
+  const na = mapDiff(base?.not_available ?? {}, next.not_available ?? {});
+  const copied = mapDiff(base?.copied ?? {}, next.copied ?? {});
   return {
     case_id: next.meta.case_id,
     meta: changed(base?.meta, next.meta),
     rows,
     additional: diffList(base?.additional ?? [], next.additional, (a) => a.info_id),
     not_available: na,
+    copied,
     history: diffList(base?.history ?? [], next.history ?? [], historyId),
   };
 }
 
 export function isEmptyPatch(p: CasePatch): boolean {
-  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !p.history.length;
+  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !Object.keys(p.copied).length && !p.history.length;
 }
 
 /** Applies a patch to the stored copy of a case (null = not stored yet). */
@@ -89,6 +94,11 @@ export function applyPatch(stored: CaseRecord | null, p: CasePatch): CaseRecord 
   for (const [k, v] of Object.entries(p.not_available)) {
     if (v) na[k] = v;
     else delete na[k];
+  }
+  const copied = (rec.copied ??= {});
+  for (const [k, v] of Object.entries(p.copied)) {
+    if (v) copied[k] = v;
+    else delete copied[k];
   }
   const hist = (rec.history ??= []);
   for (const c of p.history) {

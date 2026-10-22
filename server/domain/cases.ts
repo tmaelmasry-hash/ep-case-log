@@ -88,6 +88,7 @@ export function newCaseRecord(dict: Dictionary, input: NewCaseInput, a: Actor): 
     additional: [],
     not_available: {},
     history: [],
+    copied: {},
   };
   insert(rec, 'PATIENT_IDENTIFIERS', input.patientId, { patient_id: input.patientId, mrn: input.mrn }, a);
   insert(rec, 'PATIENTS', input.patientId, { patient_id: input.patientId, enrollment_date: input.enrollmentDate, registry_basis: input.registryBasis }, a);
@@ -310,6 +311,8 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
         afterChange(def, row, ch.field);
         const after = decodeValue(f!, row[ch.field]);
         if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where, old: before, new: after }, a);
+        // Checked by a person: no longer marked as copied.
+        if (rec.copied) delete rec.copied[`${def.entity}.${ch.field}`];
         // A value replaces "Not available" (EP Workspace: entering a value later replaces it).
         if (hasValue(after) && rec.not_available) delete rec.not_available[naKey(def.entity, ch.field, procedureOf(dict, def.entity, row))];
       }
@@ -423,6 +426,31 @@ export function historyItems(dict: Dictionary, rec: CaseRecord, nameOf: (id: str
     });
 }
 
+/** Copies the configured history fields (case_layout copy_forward) from the same MRN's latest case into a new one.
+ *  Ported from EP Workspace copyForward: values stay as stored; each copied field is marked with `note` until a
+ *  person edits it. Returns the number of values copied. */
+export function copyForward(dict: Dictionary, rec: CaseRecord, src: CaseRecord, note: string, a: Actor): number {
+  let n = 0;
+  for (const def of Object.values(dict.entities)) {
+    if (!def.copy_forward?.length) continue;
+    const from = liveRows(src, def.entity)[0];
+    if (!from) continue;
+    const fields = def.copy_forward.filter((x) => hasValue(from[x]));
+    if (!fields.length) continue;
+    const id = def.entity === 'PATIENT_IDENTIFIERS' || def.entity === 'PATIENTS' ? rec.meta.patient_id : expectedSlot(dict, def.entity, rec.meta.case_id);
+    let row = findLive(rec, def.entity, id);
+    if (!row) row = insert(rec, def.entity, id, placeRow(dict, rec, def, id, null, a), a);
+    for (const x of fields) {
+      row[x] = from[x];
+      (rec.copied ??= {})[`${def.entity}.${x}`] = note;
+      n++;
+    }
+    if (from.other_specify_json && def.fields.some((x) => x.name === 'other_specify_json')) row.other_specify_json = mergeOtherSpecify(def, { ...row, other_specify_json: from.other_specify_json }, null, null);
+  }
+  if (n) addHistory(rec, { kind: 'add', text: `${n} history value${n === 1 ? '' : 's'} ${note.replace(/^Copied/, 'copied')} (same MRN)` }, a);
+  return n;
+}
+
 export function decodeRows(dict: Dictionary, rec: CaseRecord): Record<string, DecodedRow[]> {
   const out: Record<string, DecodedRow[]> = {};
   for (const [entity, rows] of Object.entries(rec.rows)) {
@@ -446,6 +474,7 @@ export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, u
     rows: decodeRows(dict, rec),
     additional: rec.additional.filter((x) => !x.is_deleted),
     not_available: rec.not_available ?? {},
+    copied: rec.copied ?? {},
     history_count: rec.history?.length ?? 0,
     users,
   };

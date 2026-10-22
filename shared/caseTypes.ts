@@ -66,6 +66,8 @@ export interface CaseRecord {
   /** naKey → reason (shared/readiness.ts). */
   not_available?: Record<string, NotAvailable>;
   history?: HistoryEntry[];
+  /** "ENTITY.field" → where it was copied from (phase 5); removed when someone edits the field. */
+  copied?: Record<string, string>;
 }
 
 /** A row as the browser sees it: decoded values plus _id. */
@@ -76,6 +78,7 @@ export interface CaseDetail {
   rows: Record<string, DecodedRow[]>;
   additional: AdditionalInfo[];
   not_available: Record<string, NotAvailable>;
+  copied: Record<string, string>;
   history_count: number;
   users: { id: string; name: string }[];
 }

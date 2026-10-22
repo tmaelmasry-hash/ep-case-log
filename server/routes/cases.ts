@@ -3,7 +3,7 @@
 import { checkMrn } from '../../shared/mrn.ts';
 import type { CaseRecord, EditBatch } from '../../shared/caseTypes.ts';
 import { siteLocalDate } from '../appconfig.ts';
-import { addHistory, applyEdits, completeCase, historyItems, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
+import { addHistory, applyEdits, completeCase, copyForward, historyItems, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { AppContext } from '../context.ts';
 import { newId } from '../util.ts';
@@ -60,8 +60,24 @@ export function caseRoutes(app: Router) {
     if (typeof b.episode_start_date !== 'string' || !DATE.test(b.episode_start_date)) throw badRequest('Episode start date: enter a valid date.', { field: 'episode_start_date' });
     const today = siteLocalDate(site.timezone, ctx.now());
     if (b.episode_start_date > today) throw badRequest('Episode start date cannot be in the future.', { field: 'episode_start_date' });
-    // All cases of one MRN share one patient id (EP Workspace P3-1). The MRN prompt and copy-forward come in phase 5.
-    const prior = (await store.listCases()).filter((c) => c.meta.mrn === mrn.value).sort((x, y) => y.meta.created_at.localeCompare(x.meta.created_at))[0];
+    // MRN prompt (EP Workspace): an MRN with live cases is answered with them first (409 MRN_HAS_CASES: this group's
+    // cases by number; other groups only as "also registered in another group"); new_case: true then adds one more.
+    const all = (await store.listCases()).filter((c) => c.meta.mrn === mrn.value).sort((x, y) => x.meta.created_at.localeCompare(y.meta.created_at));
+    const live = all.filter((c) => !c.meta.is_deleted);
+    if (live.length && b.new_case !== true) {
+      const here = live.filter((c) => c.meta.group_id === b.group_id).map((c) => summarize(dict, c));
+      const elsewhere = live.some((c) => c.meta.group_id !== b.group_id);
+      throw new HttpError(
+        409,
+        'MRN_HAS_CASES',
+        here.length
+          ? `This MRN already has ${here.length} case${here.length > 1 ? 's' : ''} in this group.${elsewhere ? ' It is also registered in another group.' : ''}`
+          : 'This MRN is already registered in another group.',
+        { here: here.map((c) => ({ case_id: c.case_id, group_seq: c.group_seq, episode_start_date: c.episode_start_date, collection_status: c.collection_status, procedures: c.procedures })), elsewhere },
+      );
+    }
+    // All cases of one MRN share one patient id (EP Workspace P3-1); history is copied from the latest case the user can see.
+    const source = live.filter((c) => groups.includes(c.meta.group_id)).at(-1) ?? null;
     const caseId = newId('case');
     const seq = await store.allocateSeq(b.group_id);
     const now = ctx.now().toISOString();
@@ -69,7 +85,7 @@ export function caseRoutes(app: Router) {
       dict,
       {
         caseId,
-        patientId: prior?.meta.patient_id ?? newId('patient'),
+        patientId: all.at(-1)?.meta.patient_id ?? newId('patient'),
         mrn: mrn.value,
         groupId: b.group_id,
         groupSeq: seq,
@@ -79,11 +95,14 @@ export function caseRoutes(app: Router) {
       },
       { userId: u.userId, now },
     );
-    const gname = (await store.listGroups()).find((g) => g.group_id === b.group_id)?.name ?? '';
+    const groupList = await store.listGroups();
+    const gname = groupList.find((g) => g.group_id === b.group_id)?.name ?? '';
     addHistory(rec, { kind: 'create', text: `Case created in ${gname} as No. ${seq}` }, { userId: u.userId, now });
+    const note = source ? `Copied from ${groupList.find((g) => g.group_id === source.meta.group_id)?.name ?? 'group'} No. ${source.meta.group_seq}` : null;
+    const copied = source && note ? copyForward(dict, rec, source, note, { userId: u.userId, now }) : 0;
     await store.putCase(rec, null);
-    await store.appendActivity([{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq } }]);
-    return { case_id: caseId, group_seq: seq, warning: mrn.warning ?? null };
+    await store.appendActivity([{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq, ...(copied ? { copied_from: source!.meta.case_id, copied_fields: copied } : {}) } }]);
+    return { case_id: caseId, group_seq: seq, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied };
   });
 
   app.get('/api/cases/:id', async (req) => {

@@ -133,6 +133,7 @@ export function FieldRow({
   readOnly,
   na,
   onNa,
+  copied,
 }: {
   def: EntityDef;
   f: FormField;
@@ -145,6 +146,8 @@ export function FieldRow({
   readOnly?: boolean;
   na?: NaInfo;
   onNa?: () => void;
+  /** Where the value was copied from (same MRN), until someone edits it. */
+  copied?: string;
 }) {
   const value = row?.[f.name] ?? null;
   const kind = controlKind(f, row);
@@ -155,6 +158,11 @@ export function FieldRow({
     <span className="lab">
       {f.label}
       {star && <span className="req" title="Core field"> *</span>}
+      {copied && (
+        <span className="copied-tag" title={copied} data-testid="copied-tag">
+          Copied
+        </span>
+      )}
     </span>
   );
   const holdsOther = value === 'OTHER' || (Array.isArray(value) && value.includes('OTHER'));
@@ -270,6 +278,7 @@ export function EntityFields({
   readOnly,
   naOf,
   onNa,
+  copiedOf,
 }: {
   entity: string;
   row: DecodedRow | null;
@@ -280,6 +289,7 @@ export function EntityFields({
   readOnly?: boolean;
   naOf?: (field: string) => NaInfo | undefined;
   onNa?: (field: string) => void;
+  copiedOf?: (field: string) => string | undefined;
 }) {
   const def = dict.entities[entity];
   return (
@@ -298,6 +308,7 @@ export function EntityFields({
           readOnly={readOnly}
           na={naOf?.(f.name)}
           onNa={onNa ? () => onNa(f.name) : undefined}
+          copied={copiedOf?.(f.name)}
         />
       ))}
     </div>

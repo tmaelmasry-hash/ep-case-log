@@ -65,32 +65,55 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
   const [date, setDate] = useState(todayISO());
   const [err, setErr] = useState<{ field?: string; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [existing, setExisting] = useState<{ message: string; here: { case_id: string; group_seq: number; episode_start_date: string | null; collection_status: string; procedures: ProcedureSummary[] }[] } | null>(null);
   const check = mrn ? checkMrn(mrn, mrnRules) : null;
 
-  const submit = async () => {
+  const submit = async (newCase = false) => {
     if (!check?.ok) return setErr({ field: 'mrn', message: check?.error ?? 'Enter the MRN.' });
     setBusy(true);
     setErr(null);
     try {
-      const r = await api<{ case_id: string; group_seq: number; warning: string | null }>('POST', '/api/cases', { mrn, group_id: group, episode_start_date: date });
+      const r = await api<{ case_id: string; group_seq: number; warning: string | null; case_of_mrn: number | null; copied: number; copied_from: string | null }>('POST', '/api/cases', {
+        mrn,
+        group_id: group,
+        episode_start_date: date,
+        ...(newCase ? { new_case: true } : {}),
+      });
       await refreshCases();
-      toast({ message: `Case No. ${r.group_seq} created`, kind: 'success' });
+      toast({
+        message: `Case No. ${r.group_seq} created${r.case_of_mrn ? ` — case ${r.case_of_mrn} for this MRN` : ''}${r.copied ? `; ${r.copied} history value${r.copied === 1 ? '' : 's'} copied` : ''}`,
+        kind: 'success',
+      });
       onCreated(r.case_id);
     } catch (e) {
       const a = e as ApiError;
-      setErr({ field: a.field, message: a.message });
+      // MRN prompt (EP Workspace): the MRN already has cases; show them, then the user decides.
+      if (a.code === 'MRN_HAS_CASES') setExisting({ message: a.message, here: (a.details as { here: NonNullable<typeof existing>['here'] }).here });
+      else setErr({ field: a.field, message: a.message });
       setBusy(false);
     }
   };
 
   return (
-    <Sheet title="New Case" onClose={onClose} onDone={submit} doneLabel="Create" doneDisabled={busy} testId="new-case-sheet">
+    <Sheet title="New Case" onClose={onClose} onDone={() => submit(!!existing)} doneLabel="Create" doneDisabled={busy} testId="new-case-sheet">
       <div className="group">
         <div className="frow inline">
           <label className="lab-wrap" htmlFor="new-mrn">
             <span className="lab">MRN <span className="req">*</span></span>
           </label>
-          <input id="new-mrn" className="ios-value" inputMode="numeric" autoComplete="off" placeholder="7 digits" value={mrn} onChange={(e) => setMrn(e.target.value)} autoFocus />
+          <input
+            id="new-mrn"
+            className="ios-value"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="7 digits"
+            value={mrn}
+            onChange={(e) => {
+              setMrn(e.target.value);
+              setExisting(null);
+            }}
+            autoFocus
+          />
         </div>
         {groups.length > 1 && (
           <div className="frow stack">
@@ -118,10 +141,41 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
           {err.message}
         </p>
       )}
-      <p className="muted small">A case is one episode of care. Add each procedure of the episode inside the case.</p>
-      <button className="btn primary block" onClick={submit} disabled={busy}>
-        {busy ? 'Creating…' : 'Create case'}
-      </button>
+      {existing ? (
+        <div className="mrn-prompt" role="alert" data-testid="mrn-prompt">
+          <p>
+            <b>{existing.message}</b>
+          </p>
+          {existing.here.length > 0 && (
+            <div className="group">
+              {existing.here.map((c) => (
+                <a key={c.case_id} className="grow-row" href={`#/cases/${c.case_id}`} onClick={onClose}>
+                  <span className="grow">
+                    <span className="line1">
+                      No. {c.group_seq} · {c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}
+                    </span>
+                    <span className="sub">
+                      {c.procedures.map((p) => procedureChip(p).text).join(' · ') || 'No procedures'} · {c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}
+                    </span>
+                  </span>
+                  <Icon name="chevron" size={16} className="muted" />
+                </a>
+              ))}
+            </div>
+          )}
+          <p className="muted small">Open the case above to add a procedure to the same episode, or add a new case (a new episode). Patient history is copied from the latest case and marked "Copied" to check.</p>
+          <button className="btn primary block" onClick={() => submit(true)} disabled={busy}>
+            {busy ? 'Creating…' : 'Add a new case for this MRN'}
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="muted small">A case is one episode of care. Add each procedure of the episode inside the case.</p>
+          <button className="btn primary block" onClick={() => submit()} disabled={busy}>
+            {busy ? 'Creating…' : 'Create case'}
+          </button>
+        </>
+      )}
     </Sheet>
   );
 }

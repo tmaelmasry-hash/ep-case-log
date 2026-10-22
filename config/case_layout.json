@@ -1,15 +1,24 @@
 {
- "_note": "Arranges the dictionary entities for this app's case model (owner D4: case = EP_EPISODE with one or more EP_PROCEDURES). scope: case = one or more rows per case; procedure = rows belong to one EP_PROCEDURES row; nest_under = rows inside a parent row. module = shown for a procedure when one of its PROCEDURE_COMPONENTS has these component types (or when it already has data). auto_parent = link filled automatically to the case's single row of that entity. later = not shown yet (built in that phase). Only arranges; never adds fields or codes.",
+ "_note": "Arranges the dictionary entities for this app's case model (owner D4: case = EP_EPISODE with one or more EP_PROCEDURES). scope: case = one or more rows per case; procedure = rows belong to one EP_PROCEDURES row; nest_under = rows inside a parent row. module = shown for a procedure when one of its PROCEDURE_COMPONENTS has these component types (or when it already has data). auto_parent = link filled automatically to the case's single row of that entity. later = not shown yet (built in that phase). Only arranges; never adds fields or codes. copy_forward = history fields copied from the same MRN's latest case the user can see when a new case is added (EP Workspace sections.json copy_forward); copied values are marked 'Copied' until checked.",
  "entities": {
   "PATIENT_IDENTIFIERS": {
    "scope": "case",
    "cardinality": "single",
-   "label": "Identifiers"
+   "label": "Identifiers",
+   "copy_forward": [
+    "full_name",
+    "date_of_birth"
+   ]
   },
   "PATIENTS": {
    "scope": "case",
    "cardinality": "single",
-   "label": "Registry & demographics"
+   "label": "Registry & demographics",
+   "copy_forward": [
+    "sex_at_birth",
+    "nationality",
+    "residence_status"
+   ]
   },
   "EP_EPISODES": {
    "scope": "case",
@@ -24,7 +33,24 @@
   "CLINICAL_PROFILE_SNAPSHOTS": {
    "scope": "case",
    "cardinality": "single",
-   "label": "Baseline risk profile"
+   "label": "Baseline risk profile",
+   "copy_forward": [
+    "hypertension",
+    "diabetes",
+    "coronary_artery_disease_or_prior_mi",
+    "vascular_disease",
+    "heart_failure",
+    "cardiomyopathy_type",
+    "ckd_status",
+    "prior_stroke_tia_systemic_embolism",
+    "significant_valve_disease",
+    "congenital_heart_disease",
+    "prior_cardiac_surgery",
+    "prior_ep_ablation",
+    "existing_cied",
+    "thyroid_disease",
+    "obstructive_sleep_apnea"
+   ]
   },
   "EP_PROCEDURES": {
    "scope": "case",

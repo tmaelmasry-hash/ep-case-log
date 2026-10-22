@@ -121,7 +121,9 @@ describe('create case', () => {
   it('cases of the same MRN share one patient id', async () => {
     const admin = await Client.as('admin');
     const a = await newCase(admin, '1100007');
-    const b = await newCase(admin, '1100007', groups[1].group_id);
+    const again = await admin.call('POST', '/api/cases', { group_id: groups[1].group_id, mrn: '1100007', episode_start_date: '2026-03-12' });
+    expect(again.status).toBe(409); // MRN prompt (phase 5)
+    const b = (await admin.call('POST', '/api/cases', { group_id: groups[1].group_id, mrn: '1100007', episode_start_date: '2026-03-12', new_case: true })).data.case_id;
     const ra = (await admin.call('GET', `/api/cases/${a}`)).data;
     const rb = (await admin.call('GET', `/api/cases/${b}`)).data;
     expect(ra.meta.patient_id).toBe(rb.meta.patient_id);

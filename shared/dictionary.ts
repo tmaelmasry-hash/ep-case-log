@@ -43,6 +43,8 @@ export interface LayoutEntity {
   auto_parent?: Record<string, string>;
   nest_under?: { entity: string; fk: string };
   later?: string;
+  /** Fields copied from the same MRN's latest case into a new case (phase 5). */
+  copy_forward?: string[];
 }
 
 export interface LayoutRow {
@@ -120,6 +122,8 @@ export function buildDictionary(raw: RawDictionary): Dictionary {
   for (const ent of Object.values(entities)) {
     for (const f of ent.fields) for (const c of f.codes ?? []) c.label = raw.labels.codes[`${ent.entity}.${f.name}.${c.code}`] ?? raw.labels.codes[c.code] ?? c.label;
     if (ent.nest_under && !entities[ent.nest_under.entity]) throw new Error(`${ent.entity}: nest_under names unknown entity`);
+    for (const f of ent.copy_forward ?? []) if (!ent.fields.some((x) => x.name === f)) throw new Error(`${ent.entity}: copy_forward names unknown field ${f}`);
+    if (ent.copy_forward && ent.cardinality !== 'single') throw new Error(`${ent.entity}: copy_forward needs a one-per-case section`);
     for (const t of ent.module ?? []) {
       const ok = entities.PROCEDURE_COMPONENTS?.fields.find((f) => f.name === 'component_type')?.codes?.some((c) => c.code === t);
       if (!ok) throw new Error(`${ent.entity}: module component type ${t} is not a dictionary code`);

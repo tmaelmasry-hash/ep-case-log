@@ -1981,3 +1981,25 @@ textarea.box {
   padding: 6px 12px;
   font-size: 0.85rem;
 }
+
+/* ---------- Phase 5: MRN prompt, copied values ---------- */
+.mrn-prompt {
+  margin-top: 14px;
+}
+.mrn-prompt .group {
+  margin: 8px 0;
+}
+.copied-tag {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  vertical-align: middle;
+}
+.banner.info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

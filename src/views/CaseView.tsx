@@ -91,6 +91,7 @@ function RowForm({ ed, entity, rowId, parentId, row }: { ed: CaseEditor; entity:
       errorOf={(field) => ed.fieldError(entity, rowId, field)}
       naOf={(field) => naInfo(c, entity, field, pid)}
       onNa={(field) => c.askNa(entity, field, pid)}
+      copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
       onChange={(field, value, key) => ed.setField(entity, rowId, field, value, { key, create: exists ? undefined : { parent_id: parentId ?? null } })}
     />
   );
@@ -847,6 +848,16 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
                 Reopen…
               </button>
             )}
+          </div>
+        )}
+
+        {!completed && Object.keys(d.copied ?? {}).length > 0 && (
+          <div className="banner info" data-testid="copied-banner">
+            <Icon name="info" size={18} />
+            <span className="grow">
+              {Object.keys(d.copied).length} history value{Object.keys(d.copied).length === 1 ? ' was' : 's were'} {Object.values(d.copied)[0].replace(/^Copied/, 'copied')} (same MRN). Check them; they are marked
+              “Copied”.
+            </span>
           </div>
         )}
 

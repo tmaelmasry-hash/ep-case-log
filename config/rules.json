@@ -1,6 +1,6 @@
 {
  "_note": "Dynamic-form rules (merge step M-1, DECISIONS M-1). Evaluated by public/js/rules.js in the browser and on the server. Only rules taken from the dictionary / frozen spec text (SOURCE_EXPLICIT) or approved by the owner (OWNER_APPROVED) are listed; open ones stay in docs/merge/DYNAMIC_RULES_MATRIX.tsv. A hidden field is never stored as N/A; a value that stops fitting is removed only after the person confirms. 'enabled': false switches every rule off.",
- "version": "rules/m4b-2026-10-23",
+ "version": "rules/r3-2026-10-23",
  "enabled": true,
  "rules": [
   {
@@ -539,6 +539,39 @@
     "in": [
      "OTHER"
     ]
+   }
+  },
+  {
+   "id": "DR-EP-05a",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.electroanatomic_mapping_used \"RC for ablation\" (EP Workspace matrix DR-EP-05; owner R3-1)",
+   "target": "EP_PROCEDURES.electroanatomic_mapping_used",
+   "effect": "show_when",
+   "when": {
+    "component": ["AVNRT", "AVRT_WPW", "AT_SVT", "AF", "FLUTTER", "PVC", "VT_VF", "AVJ_ABLATION"]
+   }
+  },
+  {
+   "id": "DR-EP-05b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.intracardiac_echo_used \"RC for ablation\" (EP Workspace matrix DR-EP-05; owner R3-1)",
+   "target": "EP_PROCEDURES.intracardiac_echo_used",
+   "effect": "show_when",
+   "when": {
+    "component": ["AVNRT", "AVRT_WPW", "AT_SVT", "AF", "FLUTTER", "PVC", "VT_VF", "AVJ_ABLATION"]
+   }
+  },
+  {
+   "id": "DR-EP-06",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary EP_PROCEDURES.transseptal_access \"C for left atrial procedure\"; which procedures chosen by the owner (R3-2, 23 Oct 2026)",
+   "target": "EP_PROCEDURES.transseptal_access",
+   "effect": "show_when",
+   "when": {
+    "component": ["AF", "LAA_CLOSURE", "FLUTTER", "AT_SVT", "AVRT_WPW", "PVC", "VT_VF"]
    }
   },
   {

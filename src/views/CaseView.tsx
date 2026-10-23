@@ -1,6 +1,6 @@
 // Case page (approved EP Log-style preview): header card, then grouped rows; each row opens its form in a sheet.
 // Case = one EP_EPISODE; PROCEDURES lists the episode's EP_PROCEDURES, each with its components and modules.
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { codeLabel, displayValue, formFields, hasValue, offeredCodes, type FormField } from '../../shared/dictionary.ts';
 import { ageOn, type CaseDetail, type DecodedRow, type HistoryItem } from '../../shared/caseTypes.ts';
 import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness, type Tally } from '../../shared/readiness.ts';
@@ -19,6 +19,7 @@ import { AiSheet, aiPending } from './AiAssistant';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
+import { componentToTick, offeredComponents, showsDevice, showsLeads } from '../lib/procedureTypes';
 
 // ── readiness shared by every sheet of the open case ──
 interface CaseCtx {
@@ -255,7 +256,7 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
 }
 
 /** A layout row (e.g. "Patient", "ECG", "Devices"): one-per-case sections as forms, repeatable ones as lists. */
-function SectionSheet({ ed, title, entities, focus, onClose }: { ed: CaseEditor; title: string; entities: string[]; focus?: string; onClose: () => void }) {
+function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEditor; title: string; entities: string[]; focus?: string; cha?: ChaResult | null; onClose: () => void }) {
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
   const caseId = ed.detail!.meta.case_id;
   useFocusField(focus);
@@ -271,6 +272,7 @@ function SectionSheet({ ed, title, entities, focus, onClose }: { ed: CaseEditor;
             <div key={entity}>
               {entities.length > 1 && <h3 className="sechead">{def.label}</h3>}
               <RowForm ed={ed} entity={entity} rowId={id} row={row} />
+              {entity === 'CLINICAL_PROFILE_SNAPSHOTS' && cha && <ChaLine cha={cha} />}
               {row && <NestedLists ed={ed} parentEntity={entity} parentId={id} onOpen={(e, cid) => setOpen({ entity: e, id: cid })} />}
             </div>
           );
@@ -304,6 +306,39 @@ function SectionSheet({ ed, title, entities, focus, onClose }: { ed: CaseEditor;
 
 const MODULES = Object.values(dict.entities).filter((d) => d.module);
 
+/** R3-1: the case device (type, manufacturer, model) and its leads, entered inside a device procedure. Same rows as Devices. */
+function DeviceSection({ ed, leads, onOpen }: { ed: CaseEditor; leads: boolean; onOpen: (entity: string, id: string) => void }) {
+  const devId = ed.slot('DEVICES', ed.detail!.meta.case_id);
+  const dev = ed.rows('DEVICES').find((r) => r._id === devId) ?? null;
+  const rows = ed.rows('DEVICE_LEADS');
+  return (
+    <div data-testid="device-section">
+      <h3 className="sechead">{dict.entities.DEVICES.label}</h3>
+      <RowForm ed={ed} entity="DEVICES" rowId={devId} row={dev} />
+      {leads && (
+        <>
+          <h3 className="sechead">Leads</h3>
+          <div className="group" data-testid="device-leads">
+            {rows.map((r, i) => (
+              <button key={r._id} className="grow-row" onClick={() => onOpen('DEVICE_LEADS', r._id)}>
+                <span className="grow">{rowTitle('DEVICE_LEADS', r, i)}</span>
+                <span className="muted small">{filledCount('DEVICE_LEADS', r)} filled</span>
+                <Icon name="chevron" size={16} className="muted" />
+              </button>
+            ))}
+            {!ed.readOnly && (
+              <button className="grow-row add" onClick={() => onOpen('DEVICE_LEADS', ed.addRow('DEVICE_LEADS'))}>
+                <Icon name="plus" size={18} /> Add lead
+              </button>
+            )}
+            {ed.readOnly && !rows.length && <div className="grow-row muted">None</div>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications. */
 function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string; focus?: string; onClose: () => void }) {
   const c = useCase();
@@ -314,9 +349,20 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const [extra, setExtra] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<null | 'procedure' | { componentId: string; module: string }>(null);
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
+  const [allTypes, setAllTypes] = useState(false);
   const comps = ed.rows('PROCEDURE_COMPONENTS').filter((c) => c.procedure_id === id);
   const types = comps.map((c) => String(c.component_type));
   const compField = fieldOf('PROCEDURE_COMPONENTS', 'component_type');
+  const ptype = p?.primary_procedure_type;
+
+  // R3-1: choosing the procedure type ticks its component (only on a change made here, never just by opening).
+  const lastType = useRef(ptype);
+  useEffect(() => {
+    if (lastType.current === ptype) return;
+    lastType.current = ptype;
+    const tick = ed.readOnly ? null : componentToTick(ptype, types);
+    if (tick) ed.addRow('PROCEDURE_COMPONENTS', id, { component_type: tick });
+  }, [ptype]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (open) return <RowSheet ed={ed} entity={open.entity} id={open.id} onClose={() => setOpen(null)} />;
   if (!p)
@@ -350,19 +396,30 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
     <Sheet title={procedureTitle(p, i)} onClose={onClose} onDone={onClose} testId="procedure-sheet">
       <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} />
 
-      <h3 className="sechead">Procedure components</h3>
+      <h3 className="sechead">{ptype === 'ABLATION' ? 'Ablation of' : 'Procedure components'}</h3>
       <div className="group">
         <div className="frow stack">
           <div className="pill-set" role="group" aria-label="Procedure components">
-            {offeredCodes(compField, null).map((c) => (
+            {(allTypes ? offeredCodes(compField, null) : offeredComponents(ptype, offeredCodes(compField, null), types)).map((c) => (
               <button key={c} type="button" aria-pressed={types.includes(c)} className={types.includes(c) ? 'on' : ''} disabled={ed.readOnly} onClick={() => toggleComponent(c)}>
                 {codeLabel(compField, c)}
               </button>
             ))}
           </div>
-          {!ed.readOnly && <span className="hint">Each component opens its own section below.</span>}
+          {!ed.readOnly && (
+            <span className="hint">
+              Each component opens its own section below.{' '}
+              {!allTypes && offeredComponents(ptype, offeredCodes(compField, null), types).length < offeredCodes(compField, null).length && (
+                <button type="button" className="link small" onClick={() => setAllTypes(true)}>
+                  Show all
+                </button>
+              )}
+            </span>
+          )}
         </div>
       </div>
+
+      {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
 
       {shown.map((m) => {
         const row = moduleRow(m.entity);
@@ -907,35 +964,21 @@ function FollowUpSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void })
   );
 }
 
-function ChaSheet({ cha, onClose, onGo }: { cha: ChaResult; onClose: () => void; onGo: (section: string) => void }) {
+/** R3-3: CHA₂DS₂-VASc as one read-only line inside Baseline risk profile; computed from saved fields, never stored. */
+function ChaLine({ cha }: { cha: ChaResult }) {
+  const missing = cha.items.filter((i) => i.points === null).map((i) => i.label);
   return (
-    <Sheet title="CHA₂DS₂-VASc" closeLabel="Close" onClose={onClose} onDone={onClose} testId="cha-sheet">
-      <div className="summary">
-        <div>
-          <b>{cha.score ?? '—'}</b>
-          {cha.score === null ? 'incomplete' : 'points'}
-        </div>
+    <div className="group" style={{ marginTop: 10 }}>
+      <div className="frow inline" data-testid="cha-line">
+        <span className="lab">
+          CHA₂DS₂-VASc <span className="muted small">(calculated)</span>
+        </span>
+        <span className="ios-value">
+          <b>{cha.score ?? 'incomplete'}</b>
+        </span>
+        {missing.length > 0 && <span className="hint">Not known yet: {missing.join(', ')}</span>}
       </div>
-      <div className="group">
-        {cha.items.map((i) => (
-          <div key={i.key} className="grow-row">
-            <span className="grow">{i.label}</span>
-            <span className={i.points === null ? 'muted small' : 'small'}>{i.points === null ? 'not known' : `+${i.points}`}</span>
-          </div>
-        ))}
-      </div>
-      <p className="note">Computed from the saved fields (baseline risk profile, date of birth on the episode date, sex at birth); never stored. No number until every item is Yes or No and age and sex are known.</p>
-      <div className="group">
-        <button className="grow-row" onClick={() => onGo('risk')}>
-          <span className="grow">Open baseline risk profile</span>
-          <Icon name="chevron" size={16} className="muted" />
-        </button>
-        <button className="grow-row" onClick={() => onGo('patient')}>
-          <span className="grow">Open patient (date of birth, sex)</span>
-          <Icon name="chevron" size={16} className="muted" />
-        </button>
-      </div>
-    </Sheet>
+    </div>
   );
 }
 
@@ -960,7 +1003,6 @@ function ReportSheet({ ed, readiness, onClose }: { ed: CaseEditor; readiness: Re
 }
 
 type OpenSheet =
-  | { kind: 'cha' }
   | { kind: 'report' }
   | { kind: 'followup' }
   | { kind: 'procedure'; id: string; focus?: string }
@@ -1117,11 +1159,6 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <span className={`status ${completed ? 's-done' : 's-prog'}`} data-testid="case-status">
               {completed ? 'Completed' : 'In progress'}
             </span>
-            {cha && (
-              <button className="chip c-neutral cha-chip" onClick={() => setSheet({ kind: 'cha' })} data-testid="cha-chip">
-                CHA₂DS₂-VASc {cha.score === null ? 'incomplete' : cha.score}
-              </button>
-            )}
           </div>
           <div className="progress-row" data-testid="core-progress">
             <span>
@@ -1309,20 +1346,10 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         )}
 
         {sheet?.kind === 'procedure' && <ProcedureSheet ed={ed} id={sheet.id} focus={sheet.focus} onClose={() => setSheet(null)} />}
-        {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} focus={sheet.focus} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} focus={sheet.focus} cha={cha} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'additional' && <AdditionalSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'report' && <ReportSheet ed={ed} readiness={readiness} onClose={() => setSheet(null)} />}
-        {sheet?.kind === 'cha' && cha && (
-          <ChaSheet
-            cha={cha}
-            onClose={() => setSheet(null)}
-            onGo={(id) => {
-              const row = dict.layout.groups.flatMap((g) => g.rows).find((r) => r.id === id)!;
-              setSheet({ kind: 'section', title: row.label, entities: row.entities });
-            }}
-          />
-        )}
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}

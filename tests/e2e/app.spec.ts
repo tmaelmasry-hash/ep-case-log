@@ -50,7 +50,8 @@ test('create a case, add two procedures with components and module fields; it pe
   let ps = page.getByTestId('procedure-sheet');
   await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'EPS' }).click();
   await ps.getByLabel('Procedure date & time').fill('2026-03-12T10:00');
-  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'Diagnostic EPS' }).click();
+  // R3-1: choosing EPS ticks Diagnostic EPS by itself.
+  await expect(ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'Diagnostic EPS' })).toHaveAttribute('aria-pressed', 'true');
   await expect(ps.getByTestId('module-DIAGNOSTIC_EPS')).toBeVisible();
   await ps.getByTestId('module-DIAGNOSTIC_EPS').getByRole('radiogroup', { name: 'EPS indication' }).getByRole('radio', { name: 'Syncope' }).click();
   await saved(page);

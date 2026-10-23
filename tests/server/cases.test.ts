@@ -64,13 +64,14 @@ async function newCase(c: Client, mrn = '1100001', group = groups[0].group_id, d
 }
 
 describe('dictionary', () => {
-  it('loads all 37 dictionary entities plus the review extension, arranged for case = episode', () => {
-    expect(Object.keys(dict.entities)).toHaveLength(38);
+  it('loads all 37 dictionary entities plus the review extension and the amendment LAA closure, arranged for case = episode', () => {
+    expect(Object.keys(dict.entities)).toHaveLength(39);
     expect(dict.entities.EP_PROCEDURES.cardinality).toBe('multi');
     expect(dict.entities.AF_ABLATIONS.scope).toBe('procedure');
     expect(dict.entities.AF_ABLATIONS.module).toEqual(['AF']);
     const fieldCount = Object.values(dict.entities).reduce((n, e) => n + e.fields.length, 0);
-    expect(fieldCount).toBe(546); // 545 dictionary fields + complications_reviewed (extension)
+    // 545 dictionary fields + complications_reviewed (extension) + 48 amendment fields (M-3, M-4a, M-4b) + the 6 of LAA closure
+    expect(fieldCount).toBe(600);
   });
   it('never shows link, polymorphic or json fields on a form', () => {
     for (const e of Object.values(dict.entities)) {

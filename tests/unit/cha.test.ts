@@ -20,6 +20,15 @@ describe('CHA2DS2-VASc', () => {
   it('age 65 on the episode date scores 1; stroke scores 2', () => {
     expect(cha2ds2vasc(rows({ ...all('NO'), prior_stroke_tia_systemic_embolism: 'YES' }, '1961-03-12', 'MALE')).score).toBe(3);
   });
+  it('M-4a: stroke, TIA and thromboembolism are three items; any Yes scores 2, all No 0, part answered = incomplete', () => {
+    const base = { heart_failure: 'NO', hypertension: 'NO', diabetes: 'NO', vascular_disease: 'NO' };
+    const split = (s: string, t: string, e: string) => ({ ...base, prior_stroke: s, prior_tia: t, prior_thromboembolic_event: e });
+    expect(cha2ds2vasc(rows(split('NO', 'YES', 'NO'), '1980-01-01', 'MALE')).score).toBe(2);
+    expect(cha2ds2vasc(rows(split('NO', 'NO', 'NO'), '1980-01-01', 'MALE')).score).toBe(0);
+    expect(cha2ds2vasc(rows({ ...base, prior_stroke: 'NO' }, '1980-01-01', 'MALE')).missing).toEqual(['Stroke / TIA / thromboembolism']);
+    // The new items win over the old combined one once any of them is answered.
+    expect(cha2ds2vasc(rows({ ...split('NO', 'NO', 'NO'), prior_stroke_tia_systemic_embolism: 'YES' }, '1980-01-01', 'MALE')).score).toBe(0);
+  });
   it('incomplete while any item is unknown, unanswered, or age/sex missing', () => {
     expect(cha2ds2vasc(rows({ ...all('NO'), diabetes: 'UNKNOWN' }, '1950-01-01', 'MALE'))).toMatchObject({ score: null, missing: ['Diabetes'] });
     expect(cha2ds2vasc(rows(all('NO'), null, null)).missing).toEqual(['Age', 'Sex at birth']);

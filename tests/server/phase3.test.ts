@@ -267,6 +267,8 @@ describe('case history', () => {
     const id = await newCase(sara);
     const p = await addProcedure(sara, id, ['AF']);
     const edit = (value: unknown) => sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'fluoroscopy_time_min', value }] });
+    expect((await edit('15')).data.results[0].ok).toBe(false); // M-1: fluoroscopy time applies once fluoroscopy was used
+    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'fluoroscopy_used', value: true }] });
     expect((await edit('15')).data.results[0].ok).toBe(true);
     clock = new Date(clock.getTime() + 10 * 60_000);
     await edit('1');
@@ -282,6 +284,7 @@ describe('case history', () => {
     expect(edits.map((x) => [x.old, x.new])).toEqual([
       ['15 min', '12.5 min'],
       ['—', '15 min'],
+      ['—', 'Yes'], // fluoroscopy used
     ]);
     expect(items.some((x) => x.kind === 'add' && x.text === 'Component AF added to Procedure 1')).toBe(true);
     expect(items[items.length - 1]).toMatchObject({ kind: 'create', text: `Case created in ${groups[0].name} as No. 1` });

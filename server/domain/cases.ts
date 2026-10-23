@@ -5,6 +5,7 @@ import { FieldError, decodeValue, encodeValue, mergeOtherSpecify } from '../../s
 import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../../shared/readiness.ts';
 import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import { CATEGORY_FIELDS } from '../../shared/categories.ts';
+import { caseEnv, consequences, misfit } from '../../shared/rules.ts';
 import {
   ID_RE,
   ageOn,
@@ -198,6 +199,29 @@ export function placeRow(dict: Dictionary, rec: CaseRecord, def: EntityDef, id: 
 }
 
 /** Validates one value for a row (dictionary codes, types, links inside this case). Returns the stored value. */
+/** M-1 save check (same evaluator as the screen): a value the rules forbid is refused, and so is a change that would
+ *  leave another answer of the same procedure (or of the case) not fitting, unless this batch clears that answer. */
+function checkRules(dict: Dictionary, rec: CaseRecord, def: EntityDef, row: StoredRow, field: string, value: unknown, clearing: Set<string>) {
+  if (!dict.rules.byTarget.size) return;
+  const decoded = decodeRows(dict, rec);
+  const rowsOf = (e: string) => decoded[e] ?? [];
+  const pid = procedureOf(dict, def.entity, row);
+  const own = rowsOf(def.entity).find((r) => r._id === row._id) ?? null;
+  // Read as stored (EP Workspace valueMisfit): a field shown only once it holds an answer takes no new answer.
+  const env = caseEnv(dict.entities, rowsOf, pid, { entity: def.entity, row: own });
+  const label = def.fields.find((f) => f.name === field)?.label ?? field;
+  const why = misfit(dict.rules, def.entity, field, value, env);
+  if (why) throw new EditError(`${label}: ${why}.`);
+  const broken = consequences(dict.rules, dict.entities, rowsOf, pid, def.entity, field, value).filter((c) => {
+    const cpid = dict.entities[c.entity]?.scope === 'procedure' || c.entity === 'EP_PROCEDURES' ? pid : null;
+    return !clearing.has(`${c.entity}.${c.field}@${cpid ?? ''}`);
+  });
+  if (broken.length) {
+    const names = broken.map((c) => dict.entities[c.entity].fields.find((f) => f.name === c.field)?.label ?? c.field).join(', ');
+    throw new EditError(`${label}: first remove the answers that would no longer apply (${names}).`);
+  }
+}
+
 function encodeFor(dict: Dictionary, rec: CaseRecord, def: EntityDef, row: Record<string, unknown>, field: string, value: unknown, userIds: Set<string>, allowCreateOnly = false): unknown {
   const f = def.fields.find((x) => x.name === field);
   if (!f) throw new EditError(`${def.label}: unknown field ${field}.`);
@@ -311,6 +335,16 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
     }),
   );
 
+  // Answers this batch clears (M-1: a change may make other answers not apply; they must be cleared with it).
+  const clearing = new Set(
+    (batch.changes ?? [])
+      .filter((c) => c?.value === null || c?.value === '' || (Array.isArray(c?.value) && !c.value.length))
+      .map((c) => {
+        const r = findLive(rec, String(c.entity), String(c.id));
+        return `${c.entity}.${c.field}@${r ? procedureOf(dict, String(c.entity), r) : ''}`;
+      }),
+  );
+
   (batch.changes ?? []).slice(0, 200).forEach((ch, i) =>
     run('change', i, () => {
       const def = dict.entities[ch?.entity];
@@ -328,7 +362,9 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
       } else {
         const f = def.fields.find((x) => x.name === ch.field);
         const before = f ? decodeValue(f, row[ch.field]) : null;
-        row[ch.field] = encodeFor(dict, rec, def, row, ch.field, ch.value, userIds);
+        const encoded = encodeFor(dict, rec, def, row, ch.field, ch.value, userIds);
+        checkRules(dict, rec, def, row, ch.field, decodeValue(f!, encoded), clearing);
+        row[ch.field] = encoded;
         afterChange(def, row, ch.field);
         const after = decodeValue(f!, row[ch.field]);
         if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where, old: before, new: after }, a);

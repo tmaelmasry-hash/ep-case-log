@@ -10,7 +10,7 @@
     "EP_EPISODES.hajj_timing": "Hajj / Umrah timing",
     "ARRHYTHMIA_INDICATIONS.primary_ep_diagnosis": "Primary EP diagnosis",
     "CLINICAL_PROFILE_SNAPSHOTS.coronary_artery_disease_or_prior_mi": "CAD or prior MI",
-    "CLINICAL_PROFILE_SNAPSHOTS.prior_stroke_tia_systemic_embolism": "Prior stroke / TIA / systemic embolism",
+    "CLINICAL_PROFILE_SNAPSHOTS.prior_stroke_tia_systemic_embolism": "Prior stroke / TIA / systemic embolism (old combined item)",
     "ECHO_STUDIES.lvef_assessment": "LVEF assessment",
     "ECHO_STUDIES.lvef_pct": "LVEF",
     "EP_PROCEDURES.procedure_start_datetime": "Procedure date & time",
@@ -25,7 +25,8 @@
     "DEVICES.current_device_type": "Device type",
     "DEVICE_IMPLANTS.icd_prevention_type": "ICD prevention type",
     "DEVICE_IMPLANTS.perioperative_antibiotic_given": "Peri-operative antibiotic given",
-    "SVT_ABLATIONS.svt_mechanism": "SVT mechanism"
+    "SVT_ABLATIONS.svt_mechanism": "SVT mechanism",
+    "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_type": "Cardiomyopathy type (old single-choice item)"
   },
   "codes": {
     "PFA": "PFA (pulsed field)",

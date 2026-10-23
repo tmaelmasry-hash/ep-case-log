@@ -1,6 +1,5 @@
 {
-  "_note": "Sidebar menu (owner R2-4 / R2-5, 23 Oct 2026). Each item lists the dictionary codes it matches; a parent without its own match holds every case of its children. 'proc' is checked inside one procedure (its components, primary type and the codes of its own rows); 'case' on the whole case. A case can sit under several items. Cases that match no Procedures item go to Unclassified. To add an item: add one object here (fields must be in CATEGORY_FIELDS, shared/categories.ts). Codes in pending_codes are owner-approved M-3 additions that are not in the dictionary yet.",
-  "pending_codes": ["PROCEDURE_COMPONENTS.component_type=LAA_CLOSURE"],
+  "_note": "Sidebar menu (owner R2-4 / R2-5, 23 Oct 2026). Each item lists the dictionary codes it matches; a parent without its own match holds every case of its children. 'proc' is checked inside one procedure (its components, primary type and the codes of its own rows); 'case' on the whole case. A case can sit under several items. Cases that match no Procedures item go to Unclassified. To add an item: add one object here (fields must be in CATEGORY_FIELDS, shared/categories.ts).",
   "items": [
     {"id":"ABLATION","label":"Ablation","section":"procedures","icon":"bolt","color":"cat-ablation"},
     {"id":"AF","label":"AF ablation","parent":"ABLATION","section":"procedures","color":"cat-af","match":{"proc":{"component":["AF"]}}},

@@ -105,6 +105,14 @@
     "VT_VF"
    ]
   },
+  "LAA_CLOSURES": {
+   "scope": "procedure",
+   "cardinality": "single",
+   "label": "LAA closure",
+   "module": [
+    "LAA_CLOSURE"
+   ]
+  },
   "AVJ_ABLATIONS": {
    "scope": "procedure",
    "cardinality": "single",

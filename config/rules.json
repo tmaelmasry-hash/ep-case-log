@@ -1,0 +1,1528 @@
+{
+ "_note": "Dynamic-form rules (merge step M-1, DECISIONS M-1). Evaluated by public/js/rules.js in the browser and on the server. Only rules taken from the dictionary / frozen spec text (SOURCE_EXPLICIT) or approved by the owner (OWNER_APPROVED) are listed; open ones stay in docs/merge/DYNAMIC_RULES_MATRIX.tsv. A hidden field is never stored as N/A; a value that stops fitting is removed only after the person confirms. 'enabled': false switches every rule off.",
+ "version": "rules/m4b-2026-10-23",
+ "enabled": true,
+ "rules": [
+  {
+   "id": "DR-AF-01",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec CANON_AF_ENDPOINT_V1 I1",
+   "target": "EP_PROCEDURES.first_or_redo",
+   "effect": "offer_when",
+   "code": "NOT_APPLICABLE",
+   "when": {
+    "not": {
+     "component": [
+      "AF"
+     ]
+    }
+   }
+  },
+  {
+   "id": "DR-AF-03",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I2",
+   "target": "AF_ABLATIONS.pv_status_at_case_end",
+   "effect": "offer_when",
+   "code": "NO_RECONNECTION_CONFIRMED",
+   "when": {
+    "field": "EP_PROCEDURES.first_or_redo",
+    "in": [
+     "REDO"
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-04a",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I3",
+   "target": "AF_ABLATIONS.pv_status_at_case_end",
+   "effect": "offer_when",
+   "code": "ALL_TARGET_PVS_ISOLATED",
+   "when": {
+    "not": {
+     "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+     "eq": false
+    }
+   }
+  },
+  {
+   "id": "DR-AF-04b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I3",
+   "target": "AF_ABLATIONS.pv_status_at_case_end",
+   "effect": "offer_when",
+   "code": "PARTIAL_ISOLATION",
+   "when": {
+    "not": {
+     "all": [
+      {
+       "field": "EP_PROCEDURES.first_or_redo",
+       "in": [
+        "FIRST"
+       ]
+      },
+      {
+       "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+       "eq": false
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "DR-AF-05",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I4, I5",
+   "target": "AF_ABLATIONS.pv_reconnection_present_at_redo",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "EP_PROCEDURES.first_or_redo",
+      "in": [
+       "REDO"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.pv_status_at_case_end",
+      "in": [
+       "ALL_TARGET_PVS_ISOLATED",
+       "PARTIAL_ISOLATION",
+       "NOT_ISOLATED",
+       "NO_RECONNECTION_CONFIRMED"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-05b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I5 (NO_RECONNECTION_CONFIRMED forces FALSE)",
+   "target": "AF_ABLATIONS.pv_reconnection_present_at_redo",
+   "effect": "offer_when",
+   "code": "true",
+   "when": {
+    "not": {
+     "field": "AF_ABLATIONS.pv_status_at_case_end",
+     "in": [
+      "NO_RECONNECTION_CONFIRMED"
+     ]
+    }
+   }
+  },
+  {
+   "id": "DR-AF-06",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I4, I5",
+   "target": "AF_ABLATIONS.reconnected_pv_count",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "EP_PROCEDURES.first_or_redo",
+      "in": [
+       "REDO"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.pv_reconnection_present_at_redo",
+      "eq": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-06b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I5 (a count of ZERO is an error)",
+   "target": "AF_ABLATIONS.reconnected_pv_count",
+   "effect": "min",
+   "value": 1
+  },
+  {
+   "id": "DR-AF-07",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I6",
+   "target": "AF_ABLATIONS.additional_ablation_types",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.additional_ablation_beyond_pvi",
+    "eq": true
+   }
+  },
+  {
+   "id": "DR-AF-08",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I8",
+   "target": "AF_ABLATIONS.pvi_block_confirmation",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.pv_status_at_case_end",
+    "in": [
+     "ALL_TARGET_PVS_ISOLATED",
+     "PARTIAL_ISOLATION",
+     "NO_RECONNECTION_CONFIRMED"
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-E1",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec E1 (shown as a check, saving not blocked)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "Complete PVI / re-isolation needs PVI attempted = Yes and every target vein isolated.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "COMPLETE_PVI_OR_REISOLATION"
+      ]
+     },
+     {
+      "any": [
+       {
+        "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+        "eq": false
+       },
+       {
+        "not": {
+         "field": "AF_ABLATIONS.pv_status_at_case_end",
+         "in": [
+          "ALL_TARGET_PVS_ISOLATED"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-E2",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec E2 (shown as a check, saving not blocked)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "\"No reconnection, no new PVI required\" needs a redo with no PVI attempted, no reconnection confirmed and no additional ablation.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "NO_RECONNECTION_NO_NEW_PVI_REQUIRED"
+      ]
+     },
+     {
+      "any": [
+       {
+        "field": "EP_PROCEDURES.first_or_redo",
+        "in": [
+         "FIRST"
+        ]
+       },
+       {
+        "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+        "eq": true
+       },
+       {
+        "not": {
+         "field": "AF_ABLATIONS.pv_status_at_case_end",
+         "in": [
+          "NO_RECONNECTION_CONFIRMED"
+         ]
+        }
+       },
+       {
+        "field": "AF_ABLATIONS.additional_ablation_beyond_pvi",
+        "eq": true
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-E3",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec E3 (shown as a check, saving not blocked)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "\"Non-PV target achieved\" needs additional ablation = Yes and a complete PVI (or, at a redo, no reconnection confirmed).",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "NON_PV_TARGET_ACHIEVED"
+      ]
+     },
+     {
+      "any": [
+       {
+        "field": "AF_ABLATIONS.additional_ablation_beyond_pvi",
+        "eq": false
+       },
+       {
+        "not": {
+         "any": [
+          {
+           "all": [
+            {
+             "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+             "eq": true
+            },
+            {
+             "field": "AF_ABLATIONS.pv_status_at_case_end",
+             "in": [
+              "ALL_TARGET_PVS_ISOLATED"
+             ]
+            }
+           ]
+          },
+          {
+           "all": [
+            {
+             "field": "EP_PROCEDURES.first_or_redo",
+             "in": [
+              "REDO"
+             ]
+            },
+            {
+             "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+             "eq": false
+            },
+            {
+             "field": "AF_ABLATIONS.pv_status_at_case_end",
+             "in": [
+              "NO_RECONNECTION_CONFIRMED"
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-E4",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec E4 (shown as a check, saving not blocked)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "\"Failed / aborted\" does not fit a case that ended with every target vein isolated.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "FAILED_ABORTED"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.pv_status_at_case_end",
+      "in": [
+       "ALL_TARGET_PVS_ISOLATED",
+       "NO_RECONNECTION_CONFIRMED"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-E5",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "spec E5 (clinical approval OUTSTANDING in the spec; owner 21 Oct: warning only)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "\"Partial\" is unusual here: every target vein is isolated and there was no additional ablation.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "PARTIAL"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.additional_ablation_beyond_pvi",
+      "eq": false
+     },
+     {
+      "any": [
+       {
+        "all": [
+         {
+          "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+          "eq": true
+         },
+         {
+          "field": "AF_ABLATIONS.pv_status_at_case_end",
+          "in": [
+           "ALL_TARGET_PVS_ISOLATED"
+          ]
+         }
+        ]
+       },
+       {
+        "all": [
+         {
+          "field": "EP_PROCEDURES.first_or_redo",
+          "in": [
+           "REDO"
+          ]
+         },
+         {
+          "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+          "eq": false
+         },
+         {
+          "field": "AF_ABLATIONS.pv_status_at_case_end",
+          "in": [
+           "NO_RECONNECTION_CONFIRMED"
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-09-I7",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec I7 (shown as a check, saving not blocked)",
+   "target": "AF_ABLATIONS.acute_af_endpoint",
+   "effect": "warn_when",
+   "message": "This endpoint needs something attempted: PVI attempted = Yes, or additional ablation = Yes.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.acute_af_endpoint",
+      "in": [
+       "COMPLETE_PVI_OR_REISOLATION",
+       "NON_PV_TARGET_ACHIEVED",
+       "PARTIAL"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+      "eq": false
+     },
+     {
+      "field": "AF_ABLATIONS.additional_ablation_beyond_pvi",
+      "eq": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-I3B",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "spec I3B (clinical approval OUTSTANDING in the spec; owner 21 Oct: warning only)",
+   "target": "AF_ABLATIONS.pv_status_at_case_end",
+   "effect": "warn_when",
+   "message": "\"No reconnection confirmed\" usually means no re-isolation was attempted; PVI attempted is Yes.",
+   "when": {
+    "all": [
+     {
+      "field": "AF_ABLATIONS.pv_status_at_case_end",
+      "in": [
+       "NO_RECONNECTION_CONFIRMED"
+      ]
+     },
+     {
+      "field": "AF_ABLATIONS.pvi_or_reisolation_attempted",
+      "eq": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-10",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary AF_ABLATIONS.thrombus_assessment_date",
+   "target": "AF_ABLATIONS.thrombus_assessment_date",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.thrombus_exclusion_modality",
+    "in": [
+     "TEE",
+     "CARDIAC_CT",
+     "EXTERNAL_APPROVED_SOURCE"
+    ]
+   }
+  },
+  {
+   "id": "DR-AF-11",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary AF_ABLATIONS.same_day_thrombus_assessment_completed_before_la_access",
+   "target": "AF_ABLATIONS.same_day_thrombus_assessment_completed_before_la_access",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.thrombus_assessment_date",
+    "same_day_as": "EP_PROCEDURES.procedure_start_datetime"
+   }
+  },
+  {
+   "id": "DR-EP-01",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.mapping_system \"C if used\"",
+   "target": "EP_PROCEDURES.mapping_system",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.electroanatomic_mapping_used",
+    "eq": true
+   }
+  },
+  {
+   "id": "DR-EP-02",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.fluoroscopy_time_min \"C if used\"",
+   "target": "EP_PROCEDURES.fluoroscopy_time_min",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.fluoroscopy_used",
+    "eq": true
+   }
+  },
+  {
+   "id": "DR-EP-03",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.contrast_volume_ml \"C if contrast used\"",
+   "target": "EP_PROCEDURES.contrast_volume_ml",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.contrast_used",
+    "eq": true
+   }
+  },
+  {
+   "id": "DR-EP-04",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary EP_PROCEDURES.other_procedure_invasiveness",
+   "target": "EP_PROCEDURES.other_procedure_invasiveness",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.primary_procedure_type",
+    "in": [
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-FL-01",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary FLUTTER_ABLATIONS.flutter_circuit_or_isthmus \"C for atypical flutter\"",
+   "target": "FLUTTER_ABLATIONS.flutter_circuit_or_isthmus",
+   "effect": "show_when",
+   "when": {
+    "field": "FLUTTER_ABLATIONS.flutter_type",
+    "in": [
+     "ATYPICAL_RA",
+     "ATYPICAL_LA"
+    ]
+   }
+  },
+  {
+   "id": "DR-FL-02",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary FLUTTER_ABLATIONS.bidirectional_cti_block \"C if CTI ablated\"",
+   "target": "FLUTTER_ABLATIONS.bidirectional_cti_block",
+   "effect": "show_when",
+   "when": {
+    "field": "FLUTTER_ABLATIONS.cti_ablation_performed",
+    "eq": true
+   }
+  },
+  {
+   "id": "DR-DV-01",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary DEVICE_IMPLANTS.icd_prevention_type \"C for ICD/CRT-D/S-ICD/EV-ICD\"",
+   "target": "DEVICE_IMPLANTS.icd_prevention_type",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-02",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary DEVICE_IMPLANTS.prior_device_id",
+   "target": "DEVICE_IMPLANTS.prior_device_id",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_IMPLANTS.device_action",
+    "in": [
+     "GENERATOR_CHANGE",
+     "UPGRADE",
+     "DOWNGRADE"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-02a",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary CRT_CSP_PROCEDURES.final_paced_qrs_ms",
+   "target": "CRT_CSP_PROCEDURES.final_paced_qrs_ms",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.strategy_implant_success",
+    "in": [
+     "YES",
+     "PARTIAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-02b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary CRT_CSP_PROCEDURES.csp_or_lv_lead_id",
+   "target": "CRT_CSP_PROCEDURES.csp_or_lv_lead_id",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.strategy_implant_success",
+    "in": [
+     "YES",
+     "PARTIAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-03",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary CRT_CSP_PROCEDURES.failed_strategy_reason \"C if partial/failed\"",
+   "target": "CRT_CSP_PROCEDURES.failed_strategy_reason",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.strategy_implant_success",
+    "in": [
+     "PARTIAL",
+     "NO"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-04a",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary CRT_CSP_PROCEDURES.baseline_nyha_class",
+   "target": "CRT_CSP_PROCEDURES.baseline_nyha_class",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.cpp_indication",
+    "in": [
+     "HF_DYSSYNCHRONY",
+     "PACING_INDUCED_CM",
+     "FAILED_PRIOR_CRT"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-04b",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "dictionary CRT_CSP_PROCEDURES.baseline_echo_id",
+   "target": "CRT_CSP_PROCEDURES.baseline_echo_id",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.cpp_indication",
+    "in": [
+     "HF_DYSSYNCHRONY",
+     "PACING_INDUCED_CM",
+     "FAILED_PRIOR_CRT"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-A1",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) A1",
+   "target": "AF_ABLATIONS.af_energy_sources_used",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.af_energy_source",
+    "in": [
+     "MULTIPLE"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-A1b",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) A1",
+   "target": "AF_ABLATIONS.af_energy_sources_used",
+   "effect": "warn_when",
+   "message": "MULTIPLE energy sources: choose at least two.",
+   "when": {
+    "field": "AF_ABLATIONS.af_energy_sources_used",
+    "count_lt": 2
+   }
+  },
+  {
+   "id": "DR-M3-B3",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B3",
+   "target": "CLINICAL_PROFILE_SNAPSHOTS.mechanical_mitral_valve",
+   "effect": "show_when",
+   "when": {
+    "field": "CLINICAL_PROFILE_SNAPSHOTS.valvular_af",
+    "in": [
+     "YES"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-B7",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B7",
+   "target": "AF_ABLATIONS.last_prior_af_catheter_ablation_date",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.first_or_redo",
+    "in": [
+     "REDO"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-B9",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B9",
+   "target": "AF_ABLATIONS.last_prior_surgical_af_ablation_date",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.prior_surgical_af_ablation",
+    "in": [
+     "YES"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-B10",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B10",
+   "target": "AF_ABLATIONS.prior_flutter_pharmacologic_cardioversion",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.coexisting_atrial_flutter",
+    "in": [
+     "TYPICAL_CTI",
+     "ATYPICAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-B11",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B11",
+   "target": "AF_ABLATIONS.prior_flutter_dc_cardioversion",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.coexisting_atrial_flutter",
+    "in": [
+     "TYPICAL_CTI",
+     "ATYPICAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-B12",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) B12",
+   "target": "AF_ABLATIONS.last_prior_flutter_catheter_ablation_date",
+   "effect": "show_when",
+   "when": {
+    "field": "AF_ABLATIONS.coexisting_atrial_flutter",
+    "in": [
+     "TYPICAL_CTI",
+     "ATYPICAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D1",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D1",
+   "target": "DEVICE_IMPLANTS.preimplant_nyha_class",
+   "effect": "show_when",
+   "when": {
+    "field": "CLINICAL_PROFILE_SNAPSHOTS.heart_failure",
+    "in": [
+     "YES"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D2",
+   "version": 2,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D2; M-4b: reads the multi-choice field (any chosen type)",
+   "target": "DEVICE_IMPLANTS.ischemic_cm_timeframe",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_types",
+      "in": [
+       "ISCHEMIC"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D3",
+   "version": 2,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D3; M-4b: reads the multi-choice field (any chosen type)",
+   "target": "DEVICE_IMPLANTS.ischemic_cm_gdmt_max_dose",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_types",
+      "in": [
+       "ISCHEMIC"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D4",
+   "version": 2,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D4; M-4b: reads the multi-choice field (any chosen type)",
+   "target": "DEVICE_IMPLANTS.nonischemic_cm_timeframe",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_types",
+      "in": [
+       "DILATED_NONISCHEMIC"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D5",
+   "version": 2,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D5; M-4b: reads the multi-choice field (any chosen type)",
+   "target": "DEVICE_IMPLANTS.nonischemic_cm_gdmt_max_dose",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_types",
+      "in": [
+       "DILATED_NONISCHEMIC"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D6",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D6",
+   "target": "DEVICE_IMPLANTS.most_recent_mi_date",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "CLINICAL_PROFILE_SNAPSHOTS.coronary_artery_disease_or_prior_mi",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D7",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D7",
+   "target": "DEVICE_IMPLANTS.vf_history",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D8",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D8",
+   "target": "DEVICE_IMPLANTS.vf_date",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vf_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D9",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D9",
+   "target": "DEVICE_IMPLANTS.vt_history",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D10",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D10",
+   "target": "DEVICE_IMPLANTS.vt_date",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D11",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D11",
+   "target": "DEVICE_IMPLANTS.vt_type",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D12",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D12",
+   "target": "DEVICE_IMPLANTS.vt_post_cardiac_surgery_48h",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D13",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D13",
+   "target": "DEVICE_IMPLANTS.vt_bradycardia_dependent",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D14",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D14",
+   "target": "DEVICE_IMPLANTS.vt_reversible_cause",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D15",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D15",
+   "target": "DEVICE_IMPLANTS.vt_hemodynamic_instability",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.vt_history",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D16",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D16",
+   "target": "DEVICE_IMPLANTS.vad_candidate",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D17",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D17",
+   "target": "DEVICE_IMPLANTS.on_vad",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D18",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D18",
+   "target": "DEVICE_IMPLANTS.transplant_candidate",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D19",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D19",
+   "target": "DEVICE_IMPLANTS.on_transplant_list",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D20",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D20",
+   "target": "DEVICE_IMPLANTS.shared_decision_making",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D23",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D23",
+   "target": "DEVICE_IMPLANTS.cabg_this_admission",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D25",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D25",
+   "target": "DEVICE_IMPLANTS.pci_this_admission",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D21",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D21",
+   "target": "DEVICE_IMPLANTS.sdm_tool_used",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.shared_decision_making",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D22",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D22",
+   "target": "DEVICE_IMPLANTS.sdm_tool_name",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.sdm_tool_used",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D24",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D24",
+   "target": "DEVICE_IMPLANTS.cabg_date",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.cabg_this_admission",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-D26",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) D26",
+   "target": "DEVICE_IMPLANTS.pci_date",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "S_ICD",
+       "EV_ICD"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.pci_this_admission",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-E1",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) E1",
+   "target": "CRT_CSP_PROCEDURES.v1_unipolar_paced_qrs_morphology",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "CRT_CSP_PROCEDURES.csp_target",
+      "in": [
+       "LEFT_BUNDLE_BRANCH_AREA"
+      ]
+     },
+     {
+      "field": "CRT_CSP_PROCEDURES.strategy_implant_success",
+      "in": [
+       "YES",
+       "PARTIAL"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-E2",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) E2",
+   "target": "CRT_CSP_PROCEDURES.r_wave_peak_time_v5_v6_ms",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.v1_unipolar_paced_qrs_morphology",
+    "in": [
+     "QR_SMALL_Q",
+     "QR_LARGE_Q",
+     "OTHER_PATTERN"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-F1",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) F1",
+   "target": "PATIENTS.research_study_name",
+   "effect": "show_when",
+   "when": {
+    "field": "PATIENTS.registry_basis",
+    "in": [
+     "RESEARCH_CONSENT"
+    ]
+   }
+  },
+  {
+   "id": "DR-M3-F2",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-3 proposal (owner approved 22 Oct) F2",
+   "target": "PATIENTS.research_study_patient_id",
+   "effect": "show_when",
+   "when": {
+    "field": "PATIENTS.registry_basis",
+    "in": [
+     "RESEARCH_CONSENT"
+    ]
+   }
+  },
+  {
+   "id": "DR-M4A-OLD",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-4a plan (owner approved 22 Oct, option A): old combined item shown only when it already has an answer",
+   "target": "CLINICAL_PROFILE_SNAPSHOTS.prior_stroke_tia_systemic_embolism",
+   "effect": "show_when",
+   "when": {
+    "field": "CLINICAL_PROFILE_SNAPSHOTS.prior_stroke_tia_systemic_embolism",
+    "in": [
+     "YES",
+     "NO",
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "DR-M4B-OLD",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "M-4b plan (owner approved 23 Oct, option A): old single-choice item shown only when it already has an answer",
+   "target": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_type",
+   "effect": "show_when",
+   "when": {
+    "field": "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_type",
+    "in": [
+     "NONE",
+     "ISCHEMIC",
+     "DILATED_NONISCHEMIC",
+     "HYPERTROPHIC",
+     "ARRHYTHMOGENIC",
+     "INFILTRATIVE_INFLAMMATORY",
+     "CONGENITAL",
+     "OTHER",
+     "UNKNOWN"
+    ]
+   }
+  }
+ ]
+}

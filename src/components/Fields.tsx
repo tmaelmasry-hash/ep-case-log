@@ -1,11 +1,12 @@
 // Field controls built from the dictionary type of each field (ported from EP Workspace public/js/components/fields.js,
 // drawn in the approved EP Log style): short choices as a segmented control or pills, long lists as a dropdown.
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import type { FieldRuling } from '../../shared/rules.ts';
 import { codeLabel, editable, formFields, hasValue, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
 import { dict } from '../lib/dict';
 import type { AiMark, DecodedRow } from '../../shared/caseTypes.ts';
 
-const PILL_MAX = 8;
+const PILL_MAX = 10; // procedure type has 9 choices with LAA closure (M-3)
 
 function shortLabels(f: FormField, codes: string[], max: number) {
   return codes.every((c) => codeLabel(f, c).length <= max);
@@ -146,6 +147,7 @@ export function FieldRow({
   onNa,
   copied,
   ai,
+  offered,
 }: {
   def: EntityDef;
   f: FormField;
@@ -162,8 +164,11 @@ export function FieldRow({
   copied?: string;
   /** The AI filled this value (or proposes another); shown until a person accepts it or edits the field. */
   ai?: AiMark;
+  /** M-1: codes the rules offer here (the current value always stays visible). */
+  offered?: (code: string) => boolean;
 }) {
   const value = row?.[f.name] ?? null;
+  const keep = (c: string) => !offered || offered(c) || (Array.isArray(value) ? value.includes(c) : value === c);
   const kind = controlKind(f, row);
   const id = `f-${def.entity}-${f.name}-${rowId}`.replace(/[^A-Za-z0-9_-]/g, '_');
   const star = dict.core.has(`${def.entity}.${f.name}`);
@@ -209,13 +214,15 @@ export function FieldRow({
   }
 
   if (kind === 'segmented' || kind === 'pills' || kind === 'multi') {
-    const codes = f.type === 'boolean' ? ['true', 'false'] : f.type === 'lookup_array' ? (f.codes ?? []).map((c) => c.code) : offeredCodes(f, row);
+    const codes = (f.type === 'boolean' ? ['true', 'false'] : f.type === 'lookup_array' ? (f.codes ?? []).map((c) => c.code) : offeredCodes(f, row)).filter(keep);
     const labelOf = (c: string) => (f.type === 'boolean' ? (c === 'true' ? 'Yes' : 'No') : codeLabel(f, c));
     const isOn = (c: string) => (f.type === 'boolean' ? value !== null && String(value) === c : Array.isArray(value) ? value.includes(c) : value === c);
     const pick = (c: string) => {
       if (kind === 'multi') {
         const cur = Array.isArray(value) ? (value as string[]) : [];
-        onChange(f.name, cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]);
+        // M-4b: a code that must stand alone (None, Unknown) replaces the others, and another choice replaces it.
+        const ex = f.exclusive ?? [];
+        onChange(f.name, cur.includes(c) ? cur.filter((x) => x !== c) : ex.includes(c) ? [c] : [...cur.filter((x) => !ex.includes(x)), c]);
       } else if (f.type === 'boolean') onChange(f.name, isOn(c) ? null : c === 'true');
       else onChange(f.name, isOn(c) ? null : c);
     };
@@ -246,7 +253,7 @@ export function FieldRow({
 
   let control;
   if (kind === 'select' || kind === 'fk') {
-    const options: FkOption[] = kind === 'fk' ? (fkOptions ?? []) : offeredCodes(f, row).map((c) => ({ value: c, label: codeLabel(f, c) }));
+    const options: FkOption[] = kind === 'fk' ? (fkOptions ?? []) : offeredCodes(f, row).filter(keep).map((c) => ({ value: c, label: codeLabel(f, c) }));
     control = (
       <select id={id} className="ios-select" aria-label={f.label} value={value === null ? '' : String(value)} onChange={(e) => onChange(f.name, e.target.value || null)}>
         <option value="">{kind === 'fk' && !options.length ? 'Nothing to link yet' : 'Select'}</option>
@@ -300,6 +307,7 @@ export function EntityFields({
   copiedOf,
   aiOf,
   only,
+  ruling,
 }: {
   entity: string;
   row: DecodedRow | null;
@@ -314,28 +322,38 @@ export function EntityFields({
   aiOf?: (field: string) => AiMark | undefined;
   /** Show only these fields (in this order). */
   only?: string[];
+  /** M-1 dynamic-form rules for a field of this row: hidden, offered choices, notes. */
+  ruling?: (field: string) => FieldRuling | undefined;
 }) {
   const def = dict.entities[entity];
-  const list = only ? only.map((n) => formFields(def).find((f) => f.name === n)).filter((f): f is FormField => !!f) : formFields(def);
+  const all = only ? only.map((n) => formFields(def).find((f) => f.name === n)).filter((f): f is FormField => !!f) : formFields(def);
+  const list = all.filter((f) => ruling?.(f.name)?.visible !== false);
   return (
     <div className="group">
       {list.map((f) => (
-        <FieldRow
-          key={f.name}
-          def={def}
-          f={f}
-          row={row}
-          rowId={rowId}
-          onChange={onChange}
-          error={errorOf(f.name)}
-          otherError={errorOf(`other_specify_json:${f.name}`)}
-          fkOptions={f.type === 'fk' ? fkOptions(f) : undefined}
-          readOnly={readOnly}
-          na={naOf?.(f.name)}
-          onNa={onNa ? () => onNa(f.name) : undefined}
-          copied={copiedOf?.(f.name)}
-          ai={aiOf?.(f.name)}
-        />
+        <Fragment key={f.name}>
+          <FieldRow
+            def={def}
+            f={f}
+            row={row}
+            rowId={rowId}
+            onChange={onChange}
+            error={errorOf(f.name)}
+            otherError={errorOf(`other_specify_json:${f.name}`)}
+            fkOptions={f.type === 'fk' ? fkOptions(f) : undefined}
+            readOnly={readOnly}
+            na={naOf?.(f.name)}
+            onNa={onNa ? () => onNa(f.name) : undefined}
+            copied={copiedOf?.(f.name)}
+            ai={aiOf?.(f.name)}
+            offered={ruling?.(f.name)?.offered}
+          />
+          {ruling?.(f.name)?.warnings.map((w) => (
+            <p key={w.id} className="warn-text small rule-note" data-testid="rule-note">
+              {w.message}
+            </p>
+          ))}
+        </Fragment>
       ))}
     </div>
   );

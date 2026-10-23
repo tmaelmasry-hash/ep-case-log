@@ -8,9 +8,12 @@ import type { Readiness } from '../../shared/readiness.ts';
 import { dict, fieldOf, label } from '../lib/dict';
 import { fmtDate } from '../lib/util';
 
+/** Never printed: the research study's own patient ID is an identifier (EP Workspace M-3 F2). */
+const NOT_PRINTED = new Set(['PATIENTS.research_study_patient_id']);
+
 function Values({ entity, row }: { entity: string; row: DecodedRow }) {
   const def = dict.entities[entity];
-  const shown = formFields(def).filter((f) => hasValue(row[f.name]));
+  const shown = formFields(def).filter((f) => hasValue(row[f.name]) && !NOT_PRINTED.has(`${entity}.${f.name}`));
   if (!shown.length) return null;
   return (
     <table className="kv">

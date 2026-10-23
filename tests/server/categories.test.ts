@@ -38,13 +38,13 @@ function addProcedure(rec: ReturnType<typeof makeCase>, components: string[], va
 const tags = (s: CaseSummary) => m.tagsOf(s);
 
 describe('category config', () => {
-  it('uses only dictionary fields and codes (LAA closure is the one pending M-3 code)', () => {
+  it('uses only dictionary fields and codes (with the owner-approved amendments)', () => {
     const exists = (field: string, code: string) => {
       const [e, f] = field.split('.');
       return !!dict.entities[e]?.fields.find((x) => x.name === f)?.codes?.some((c) => c.code === code);
     };
-    expect(m.check(exists, cfg.pending_codes)).toEqual([]);
-    expect(cfg.pending_codes).toEqual(['PROCEDURE_COMPONENTS.component_type=LAA_CLOSURE']);
+    expect(m.check(exists)).toEqual([]);
+    expect(cfg.pending_codes).toBeUndefined();
   });
 
   it('has the owner-approved main menus in order', () => {

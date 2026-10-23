@@ -20,6 +20,8 @@ export function readRawConfig(): RawConfig {
     core: read('dictionary/core_dataset.json'),
     site: read('site.json'),
     aiFixtures: read('ai_fixtures.json'),
+    amendments: read('dictionary/amendments.json'),
+    rules: read('rules.json'),
   };
 }
 

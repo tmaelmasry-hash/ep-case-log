@@ -1,6 +1,8 @@
 // The app's configuration (dictionary + case layout + site rules), built from the raw config/ files.
 // Pure: Node reads the files from disk (server/dictionary.ts); the Cloudflare Worker imports them bundled.
 import { buildDictionary, type CaseLayout, type CoreSpec, type Dictionary, type RawEntity } from '../shared/dictionary.ts';
+import type { Amendments } from '../shared/amendments.ts';
+import type { RulesConfig } from '../shared/rules.ts';
 import type { MrnConfig } from '../shared/mrn.ts';
 import { checkDashConfig, type DashConfig } from './domain/dashboard.ts';
 import { checkFollowupConfig, type FollowupRule } from './domain/followups.ts';
@@ -50,6 +52,8 @@ export interface RawConfig {
   core: CoreSpec;
   site: Site;
   aiFixtures: { notes: AiFixture[] };
+  amendments?: Amendments;
+  rules?: RulesConfig;
 }
 
 export interface AppConfig {

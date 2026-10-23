@@ -17,6 +17,7 @@ import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
 import { AiSheet, aiPending } from './AiAssistant';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
+import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
 
 // ── readiness shared by every sheet of the open case ──
@@ -86,21 +87,61 @@ function RowForm({ ed, entity, rowId, parentId, row, only }: { ed: CaseEditor; e
   const c = useCase();
   const exists = !!row;
   const pid = scopeOf(entity, rowId, parentId, row);
+  const [ask, setAsk] = useState<{ field: string; value: unknown; key?: string; list: Consequence[] } | null>(null);
+  // M-1 dynamic-form rules: this procedure's (or the case's) answers decide what applies here.
+  const env = caseEnv(dict.entities, ed.rows, pid, { entity, row });
+  const ruling = (field: string) => (dict.rules.byTarget.has(`${entity}.${field}`) ? fieldRules(dict.rules, entity, field, env) : undefined);
+  const save = (field: string, value: unknown, key?: string) => ed.setField(entity, rowId, field, value, { key, create: exists ? undefined : { parent_id: parentId ?? null } });
+  const rowIdOf = (e: string) => (e === entity ? rowId : e === 'EP_PROCEDURES' ? pid : dict.entities[e].scope === 'procedure' ? ed.rows(e).find((r) => r.procedure_id === pid)?._id : ed.rows(e)[0]?._id);
+  const labelOf = (e: string, f: string) => dict.entities[e].fields.find((x) => x.name === f)?.label ?? f;
   return (
-    <EntityFields
-      entity={entity}
-      row={row}
-      rowId={rowId}
-      fkOptions={fk}
-      readOnly={ed.readOnly}
-      errorOf={(field) => ed.fieldError(entity, rowId, field)}
-      naOf={(field) => naInfo(c, entity, field, pid)}
-      onNa={(field) => c.askNa(entity, field, pid)}
-      copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
-      aiOf={(field) => ed.detail?.ai?.[`${entity}|${rowId}|${field}`] ?? ed.detail?.ai?.[`${entity}|${rowId}|${field}#ai`]}
-      only={only}
-      onChange={(field, value, key) => ed.setField(entity, rowId, field, value, { key, create: exists ? undefined : { parent_id: parentId ?? null } })}
-    />
+    <>
+      <EntityFields
+        entity={entity}
+        row={row}
+        rowId={rowId}
+        fkOptions={fk}
+        readOnly={ed.readOnly}
+        errorOf={(field) => ed.fieldError(entity, rowId, field)}
+        naOf={(field) => naInfo(c, entity, field, pid)}
+        onNa={(field) => c.askNa(entity, field, pid)}
+        copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
+        aiOf={(field) => ed.detail?.ai?.[`${entity}|${rowId}|${field}`] ?? ed.detail?.ai?.[`${entity}|${rowId}|${field}#ai`]}
+        only={only}
+        ruling={ruling}
+        onChange={(field, value, key) => {
+          // A change that makes other answers not apply asks first (EP Workspace M-1: Remove n answers / Keep).
+          const list = key ? [] : consequences(dict.rules, dict.entities, ed.rows, pid, entity, field, value);
+          if (list.length) setAsk({ field, value, key, list });
+          else save(field, value, key);
+        }}
+      />
+      {ask && (
+        <Confirm
+          title={`Remove ${ask.list.length} answer${ask.list.length === 1 ? '' : 's'}?`}
+          message={
+            <>
+              <p>With this change, these answers no longer apply:</p>
+              <ul data-testid="rule-consequences">
+                {ask.list.map((x) => (
+                  <li key={`${x.entity}.${x.field}`}>{labelOf(x.entity, x.field)}</li>
+                ))}
+              </ul>
+            </>
+          }
+          confirmLabel={`Remove ${ask.list.length} answer${ask.list.length === 1 ? '' : 's'}`}
+          onConfirm={() => {
+            save(ask.field, ask.value, ask.key);
+            for (const x of ask.list) {
+              const id = rowIdOf(x.entity);
+              if (id) ed.setField(x.entity, id, x.field, null);
+            }
+            setAsk(null);
+          }}
+          onCancel={() => setAsk(null)}
+        />
+      )}
+    </>
   );
 }
 

@@ -1,7 +1,8 @@
 // CHA₂DS₂-VASc display (owner D6, preview V3): computed from dictionary fields, never stored. No number until every
 // item is known (Yes/No; age from date of birth; sex at birth); until then "incomplete".
 // Items: C = CLINICAL_PROFILE_SNAPSHOTS.heart_failure, H = hypertension, A₂ = age ≥ 75, D = diabetes,
-// S₂ = prior_stroke_tia_systemic_embolism, V = vascular_disease, A = age 65–74, Sc = sex at birth female.
+// S₂ = prior stroke / TIA / thromboembolism (M-4a: three items; 2 points if any is Yes, 0 when all three are No; the old
+// combined item is read only when none of the three is answered), V = vascular_disease, A = age 65–74, Sc = sex at birth female.
 // The owner's field list (D6) uses vascular_disease only; coronary_artery_disease_or_prior_mi is not added to V.
 import { ageOn } from './caseTypes.ts';
 
@@ -19,9 +20,10 @@ const YES_NO: [string, string, number][] = [
   ['heart_failure', 'Heart failure', 1],
   ['hypertension', 'Hypertension', 1],
   ['diabetes', 'Diabetes', 1],
-  ['prior_stroke_tia_systemic_embolism', 'Stroke / TIA / thromboembolism', 2],
   ['vascular_disease', 'Vascular disease', 1],
 ];
+
+const STROKE_SPLIT = ['prior_stroke', 'prior_tia', 'prior_thromboembolic_event'];
 
 export function cha2ds2vasc(rows: Record<string, Row[]>): ChaResult {
   const risk = rows.CLINICAL_PROFILE_SNAPSHOTS?.[0] ?? {};
@@ -29,6 +31,9 @@ export function cha2ds2vasc(rows: Record<string, Row[]>): ChaResult {
   const pat = rows.PATIENTS?.[0] ?? {};
   const ep = rows.EP_EPISODES?.[0] ?? {};
   const items: ChaResult['items'] = YES_NO.map(([k, label, pts]) => ({ key: k, label, points: risk[k] === 'YES' ? pts : risk[k] === 'NO' ? 0 : null }));
+  const split = STROKE_SPLIT.map((k) => risk[k]);
+  const stroke = split.some((v) => v === 'YES') ? 2 : split.every((v) => v === 'NO') ? 0 : split.every((v) => v === undefined || v === null || v === '') ? (risk.prior_stroke_tia_systemic_embolism === 'YES' ? 2 : risk.prior_stroke_tia_systemic_embolism === 'NO' ? 0 : null) : null;
+  items.splice(3, 0, { key: 'stroke', label: 'Stroke / TIA / thromboembolism', points: stroke });
   const age = ageOn(ident.date_of_birth, ep.episode_start_date);
   items.push({ key: 'age', label: 'Age', points: age === null ? null : age >= 75 ? 2 : age >= 65 ? 1 : 0 });
   const sex = pat.sex_at_birth;

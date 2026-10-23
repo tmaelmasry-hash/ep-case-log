@@ -4,6 +4,9 @@
 // Completed needs every applicable core field to have a value or "Not available" + reason. Date of birth "not
 // available" is a warning only. Pure: the server enforces it and the browser shows it from the same code.
 import { hasValue, type CoreItem, type Dictionary } from './dictionary.ts';
+import { caseEnv, fieldRules } from './rules.ts';
+
+type RuleRow = Record<string, unknown> & { _id: string };
 
 export type CheckState = 'ok' | 'missing' | 'not_available' | 'not_applicable' | 'ai_pending';
 
@@ -122,6 +125,11 @@ export function evaluateReadiness(dict: Dictionary, rows: Record<string, Row[]>,
           if (!candidates.length) applicable = false;
         } else if (!rowsIn(e, isProcedureLevel(dict, e) ? pid : null).some(meets)) applicable = false;
       }
+    }
+    // M-1: a field the dynamic-form rules hide for this procedure (or case) does not apply.
+    if (applicable && dict.rules.byTarget.has(`${item.entity}.${item.field}`)) {
+      const env = caseEnv(dict.entities, (e) => (rows[e] ?? []) as RuleRow[], isProcedureLevel(dict, item.entity) ? pid : null);
+      if (!fieldRules(dict.rules, item.entity, item.field, env).visible) applicable = false;
     }
     if (!applicable) {
       checks.push({ ...base, state: 'not_applicable' });

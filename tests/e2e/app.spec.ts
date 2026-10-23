@@ -68,6 +68,9 @@ test('create a case, add two procedures with components and module fields; it pe
   await expect(ps.getByTestId('module-FLUTTER_ABLATIONS')).toBeVisible();
   await af.getByRole('radiogroup', { name: 'Energy source' }).getByRole('radio', { name: 'PFA' }).click();
   await af.getByRole('radiogroup', { name: 'PV status at case end' }).getByRole('radio', { name: 'All target PVs isolated' }).click();
+  // M-1: fluoroscopy time shows once fluoroscopy was used.
+  await expect(ps.getByLabel('Fluoroscopy time')).toHaveCount(0);
+  await ps.getByRole('radiogroup', { name: 'Fluoroscopy used' }).getByRole('radio', { name: 'Yes', exact: true }).click();
   // A number field refuses text, with a message under the field.
   await ps.getByLabel('Fluoroscopy time').fill('abc');
   await ps.getByLabel('Fluoroscopy time').blur();

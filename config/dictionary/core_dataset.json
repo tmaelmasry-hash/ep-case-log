@@ -1,6 +1,6 @@
 {
   "_note": "Defines what 'Mark completed' requires in Release 1. Field names are from FIELD_INVENTORY.csv; 'complications_reviewed' is a new operational extension (not in the clinical dictionary). Edit this file to change the core set; the UI progress bars and the Completed check read it.",
-  "version": "core/r1-2026-10-13",
+  "version": "core/m4a-2026-10-22",
   "completion_rule": {
     "core_field_ok_if": [
       "has_value",
@@ -89,7 +89,15 @@
     },
     {
       "entity": "CLINICAL_PROFILE_SNAPSHOTS",
-      "field": "prior_stroke_tia_systemic_embolism"
+      "field": "prior_stroke"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "prior_tia"
+    },
+    {
+      "entity": "CLINICAL_PROFILE_SNAPSHOTS",
+      "field": "prior_thromboembolic_event"
     },
     {
       "entity": "ECHO_STUDIES",

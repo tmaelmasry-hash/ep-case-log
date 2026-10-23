@@ -1,0 +1,1247 @@
+{
+ "_note": "Local amendments approved by the owner (merge steps M-3, docs/merge/M3_PROPOSAL.md, M-4a, docs/merge/M4A_PLAN.md, approved 22 Oct 2026, and M-4b, docs/merge/M4B_PLAN.md, approved 23 Oct 2026). Laid on top of the frozen dictionary when the config loads; dictionary/ and config/forms/entities/ are not edited. Every item names its proposal id and source. New one-per-case fields become new columns on the Cases tab (setup only adds columns).",
+ "version": "amend/m4b-2026-10-23",
+ "fields": {
+  "AF_ABLATIONS": [
+   {
+    "name": "af_energy_sources_used",
+    "label": "Energies used",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-A1",
+    "source": "owner Q-E1; NCDR AF v2.0 p4 #15722",
+    "after": "af_energy_source",
+    "codes": [
+     {
+      "code": "RF",
+      "label": "RF"
+     },
+     {
+      "code": "CRYOBALLOON",
+      "label": "Cryoballoon"
+     },
+     {
+      "code": "PFA",
+      "label": "PFA (pulsed field)"
+     },
+     {
+      "code": "LASER",
+      "label": "Laser"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ]
+   },
+   {
+    "name": "coexisting_atrial_flutter",
+    "label": "Atrial flutter (history)",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B4",
+    "source": "NCDR AF v2.0 p2 #4455",
+    "codes": [
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "TYPICAL_CTI",
+      "label": "Yes – typical / CTI dependent"
+     },
+     {
+      "code": "ATYPICAL",
+      "label": "Yes – atypical"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_af_pharmacologic_cardioversion",
+    "label": "Prior pharmacologic cardioversion (AF)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B5",
+    "source": "NCDR AF v2.0 p2 #4415",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_af_dc_cardioversion",
+    "label": "Prior DC cardioversion (AF)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B6",
+    "source": "NCDR AF v2.0 p2 #4420",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "last_prior_af_catheter_ablation_date",
+    "label": "Date of most recent prior catheter ablation (AF)",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B7",
+    "source": "NCDR AF v2.0 p2 #4430"
+   },
+   {
+    "name": "prior_surgical_af_ablation",
+    "label": "Prior surgical ablation (AF)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B8",
+    "source": "NCDR AF v2.0 p2 #4440",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "last_prior_surgical_af_ablation_date",
+    "label": "Date of most recent surgical ablation",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B9",
+    "source": "NCDR AF v2.0 p2 #4445"
+   },
+   {
+    "name": "prior_flutter_pharmacologic_cardioversion",
+    "label": "Prior pharmacologic cardioversion (flutter)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B10",
+    "source": "NCDR AF v2.0 p2 #4465",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_flutter_dc_cardioversion",
+    "label": "Prior DC cardioversion (flutter)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B11",
+    "source": "NCDR AF v2.0 p2 #4470",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "last_prior_flutter_catheter_ablation_date",
+    "label": "Date of most recent prior catheter ablation (flutter)",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B12",
+    "source": "NCDR AF v2.0 p2 #4475/#4480"
+   }
+  ],
+  "CLINICAL_PROFILE_SNAPSHOTS": [
+   {
+    "name": "chronic_lung_disease",
+    "label": "Chronic lung disease",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B1",
+    "source": "NCDR AF v2.0 p1 condition history",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "valvular_af",
+    "label": "Valvular atrial fibrillation",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B2",
+    "source": "NCDR AF v2.0 p1 condition history",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "mechanical_mitral_valve",
+    "label": "Mechanical valve in mitral position",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-B3",
+    "source": "NCDR AF v2.0 p1 #4390",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "lv_dysfunction",
+    "label": "LV dysfunction",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-C1",
+    "source": "NCDR AF v2.0 p1 #4015 (clinician judgement; no LVEF threshold)",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_stroke",
+    "label": "Prior stroke",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M4-A1",
+    "source": "NCDR AF v2.0 p1 #4030 (split of the combined item, owner Q-F3)",
+    "after": "prior_stroke_tia_systemic_embolism",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_tia",
+    "label": "Prior TIA",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M4-A2",
+    "source": "NCDR AF v2.0 p1 #4035 (split of the combined item, owner Q-F3)",
+    "after": "prior_stroke",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "prior_thromboembolic_event",
+    "label": "Prior thromboembolic event",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M4-A3",
+    "source": "NCDR AF v2.0 p1 #4040 (split of the combined item, owner Q-F3)",
+    "after": "prior_tia",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "cardiomyopathy_types",
+    "label": "Cardiomyopathy type(s)",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M4-B1",
+    "source": "multi-choice of the dictionary's cardiomyopathy_type, same codes (owner Q-F4; NCDR AF v2.0 p1 #4570, NCDR ICD v3.0 p2 #4545/#15785)",
+    "after": "cardiomyopathy_type",
+    "codes": [
+     {
+      "code": "NONE",
+      "label": "None"
+     },
+     {
+      "code": "ISCHEMIC",
+      "label": "Ischemic"
+     },
+     {
+      "code": "DILATED_NONISCHEMIC",
+      "label": "Dilated nonischemic"
+     },
+     {
+      "code": "HYPERTROPHIC",
+      "label": "Hypertrophic"
+     },
+     {
+      "code": "ARRHYTHMOGENIC",
+      "label": "Arrhythmogenic"
+     },
+     {
+      "code": "INFILTRATIVE_INFLAMMATORY",
+      "label": "Infiltrative inflammatory"
+     },
+     {
+      "code": "CONGENITAL",
+      "label": "Congenital"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ],
+    "exclusive": [
+     "NONE",
+     "UNKNOWN"
+    ]
+   }
+  ],
+  "DEVICE_IMPLANTS": [
+   {
+    "name": "preimplant_nyha_class",
+    "label": "NYHA class before implant",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D1",
+    "source": "NCDR ICD v3.0 p2 / PPM v3.0 p1 #4010",
+    "codes": [
+     {
+      "code": "I",
+      "label": "I"
+     },
+     {
+      "code": "II",
+      "label": "II"
+     },
+     {
+      "code": "III",
+      "label": "III"
+     },
+     {
+      "code": "IV",
+      "label": "IV"
+     }
+    ]
+   },
+   {
+    "name": "ischemic_cm_timeframe",
+    "label": "Ischemic cardiomyopathy — timeframe",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D2",
+    "source": "NCDR ICD v3.0 p1 #4190",
+    "codes": [
+     {
+      "code": "LT_3_MONTHS",
+      "label": "< 3 months"
+     },
+     {
+      "code": "GE_3_MONTHS",
+      "label": "≥ 3 months"
+     }
+    ]
+   },
+   {
+    "name": "ischemic_cm_gdmt_max_dose",
+    "label": "Ischemic cardiomyopathy — GDMT at maximum dose",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D3",
+    "source": "NCDR ICD v3.0 p1 #4195",
+    "codes": [
+     {
+      "code": "YES_3_MONTHS",
+      "label": "Yes (for 3 months)"
+     },
+     {
+      "code": "NOT_DOCUMENTED",
+      "label": "Not documented"
+     },
+     {
+      "code": "NOT_ATTEMPTED",
+      "label": "Not attempted"
+     },
+     {
+      "code": "INABILITY_TO_COMPLETE",
+      "label": "Inability to complete"
+     }
+    ]
+   },
+   {
+    "name": "nonischemic_cm_timeframe",
+    "label": "Non-ischemic cardiomyopathy — timeframe",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D4",
+    "source": "NCDR ICD v3.0 p1 #4205",
+    "codes": [
+     {
+      "code": "LT_3_MONTHS",
+      "label": "< 3 months"
+     },
+     {
+      "code": "GE_3_MONTHS",
+      "label": "≥ 3 months"
+     }
+    ]
+   },
+   {
+    "name": "nonischemic_cm_gdmt_max_dose",
+    "label": "Non-ischemic cardiomyopathy — GDMT at maximum dose",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D5",
+    "source": "NCDR ICD v3.0 p1 #4210",
+    "codes": [
+     {
+      "code": "YES_3_MONTHS",
+      "label": "Yes (for 3 months)"
+     },
+     {
+      "code": "NOT_DOCUMENTED",
+      "label": "Not documented"
+     },
+     {
+      "code": "NOT_ATTEMPTED",
+      "label": "Not attempted"
+     },
+     {
+      "code": "INABILITY_TO_COMPLETE",
+      "label": "Inability to complete"
+     }
+    ]
+   },
+   {
+    "name": "most_recent_mi_date",
+    "label": "Most recent MI date",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D6",
+    "source": "NCDR ICD v3.0 p2 #4295"
+   },
+   {
+    "name": "vf_history",
+    "label": "VF (not due to a reversible cause)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D7",
+    "source": "NCDR ICD v3.0 p2",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vf_date",
+    "label": "VF date",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D8",
+    "source": "NCDR ICD v3.0 p2 #14720"
+   },
+   {
+    "name": "vt_history",
+    "label": "Ventricular tachycardia",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D9",
+    "source": "NCDR ICD v3.0 p2",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vt_date",
+    "label": "VT date",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D10",
+    "source": "NCDR ICD v3.0 p2 #4250"
+   },
+   {
+    "name": "vt_type",
+    "label": "VT type",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D11",
+    "source": "NCDR ICD v3.0 p2 #4275",
+    "codes": [
+     {
+      "code": "MONOMORPHIC",
+      "label": "Monomorphic"
+     },
+     {
+      "code": "NON_SUSTAINED",
+      "label": "Non-sustained"
+     },
+     {
+      "code": "POLYMORPHIC",
+      "label": "Polymorphic"
+     },
+     {
+      "code": "MONOMORPHIC_AND_POLYMORPHIC",
+      "label": "Monomorphic / polymorphic"
+     }
+    ]
+   },
+   {
+    "name": "vt_post_cardiac_surgery_48h",
+    "label": "VT post cardiac surgery (within 48 h)",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D12",
+    "source": "NCDR ICD v3.0 p2 #4255",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vt_bradycardia_dependent",
+    "label": "VT bradycardia dependent",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D13",
+    "source": "NCDR ICD v3.0 p2 #4260",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vt_reversible_cause",
+    "label": "VT reversible cause",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D14",
+    "source": "NCDR ICD v3.0 p2 #4265",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vt_hemodynamic_instability",
+    "label": "VT hemodynamic instability",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D15",
+    "source": "NCDR ICD v3.0 p2 #4270",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "vad_candidate",
+    "label": "Candidate for VAD",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D16",
+    "source": "NCDR ICD v3.0 p3",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "on_vad",
+    "label": "Currently on VAD",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D17",
+    "source": "NCDR ICD v3.0 p3",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "transplant_candidate",
+    "label": "Candidate for transplant",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D18",
+    "source": "NCDR ICD v3.0 p3",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "on_transplant_list",
+    "label": "On heart transplant waiting list",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D19",
+    "source": "NCDR ICD v3.0 p3",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "shared_decision_making",
+    "label": "Shared decision making",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D20",
+    "source": "NCDR ICD v3.0 p4 #14732",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "sdm_tool_used",
+    "label": "Shared decision-making tool used",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D21",
+    "source": "NCDR ICD v3.0 p4 #14733",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "sdm_tool_name",
+    "label": "Shared decision-making tool name",
+    "type": "string",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D22",
+    "source": "NCDR ICD v3.0 p4 #14734",
+    "maxLength": 120
+   },
+   {
+    "name": "cabg_this_admission",
+    "label": "CABG during this admission",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D23",
+    "source": "NCDR ICD v3.0 p6 #10005",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "cabg_date",
+    "label": "CABG date",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D24",
+    "source": "NCDR ICD v3.0 p6 #10010"
+   },
+   {
+    "name": "pci_this_admission",
+    "label": "PCI during this admission",
+    "type": "boolean_unknown",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D25",
+    "source": "NCDR ICD v3.0 p6 #10015",
+    "codes": [
+     {
+      "code": "YES",
+      "label": "Yes"
+     },
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "pci_date",
+    "label": "PCI date",
+    "type": "date",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-D26",
+    "source": "NCDR ICD v3.0 p6 #10020"
+   }
+  ],
+  "CRT_CSP_PROCEDURES": [
+   {
+    "name": "v1_unipolar_paced_qrs_morphology",
+    "label": "Unipolar paced QRS morphology (lead V1)",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-E1",
+    "source": "NCDR ICD v3.0 p6 / PPM v3.0 p4 #15787",
+    "codes": [
+     {
+      "code": "NO",
+      "label": "No"
+     },
+     {
+      "code": "QR_SMALL_Q",
+      "label": "Yes – qR"
+     },
+     {
+      "code": "QR_LARGE_Q",
+      "label": "Yes – Qr"
+     },
+     {
+      "code": "OTHER_PATTERN",
+      "label": "Yes – other"
+     },
+     {
+      "code": "NOT_DOCUMENTED",
+      "label": "Not documented"
+     }
+    ]
+   },
+   {
+    "name": "r_wave_peak_time_v5_v6_ms",
+    "label": "R-wave peak time (leads V5–V6)",
+    "type": "integer",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "M3-E2",
+    "source": "NCDR ICD v3.0 p6 #15791 (blank = not entered, owner Q-M3-2)",
+    "unit": "ms",
+    "min": 0,
+    "max": 300
+   }
+  ],
+  "PATIENTS": [
+   {
+    "name": "research_study_name",
+    "label": "Research study name",
+    "type": "string",
+    "req": "O",
+    "role": "OPERATIONAL",
+    "amendment": "M3-F1",
+    "source": "NCDR all forms #3025",
+    "maxLength": 120
+   },
+   {
+    "name": "research_study_patient_id",
+    "label": "Patient ID in the study",
+    "type": "string",
+    "req": "O",
+    "role": "IDENTIFIER",
+    "amendment": "M3-F2",
+    "source": "NCDR all forms #3030 — an identifier: kept out of reports, sharing and the AI",
+    "maxLength": 60
+   }
+  ]
+ },
+ "codes": {
+  "COMPLICATIONS.category": [
+   {
+    "code": "DEEP_VEIN_THROMBOSIS",
+    "label": "Deep vein thrombosis",
+    "amendment": "M3-G1",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "PULMONARY_EMBOLISM",
+    "label": "Pulmonary embolism",
+    "amendment": "M3-G2",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "GENITOURINARY_BLEEDING",
+    "label": "GU bleeding",
+    "amendment": "M3-G3",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "GASTROINTESTINAL_BLEEDING",
+    "label": "Bleeding – gastrointestinal",
+    "amendment": "M3-G4",
+    "source": "NCDR ICD/PPM/Leads"
+   },
+   {
+    "code": "HEART_FAILURE",
+    "label": "Heart failure",
+    "amendment": "M3-G5",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "HEMOLYSIS",
+    "label": "Hemolysis",
+    "amendment": "M3-G6",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "PLEURAL_EFFUSION",
+    "label": "Pleural effusion",
+    "amendment": "M3-G7",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "PNEUMONIA",
+    "label": "Pneumonia",
+    "amendment": "M3-G8",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "SEPSIS",
+    "label": "Sepsis",
+    "amendment": "M3-G9",
+    "source": "NCDR AF p5"
+   },
+   {
+    "code": "CORONARY_VENOUS_DISSECTION",
+    "label": "Coronary venous dissection",
+    "amendment": "M3-G10",
+    "source": "NCDR ICD/PPM/Leads"
+   },
+   {
+    "code": "SET_SCREW_PROBLEM",
+    "label": "Set screw problem",
+    "amendment": "M3-G11",
+    "source": "NCDR ICD/PPM/Leads #9255"
+   }
+  ],
+  "PROCEDURE_COMPONENTS.component_type": [
+   {
+    "code": "LAA_CLOSURE",
+    "label": "LAA closure",
+    "amendment": "M3-H1",
+    "source": "owner Q-C2; EP Case Log"
+   }
+  ],
+  "EP_PROCEDURES.primary_procedure_type": [
+   {
+    "code": "LAA_CLOSURE",
+    "label": "LAA closure",
+    "amendment": "M3-H2",
+    "source": "owner Q-C2"
+   }
+  ],
+  "DEVICES.current_device_type": [
+   {
+    "code": "LEADLESS_LVEP",
+    "label": "Leadless LV endocardial pacing (LVEP)",
+    "amendment": "M3-H7",
+    "source": "owner Q-C2; NCDR PPM v3.0 p3 #15794"
+   },
+   {
+    "code": "CCM",
+    "label": "Cardiac contractility modulation (CCM)",
+    "amendment": "M3-H7",
+    "source": "owner Q-C2; NCDR PPM v3.0 p3 #15794"
+   }
+  ]
+ },
+ "entities": {
+  "LAA_CLOSURES": {
+   "pk": "laa_closure_id",
+   "parentFk": [
+    "procedure_id"
+   ],
+   "otherCapable": true,
+   "amendment": "M3-H3",
+   "source": "owner Q-C2; EP Case Log",
+   "fields": [
+    {
+     "name": "procedure_id",
+     "label": "Procedure",
+     "type": "fk",
+     "req": "R",
+     "role": "REQUIRED_PARENT_FK",
+     "target": "EP_PROCEDURES",
+     "auto": true
+    },
+    {
+     "name": "laao_device",
+     "label": "Device",
+     "type": "enum",
+     "req": "O",
+     "role": "CLINICAL_FIELD",
+     "amendment": "M3-H3",
+     "source": "EP Case Log",
+     "codes": [
+      {
+       "code": "WATCHMAN_FLX",
+       "label": "Watchman FLX"
+      },
+      {
+       "code": "WATCHMAN_FLX_PRO",
+       "label": "Watchman FLX Pro"
+      },
+      {
+       "code": "AMULET",
+       "label": "Amulet"
+      },
+      {
+       "code": "OTHER",
+       "label": "Other"
+      }
+     ]
+    },
+    {
+     "name": "device_size_mm",
+     "label": "Device size",
+     "type": "integer",
+     "req": "O",
+     "role": "CLINICAL_FIELD",
+     "amendment": "M3-H4",
+     "source": "EP Case Log (10–45 mm)",
+     "unit": "mm",
+     "min": 10,
+     "max": 45
+    },
+    {
+     "name": "imaging_guidance",
+     "label": "Imaging",
+     "type": "enum",
+     "req": "O",
+     "role": "CLINICAL_FIELD",
+     "amendment": "M3-H5",
+     "source": "EP Case Log",
+     "codes": [
+      {
+       "code": "TEE",
+       "label": "TEE"
+      },
+      {
+       "code": "ICE",
+       "label": "ICE"
+      },
+      {
+       "code": "CT_GUIDED",
+       "label": "CT-guided"
+      }
+     ]
+    },
+    {
+     "name": "peri_device_leak",
+     "label": "Peri-device leak",
+     "type": "enum",
+     "req": "O",
+     "role": "CLINICAL_FIELD",
+     "amendment": "M3-H6",
+     "source": "EP Case Log",
+     "codes": [
+      {
+       "code": "NONE",
+       "label": "None"
+      },
+      {
+       "code": "LT_5_MM",
+       "label": "< 5 mm"
+      },
+      {
+       "code": "GE_5_MM",
+       "label": "≥ 5 mm"
+      }
+     ]
+    },
+    {
+     "name": "other_specify_json",
+     "label": "Other specify json",
+     "type": "json_object",
+     "req": "O",
+     "role": "OTHER_SPECIFY",
+     "maxValueLength": 160,
+     "auto_other": true
+    }
+   ]
+  }
+ },
+ "copy_forward": {
+  "CLINICAL_PROFILE_SNAPSHOTS": [
+   "chronic_lung_disease",
+   "valvular_af",
+   "mechanical_mitral_valve",
+   "lv_dysfunction",
+   "prior_stroke",
+   "prior_tia",
+   "prior_thromboembolic_event",
+   "cardiomyopathy_types"
+  ]
+ }
+}

@@ -39,6 +39,12 @@ export function encodeValue(f: FormField, v: unknown, row: Record<string, unknow
       const codes = allowedCodes(f);
       const uniq = [...new Set(v.map(String))];
       for (const c of uniq) if (!codes.includes(c)) throw new FieldError(`${label}: "${c}" is not one of the allowed values.`);
+      // M-4b: codes that must stand alone (None, Unknown).
+      const alone = uniq.filter((c) => f.exclusive?.includes(c));
+      if (alone.length && uniq.length > 1) {
+        const names = alone.map((c) => f.codes?.find((x) => x.code === c)?.label ?? c).join(' / ');
+        throw new FieldError(`${label}: "${names}" cannot be combined with another choice.`);
+      }
       if (!uniq.length) return null;
       return JSON.stringify(uniq.sort());
     }

@@ -1,6 +1,8 @@
 // The dictionary as this app uses it: the entity forms generated from the owner's dictionary (config/dictionary),
 // merged with config/case_layout.json (case = episode, several procedures) and the label corrections.
 // Pure: the server and the browser both build it from the same JSON files.
+import { applyAmendments, type Amendments } from './amendments.ts';
+import { checkRules, compileRules, type CompiledRules, type RulesConfig } from './rules.ts';
 
 export interface Code {
   code: string;
@@ -20,6 +22,10 @@ export interface FormField {
   parent_map?: Record<string, string>;
   target?: string | null;
   maxLength?: number;
+  /** Codes of a multi-choice field that must stand alone (M-4b: None, Unknown). */
+  exclusive?: string[];
+  /** Owner-approved local amendment item (config/dictionary/amendments.json). */
+  amendment?: string;
   min?: number;
   max?: number;
   auto?: boolean;
@@ -99,6 +105,8 @@ export interface Dictionary {
   /** "ENTITY.field" of the core dataset, common and category items (★ marks). */
   core: Set<string>;
   coreSpec: CoreSpec;
+  /** Dynamic-form rules (M-1), compiled once. */
+  rules: CompiledRules;
 }
 
 export interface RawDictionary {
@@ -107,9 +115,15 @@ export interface RawDictionary {
   labels: { fields: Record<string, string>; codes: Record<string, string> };
   layout: CaseLayout;
   core: CoreSpec;
+  /** Owner-approved local amendments (M-3, M-4a, M-4b), laid on top of the dictionary. */
+  amendments?: Amendments;
+  /** Dynamic-form rules (M-1, config/rules.json). */
+  rules?: RulesConfig;
 }
 
-export function buildDictionary(raw: RawDictionary): Dictionary {
+export function buildDictionary(input: RawDictionary): Dictionary {
+  const am = applyAmendments(input.entities, input.layout, input.amendments);
+  const raw = { ...input, entities: am.entities, layout: am.layout };
   const entities: Record<string, EntityDef> = {};
   const add = (name: string, form: RawEntity, extension: boolean) => {
     const meta = raw.layout.entities[name];
@@ -150,7 +164,9 @@ export function buildDictionary(raw: RawDictionary): Dictionary {
     for (const t of types as string[]) if (!entities.PROCEDURE_COMPONENTS?.fields.find((f) => f.name === 'component_type')?.codes?.some((c) => c.code === t)) throw new Error(`core category ${cat}: ${t} is not a component type`);
   }
   const core = new Set(items.map((c) => `${c.entity}.${c.field}`));
-  return { entities, layout: raw.layout, core, coreSpec: raw.core };
+  const problems = checkRules(raw.rules, entities);
+  if (problems.length) throw new Error(problems.slice(0, 5).join('; '));
+  return { entities, layout: raw.layout, core, coreSpec: raw.core, rules: compileRules(raw.rules) };
 }
 
 /** Fields that never appear on a form: links filled by the app, polymorphic keys, the "Other — specify" store. */

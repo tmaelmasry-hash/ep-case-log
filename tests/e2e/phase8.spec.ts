@@ -26,7 +26,10 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
   }
   await saved(page);
   await expect(page.getByTestId('cha-chip')).toHaveText('CHA₂DS₂-VASc incomplete'); // stroke not answered yet
-  await rs.getByRole('radiogroup', { name: /Prior stroke/ }).getByRole('radio', { name: 'No', exact: true }).click();
+  // M-4a: stroke, TIA and thromboembolism are three questions.
+  for (const name of ['Prior stroke', 'Prior TIA', 'Prior thromboembolic event']) {
+    await rs.getByRole('radiogroup', { name, exact: true }).getByRole('radio', { name: 'No', exact: true }).click();
+  }
   await saved(page);
   await rs.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('cha-chip')).toHaveText('CHA₂DS₂-VASc 4'); // H1 + age ≥75 2 + female 1

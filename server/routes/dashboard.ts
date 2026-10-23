@@ -7,17 +7,29 @@ export function dashboardRoutes(app: Router) {
   const { store } = ctx;
   const { dict, site } = ctx.config;
 
-  app.get('/api/dashboard', async (req) => {
-    requireCap(req, 'dashboard.view');
-    const basis = req.query.basis === 'ALL' ? 'ALL' : 'COMPLETED';
+  /** Group and basis from the query (GET) or the body (POST); POST may also name the cases of the filtered list (R2-8). */
+  const dashboard = async (q: { group?: string; basis?: string; case_ids?: unknown }) => {
+    const basis = q.basis === 'ALL' ? 'ALL' : 'COMPLETED';
     const [cases, groups, users] = await Promise.all([store.listCases(), store.listGroups(), store.listUsers()]);
     let scope = groups.filter((g) => !g.is_deleted).sort((a, b) => a.sort_order - b.sort_order);
-    if (req.query.group && req.query.group !== 'ALL') {
-      scope = scope.filter((g) => g.group_id === req.query.group);
+    if (q.group && q.group !== 'ALL') {
+      scope = scope.filter((g) => g.group_id === q.group);
       if (!scope.length) throw new HttpError(404, 'NOT_FOUND', 'Unknown group.');
     }
     const ids = new Set(scope.map((g) => g.group_id));
-    return buildDashboard(dict, site, { cases: cases.filter((c) => ids.has(c.meta.group_id)), groups: scope, users, basis, now: ctx.now() });
+    const only = Array.isArray(q.case_ids) ? new Set(q.case_ids.map(String)) : null;
+    return buildDashboard(dict, site, { cases: cases.filter((c) => ids.has(c.meta.group_id) && (!only || only.has(c.meta.case_id))), groups: scope, users, basis, now: ctx.now() });
+  };
+
+  app.get('/api/dashboard', async (req) => {
+    requireCap(req, 'dashboard.view');
+    return dashboard({ group: req.query.group, basis: req.query.basis });
+  });
+
+  app.post('/api/dashboard', async (req) => {
+    requireCap(req, 'dashboard.view');
+    const b = req.body ?? {};
+    return dashboard({ group: b.group, basis: b.basis, case_ids: b.case_ids });
   });
 
   app.get('/api/mywork', async (req) => {

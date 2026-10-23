@@ -143,3 +143,44 @@ test('Admin renames and hides a built-in cohort, then brings it back from Hidden
   await page.getByTestId('builtin-cohort-sheet').getByRole('button', { name: 'Reset to default' }).click();
   await expect(page.getByTestId('cat-COMPLICATIONS')).toContainText('Complications');
 });
+
+test('part 4: same MRN and date warns of a duplicate; search by No. and procedure; Dashboard follows the menu', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info);
+  const create = async () => {
+    await page.getByTestId('new-case').click();
+    const sheet = page.getByTestId('new-case-sheet');
+    await sheet.locator('#new-mrn').fill(m);
+    await sheet.locator('#new-date').fill('2026-03-12');
+    await sheet.getByRole('button', { name: 'Create case' }).click();
+    return sheet;
+  };
+  await create();
+  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  const no = (await page.getByTestId('case-head').textContent())!.match(/No\. (\d+)/)![1];
+  await page.getByRole('button', { name: 'Add Procedure' }).click();
+  const ps = page.getByTestId('procedure-sheet');
+  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+  await ps.getByRole('button', { name: 'Done' }).click();
+  await page.goto('/#/cases');
+  const sheet = await create();
+  await expect(sheet.getByTestId('duplicate-warning')).toContainText(`No. ${no}`);
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+
+  const search = page.getByRole('searchbox', { name: /Search MRN/ });
+  await search.fill(m);
+  await expect(page.getByTestId('case-row')).toHaveCount(1);
+  await search.fill(`avnrt ${m.slice(0, 0)}`.trim());
+  await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(1);
+  await search.fill(`No. ${no}`);
+  await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(1);
+  await search.fill('');
+
+  await inMenu(page, { id: 'SVT' });
+  await page.goto('/#/stats');
+  await page.getByRole('radiogroup', { name: 'View' }).getByRole('radio', { name: 'Dashboard' }).click();
+  await expect(page.getByTestId('dashboard-filter')).toContainText('SVT ablation');
+  await page.getByTestId('dashboard-filter').getByRole('button', { name: 'All cases' }).click();
+  await expect(page.getByTestId('dashboard-filter')).toHaveCount(0);
+});

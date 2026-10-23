@@ -29,6 +29,14 @@ export function procedureChip(p: ProcedureSummary): { text: string; cls: string;
   return { text, cls: p.components.length ? 'c-cat' : (p.type && CHIP_CLASS[p.type]) || 'c-neutral', color: p.components.length ? componentColor(p.components[0]) : null };
 }
 
+/** Search (owner R2-8): digits match the MRN or the case No. ("12", "No. 12"); words match a procedure or category name. */
+export function matchesSearch(c: CaseSummary, term: string, tags: Set<string>): boolean {
+  const no = /^(no\.?\s*)?(\d+)$/.exec(term);
+  if (no) return c.mrn.includes(no[2]) || String(c.group_seq) === no[2];
+  const words = [...c.procedures.map((p) => procedureChip(p).text), ...[...tags].map(itemLabel)].join(' ').toLowerCase();
+  return term.split(/\s+/).every((w) => words.includes(w));
+}
+
 export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?: boolean; showGroup?: string }) {
   return (
     <a href={`#/cases/${c.case_id}`} className={`grow-row case-row${selected ? ' sel' : ''}`} data-testid="case-row" aria-current={selected ? 'true' : undefined}>
@@ -161,6 +169,11 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
           <p>
             <b>{existing.message}</b>
           </p>
+          {existing.here.some((c) => c.episode_start_date === date) && (
+            <p className="warn-text" data-testid="duplicate-warning">
+              Possible duplicate: No. {existing.here.filter((c) => c.episode_start_date === date).map((c) => c.group_seq).join(', ')} has the same MRN and the same episode date. Open it instead of adding a new case, unless this really is a second episode that day.
+            </p>
+          )}
           {existing.here.length > 0 && (
             <div className="group">
               {existing.here.map((c) => (
@@ -213,9 +226,9 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const filtering = !!(f.proc.length || f.group.length || f.from || f.to);
 
   const filtered = useMemo(() => {
-    const term = q.replace(/\s+/g, '');
+    const term = q.trim().toLowerCase();
     return applyFilters(cases, tagged, { ...f, grp: activeGroup })
-      .filter((c) => !term || c.mrn.includes(term))
+      .filter((c) => !term || matchesSearch(c, term, tagged.get(c.case_id)!))
       .sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '') || b.group_seq - a.group_seq);
   }, [cases, tagged, f, activeGroup, q]);
 
@@ -270,7 +283,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       <h1 className="large-title">Procedures</h1>
       <div className="search">
         <Icon name="search" size={18} />
-        <input type="search" inputMode="numeric" placeholder="Search MRN" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN" />
+        <input type="search" placeholder="Search MRN, No. or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN, No. or procedure" />
       </div>
       {(groups.length > 1 || can('groups.manage')) && (
         <div className="seg" role="radiogroup" aria-label="Group">

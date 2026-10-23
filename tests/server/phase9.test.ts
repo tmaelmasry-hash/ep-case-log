@@ -58,6 +58,18 @@ describe('dashboard', () => {
   });
 });
 
+describe('dashboard of a filtered list (R2-8)', () => {
+  it('POST with case ids counts only those cases; Members cannot', async () => {
+    const admin = await as(h, 'admin');
+    const a = (await newCase(admin, '9990971')).case_id;
+    await newCase(admin, '9990972');
+    expect((await admin.call('GET', '/api/dashboard?basis=ALL')).data.progress.total).toBe(2);
+    const r = await admin.call('POST', '/api/dashboard', { basis: 'ALL', case_ids: [a] });
+    expect(r.data.progress.total).toBe(1);
+    expect((await (await as(h, 'sara')).call('POST', '/api/dashboard', { case_ids: [a] })).status).toBe(403);
+  });
+});
+
 describe('My work', () => {
   it('lists the user\'s own open cases with what is missing; others\' cases are not shown', async () => {
     const sara = await as(h, 'sara');

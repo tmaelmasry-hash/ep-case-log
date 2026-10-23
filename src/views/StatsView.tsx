@@ -1,6 +1,7 @@
 // Dashboard tab (phase 9, EP Workspace): "My work" for everyone (own open cases, what is missing, reminders) and the
 // Admin dashboard (collection progress and clinical counts per procedure; counts only, no MRNs).
 import { useCallback, useEffect, useState } from 'react';
+import { applyFilters, clearFilters, itemColor, itemLabel, useFilters, useTagged } from '../lib/filters';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../auth';
 import { useStore } from '../store';
@@ -41,18 +42,19 @@ const monthLabel = (m: string) => {
   return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
 };
 
-function useLoad<T>(path: string | null) {
+function useLoad<T>(path: string | null, body?: unknown) {
+  const key = body === undefined ? '' : JSON.stringify(body);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
     if (!path) return;
     setError(null);
     try {
-      setData(await api<T>('GET', path));
+      setData(await (body === undefined ? api<T>('GET', path) : api<T>('POST', path, body)));
     } catch (e) {
       setError((e as ApiError).message);
     }
-  }, [path]);
+  }, [path, key]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
   }, [load]);
@@ -101,10 +103,15 @@ function TallyTable({ rows, first }: { rows: (Tally & { name: string })[]; first
 }
 
 function AdminDashboard() {
-  const { groups } = useStore();
+  const { groups, cases } = useStore();
   const [group, setGroup] = useState('ALL');
   const [basis, setBasis] = useState<'COMPLETED' | 'ALL'>('COMPLETED');
-  const { data: d, error, load } = useLoad<Dashboard>(`/api/dashboard?group=${encodeURIComponent(group)}&basis=${basis}`);
+  // The Dashboard follows the menu's procedures, cohorts and period (owner R2-8); its own group switcher stays.
+  const f = useFilters();
+  const tagged = useTagged(cases);
+  const filtering = !!(f.proc.length || f.group.length || f.from || f.to);
+  const caseIds = filtering ? applyFilters(cases, tagged, { ...f, grp: 'ALL' }).map((c) => c.case_id) : undefined;
+  const { data: d, error, load } = useLoad<Dashboard>(`/api/dashboard?group=${encodeURIComponent(group)}&basis=${basis}`, caseIds ? { group, basis, case_ids: caseIds } : undefined);
   if (error)
     return (
       <p className="field-error" role="alert">
@@ -119,6 +126,20 @@ function AdminDashboard() {
   const pct = (a: number, b: number) => (b ? `${Math.round((1000 * a) / b) / 10}%` : '—');
   return (
     <div data-testid="dashboard">
+      {filtering && (
+        <p className="filter-bar" data-testid="dashboard-filter">
+          <span className="muted small">Showing</span>
+          {[...f.proc, ...f.group].map((id) => (
+            <span key={id} className="chip c-cat" style={{ ['--chip' as string]: `var(--${itemColor(id)})` }}>
+              {itemLabel(id)}
+            </span>
+          ))}
+          {(f.from || f.to) && <span className="chip c-neutral">{`${f.from ?? '…'} – ${f.to ?? '…'}`}</span>}
+          <button type="button" className="link small" onClick={clearFilters}>
+            All cases
+          </button>
+        </p>
+      )}
       {groups.length > 1 && (
         <div className="seg" role="radiogroup" aria-label="Dashboard group">
           {[{ group_id: 'ALL', name: 'All groups' }, ...groups].map((g) => (

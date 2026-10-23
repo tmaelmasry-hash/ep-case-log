@@ -40,6 +40,8 @@ npm run sheets -- setup --test    # same in the TEST Sheet
 npm run setup -- --username <your username>   # Groups 1–3 and the first Admin; shows a one-time password once
 ```
 `npm start` now runs the app on this computer with the Google Sheet (http://localhost:8787).
+In Windows PowerShell, npm drops the `--` and fails on `--username`/`--test`; run the script directly instead:
+`node scripts/setup.ts --username <name>`, `node scripts/sheets.ts setup --test`.
 
 ## C. Cloudflare: publish the Worker
 ```

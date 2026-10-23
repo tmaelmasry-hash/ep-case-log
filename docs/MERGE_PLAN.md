@@ -14,6 +14,7 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 | D7 | Removed from EP Case Log: images, op-note scan, image inbox, its own sync server / local-only mode, invented fields. |
 | D8 | Brought from EP Workspace: Bulk add MRNs, AI Assistant, MRN prompt + copy-forward, Light follow-up, Excel export, Dashboard + My work, Follow-up bell (built switched off, as in F-19). Not brought: Reports templates + WhatsApp. |
 | D9 | Accounts/hosting: the owner's Google Apps Script account and Cloudflare account (Workers & Pages), named 22 Oct 2026. They hold test items only; the owner asked to delete them. Clean-up is done from a session on the owner's computer (`docs/ACCOUNTS_CLEANUP_HANDOFF.md`), list first, delete only confirmed items. Phases 1–3 run on a local store with synthetic data. |
+| D10 | Clean slate (owner, 23 Oct 2026): after being shown that the accounts held the EP Workspace registry Sheet "EP Registry — Rebuild" with its nightly backups and the Pages project `ep-registry-rebuild`, the owner said to delete everything and treat the new registry as brand new. The owner moved all EP Registry Drive files (Sheets, backups, export folders, their bound scripts) to Drive Trash; Apps Script My projects is empty. Still to do by the owner: delete the Cloudflare Pages project `ep-registry-rebuild`; empty Drive / Apps Script Trash if wanted. **Phase 13 (copy of real EP Workspace data) is dropped**: there is no source left. Supersedes D5. |
 
 ## Build order (owner approved)
 1. Server, sign-in, Admin/Member
@@ -28,7 +29,7 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 10. Excel export
 11. AI Assistant (needs API key)
 12. Follow-up bell (off)
-13. One-time copy of real EP Workspace data (explicit approval)
+13. ~~One-time copy of real EP Workspace data (explicit approval)~~ dropped by D10
 
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.
@@ -85,6 +86,7 @@ Owner decisions (step 2, phase 3): core fields are checked **for each procedure*
 - Owner steps and commands: `docs/DEPLOY.md` (`npm run sheets -- secret | init | setup`, `npm run setup`, `npm run worker:secrets`, `npm run deploy`).
 - Tests: server tests run twice (memory store, and Sheet store over the real Code.js on a fake spreadsheet) + `tests/server/sheets.test.ts`; browser tests run against the local server and against the Worker in Cloudflare's local runtime (`npm run e2e:worker`). A mutation check (writing whole rows instead of changed cells) makes the concurrency test fail.
 - Not done here: the real Google Sheet and Cloudflare deployment (owner's accounts; cleanup of test items first, `docs/ACCOUNTS_CLEANUP_HANDOFF.md`).
+- **Deployed 23 Oct 2026** (session on the owner's computer, after D10 clean-up): Google Sheet "EP Case Log — Registry" with bound Apps Script (web app "EP Case Log v1"), TEST Sheet and daily 10:00 backup from `setupSheets`; `sheets init/setup` (+ `--test`) done; first Admin `admin` with Groups 1–3. Worker `ep-case-log` on the owner's Cloudflare account Tarek.kamc (cfcaa4…): https://ep-case-log.ep-registry-tarek.workers.dev. Checked: page 200 with security headers, `/api` answers, a wrong sign-in reads the Users tab through Apps Script (401 INVALID_LOGIN, ~3.4 s). Not yet checked: owner's first sign-in and a full case save on the live site.
 
 ## Phases 5–12 (built 22 Oct 2026; owner asked to finish all phases, test, try locally, then deploy last)
 - **5 MRN prompt + copy-forward:** POST /api/cases answers 409 MRN_HAS_CASES unless `new_case: true`; history sections marked `copy_forward` in `config/case_layout.json` are copied from the latest case of the same MRN and tagged "Copied" until edited.

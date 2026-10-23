@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && tsc -p tsconfig.server.json && vite build",
+    "build": "node scripts/build-config.ts && tsc --noEmit && tsc -p tsconfig.server.json && vite build",
     "start": "node server/main.ts",
     "setup": "node scripts/setup.ts",
     "typecheck": "node scripts/build-config.ts && tsc --noEmit && tsc -p tsconfig.server.json",

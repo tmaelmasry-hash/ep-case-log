@@ -70,6 +70,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 |---|---|---|
 | `checkpoint-2026-10-23-live` | `136e845d-6ec4-4d0e-8aa1-b3b356b23850` | EP Case Log — Registry (daily backups in "EP Case Log Backups") |
 | `checkpoint-2026-10-23-round2` | `307c74d6-bfcc-4fce-afe1-01b8bfb49e5e` | same Sheet, after `sheets setup` (48 columns, Structural, CohortTags) |
+| (commit after `e154eb7`, round 3 device form + CHA line) | `a246be0b-69aa-4b64-9398-8df4bd90ed9e` | same Sheet, no Sheet change |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

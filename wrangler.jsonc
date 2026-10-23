@@ -2,6 +2,8 @@
 // SESSION_SECRET, APPS_SCRIPT_URL, GATEWAY_SECRET. Deploy with `npm run deploy`.
 {
   "name": "ep-case-log",
+  // Tarek.kamc's Cloudflare account: a deploy signed in to any other account fails instead of going there.
+  "account_id": "cfcaa4bff2f03acf68325881dcfd76f4",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {

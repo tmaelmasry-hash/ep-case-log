@@ -45,12 +45,17 @@ In Windows PowerShell, npm drops the `--` and fails on `--username`/`--test`; ru
 
 ## C. Cloudflare: publish the Worker
 ```
-npx wrangler login                # opens the browser once to allow Wrangler on your Cloudflare account
+node scripts/wrangler.ts login    # opens the browser once to allow Wrangler on your Cloudflare account
 npm run worker:secrets            # copies SESSION_SECRET, APPS_SCRIPT_URL, GATEWAY_SECRET from .env to the Worker
 npm run deploy                    # builds and publishes; prints https://ep-case-log.<your-subdomain>.workers.dev
 ```
 Open the printed address, sign in with the one-time password and choose your own. Add users in Settings → Users.
 A custom domain can be added later in Cloudflare (Workers → ep-case-log → Settings → Domains & Routes).
+
+This project keeps its own Wrangler sign-in in `~/.ep-registry-wrangler` (account Tarek.kamc), apart from the EP Workspace
+sign-in (kamc.ep2026) on the same PC: always call Wrangler through `node scripts/wrangler.ts <command>`
+(`whoami`, `deploy`, `rollback <id>`, …). `wrangler.jsonc` pins Tarek.kamc's `account_id`, so a deploy from the wrong
+account fails. If the sign-in page does not open from a background shell, run the login in a normal terminal.
 
 Without a browser (a cloud session): instead of `wrangler login`, an API token made from the **Edit Cloudflare Workers**
 template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUDFLARE_ACCOUNT_ID`), lets Wrangler run.
@@ -64,9 +69,10 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | Tag | Worker version | Sheet |
 |---|---|---|
 | `checkpoint-2026-10-23-live` | `136e845d-6ec4-4d0e-8aa1-b3b356b23850` | EP Case Log — Registry (daily backups in "EP Case Log Backups") |
+| `checkpoint-2026-10-23-round2` | `307c74d6-bfcc-4fce-afe1-01b8bfb49e5e` | same Sheet, after `sheets setup` (48 columns, Structural, CohortTags) |
 
-To go back: code `git checkout checkpoint-2026-10-23-live` (or `git reset --hard <tag>` on a branch);
-live app `npx wrangler rollback 136e845d-6ec4-4d0e-8aa1-b3b356b23850`; data: copy the wanted Sheet backup.
+To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
+live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.
 If the Sheet columns changed after the tag, `npm run sheets -- setup` only adds columns, so old code still runs.
 
 ## Notes

@@ -13,9 +13,12 @@ Work in steps, preview before building anything visible, multiple-choice questio
   `ep-workspace.pages.dev` with real data on the **kamc.ep2026** account, and still developed in another session
   (M-4b deployed 23 Oct, M-4c planned). The owner chose to start the new registry **empty** (no data copy, D10).
 
-## Live deployment (still the phase-4 build, round 2 NOT deployed)
+## Live deployment (round 2 DEPLOYED 23 Oct)
 - App: https://ep-case-log.ep-registry-tarek.workers.dev — Cloudflare Worker `ep-case-log`, account **Tarek.kamc**
-  (`cfcaa4…`), live version `136e845d…`.
+  (`cfcaa4…`), live version `307c74d6…` (restore point `checkpoint-2026-10-23-round2`; before: `136e845d…`).
+- `sheets setup` ran on the main Sheet: 48 columns, tabs Structural and CohortTags (adds only).
+- Wrangler: this project has its own sign-in (`node scripts/wrangler.ts …`, folder `~/.ep-registry-wrangler`,
+  Tarek.kamc); the global `npx wrangler` stays on kamc.ep2026 for EP Workspace. `wrangler.jsonc` pins `account_id`.
 - Google Sheet "EP Case Log — Registry" + bound Apps Script (web app "EP Case Log v1"), TEST Sheet
   "EP Case Log — TEST (synthetic data only)", daily backup 10:00 Riyadh. `.env` on this PC holds STORE=sheets,
   APPS_SCRIPT_URL, GATEWAY_SECRET, SESSION_SECRET (never print them).
@@ -41,11 +44,7 @@ Tests at the end: `npm test` 207 passed · `npm run e2e` 60 passed · `npm run e
 failed once and passed on re-run).
 
 ## What to do next (ask the owner, one at a time)
-1. **Deploy round 2** (owner's yes first): `npx wrangler whoami` must show **tarek.kamc@gmail.com** — the other
-   session switches Wrangler to kamc.ep2026 on this PC. If not: `npx wrangler logout`, then `npx wrangler login`
-   (owner signs in as Tarek.kamc). Then `node scripts/sheets.ts setup` on the **main** Sheet (adds the 48 columns,
-   the Structural and CohortTags tabs; adds only), then `npm run deploy`, check the live site, record the new version
-   id as a restore point in `docs/DEPLOY.md`.
+1. ~~Deploy round 2~~ done 23 Oct (see above). The owner still has to sign in on the live site and save a real case.
 2. Open questions for the owner:
    - Reminder (he asked): which individual form fields to remove (R2-9).
    - AF ablation by energy submenu? (energies field exists since M-3; he last said AF = First / Redo only.)

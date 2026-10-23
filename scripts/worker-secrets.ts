@@ -10,7 +10,7 @@ for (const name of ['SESSION_SECRET', 'APPS_SCRIPT_URL', 'GATEWAY_SECRET']) {
     console.error(`${name} is missing in .env`);
     process.exit(1);
   }
-  const r = spawnSync('npx', ['wrangler', 'secret', 'put', name], { input: value, stdio: ['pipe', 'inherit', 'inherit'], shell: process.platform === 'win32' });
+  const r = spawnSync('node', ['scripts/wrangler.ts', 'secret', 'put', name], { input: value, stdio: ['pipe', 'inherit', 'inherit'] });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 console.log('Worker secrets set.');

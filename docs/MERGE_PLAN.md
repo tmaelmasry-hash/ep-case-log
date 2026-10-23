@@ -47,6 +47,13 @@ Restore point before this round: tag `checkpoint-2026-10-23-live` (see `docs/DEP
 | R2-9 | Nothing is removed as a feature. The owner will name individual fields to remove later (remind him). |
 | R2-10 | Build order: (1) timer + name + colors, (2) sidebar / filters / pilgrims / export, (3) M-4a, M-3, M-1, (4) R2-8 extras. Each part on the TEST Sheet with a preview first; deploy only with the owner's yes. |
 
+| R2-11 | Menu revision (owner, 23 Oct): main menus **Ablation · Devices · Diagnostic · Structural**; Cohorts (was Patient groups). SVT › AVNRT › Typical / Atypical, Atrial tachycardia › Focal / Macro-reentrant, Other SVT (only dictionary codes: other guideline SVTs such as IST or junctional tachycardia have no code). Accessory pathway › Manifest (WPW) / Concealed / Intermittent. AV node ablation without submenu. Ventricular › PVC / Idiopathic VT / Scar VT (Ischemic / Non-ischemic) / Fascicular VT (origin = fascicular) / Other. Diagnostic › EP study / ILR (ILR moved from Devices). Structural › LAA closure (more structural items later). Group switcher: **All first**. Look: larger main rows, smaller sub rows, colored icon and count badge per item. Several items at once (any of them); period presets in the menu incl. Hijri year / Ramadan / Dhu al-Hijjah (Gregorian entered, Hijri shown); filters kept across visits; phone drawer from the left, stays open until Done. |
+| R2-12 | **New cohort button** (owner, 23 Oct): a cohort is either a rule on dictionary fields (cases join on their own) or a manual tag added from inside a case; both kinds allowed. **Admin creates**; everyone sees them, Members only with their groups' cases. To be previewed before building. |
+
+### Round 2 progress
+- **Part 1 (done, `394b2c3`):** R2-1 name, R2-2 save on leave, R2-3 colors.
+- **Part 2 (built 23 Oct, on the TEST Sheet locally):** `config/categories.json` (the menu; dictionary codes only) + `shared/categories.ts` (matcher, Hijri years); the server adds each procedure's and the case's codes and the follow-up state to the case summary; desktop sidebar tree and phone ☰ drawer (`src/components/CategoryTree.tsx`), counts follow the other filters; filter chips, period sheet, "Export these N to Excel" (`/api/exports` scope CASES, own groups only); procedure chips in their category color; export files renamed `KAMC_EP_Registry_…`. Waiting for M-3: LAA closure (code LAA_CLOSURE listed as pending), AF by energy, Leadless LVEP / CCM. Dashboard by category is part 4.
+
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.
 - Fake data only in tests; never copy secrets; ask before anything that could change or lose real data.

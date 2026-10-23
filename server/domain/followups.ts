@@ -68,6 +68,15 @@ export function checkFollowupConfig(dict: Dictionary, r: FollowupRule | undefine
   }
 }
 
+/** Sidebar "Follow-up due" (owner R2-7): per case, OVERDUE if anything is past due, else DUE. Uses the same windows
+ *  as the bell but works while the bell is switched off. */
+export function followupState(r: FollowupRule | undefined, cases: CaseRecord[], today: string): Map<string, 'DUE' | 'OVERDUE'> {
+  const out = new Map<string, 'DUE' | 'OVERDUE'>();
+  if (!r) return out;
+  for (const it of followUpsDue({ ...r, enabled: true }, cases, today)) if (out.get(it.case_id) !== 'OVERDUE') out.set(it.case_id, it.days < 0 ? 'OVERDUE' : 'DUE');
+  return out;
+}
+
 export function followUpsDue(r: FollowupRule | undefined, cases: CaseRecord[], today: string): DueItem[] {
   if (!r?.enabled) return [];
   const [, dateField] = split(r.procedure_date_field);

@@ -1,6 +1,6 @@
 // Cases list (approved EP Log-style preview): group switcher, search, cases grouped by month of the episode start,
 // each row = date · MRN · age/sex, a chip per procedure, then No. · status.
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { CaseSummary, ProcedureSummary } from '../../shared/caseTypes.ts';
 import { checkMrn } from '../../shared/mrn.ts';
 import { label, mrnRules } from '../lib/dict';
@@ -9,18 +9,24 @@ import { ageSex, fmtDate, fmtMonthKey, monthKey, todayISO } from '../lib/util';
 import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
-import { Empty, SaveIndicator, Sheet } from '../components/ui';
+import { Empty, SaveIndicator, Sheet, useMediaQuery } from '../components/ui';
+import { CategoryTree } from '../components/CategoryTree';
+import { applyFilters, clearFilters, componentColor, itemColor, itemLabel, setFilters, toggleFilter, useFilters, useTagged } from '../lib/filters';
+import { PeriodSheet } from '../components/PeriodSheet';
+import { SideDrawer } from '../components/SideDrawer';
+import { downloadXlsx } from '../lib/exportFile';
 import { GroupNameDialog } from './AdminSheets';
 import { BulkAddSheet } from './BulkAdd';
 import { FollowupBell } from './FollowupBell';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
-export function procedureChip(p: ProcedureSummary): { text: string; cls: string } {
+export function procedureChip(p: ProcedureSummary): { text: string; cls: string; color: string | null } {
   const comps = p.components.map((c) => label('PROCEDURE_COMPONENTS', 'component_type', c));
   const type = p.type ? label('EP_PROCEDURES', 'primary_procedure_type', p.type) : null;
   const text = type === 'Ablation' && comps.length ? `${comps.join(' + ')} Ablation` : [type, comps.length && type !== 'Ablation' ? comps.join(' + ') : null].filter(Boolean).join(' · ') || 'Procedure';
-  return { text, cls: (p.type && CHIP_CLASS[p.type]) || 'c-neutral' };
+  // Colored by its first component's category (R2-3); without components, by procedure type as before.
+  return { text, cls: p.components.length ? 'c-cat' : (p.type && CHIP_CLASS[p.type]) || 'c-neutral', color: p.components.length ? componentColor(p.components[0]) : null };
 }
 
 export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?: boolean; showGroup?: string }) {
@@ -40,7 +46,7 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
             c.procedures.map((p) => {
               const ch = procedureChip(p);
               return (
-                <span key={p.id} className={`chip ${ch.cls}`}>
+                <span key={p.id} className={`chip ${ch.cls}`} style={ch.color ? ({ '--chip': `var(--${ch.color})` } as CSSProperties) : undefined}>
                   {ch.text}
                 </span>
               );
@@ -190,36 +196,39 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
 }
 
 export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: string) => void }) {
-  const { cases, groups, loadError, refreshCases } = useStore();
+  const { cases, groups, loadError, refreshCases, toast } = useStore();
   const { can, me } = useAuth();
-  const [group, setGroup] = useState<string>(() => {
-    try {
-      return localStorage.getItem('ep.group') ?? 'ALL';
-    } catch {
-      return 'ALL';
-    }
-  });
+  const wide = useMediaQuery('(min-width: 960px)');
+  const f = useFilters();
+  const tagged = useTagged(cases);
   const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [addGroup, setAddGroup] = useState(false);
   const [bulk, setBulk] = useState(false);
-  const activeGroup = group === 'ALL' || groups.some((g) => g.group_id === group) ? group : 'ALL';
-  const pickGroup = (g: string) => {
-    setGroup(g);
-    try {
-      localStorage.setItem('ep.group', g);
-    } catch {
-      /* storage blocked */
-    }
-  };
+  const [drawer, setDrawer] = useState(false);
+  const [period, setPeriod] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const activeGroup = f.grp === 'ALL' || groups.some((g) => g.group_id === f.grp) ? f.grp : 'ALL';
+  const pickGroup = (g: string) => setFilters({ grp: g });
+  const filtering = !!(f.proc.length || f.group.length || f.from || f.to);
 
   const filtered = useMemo(() => {
     const term = q.replace(/\s+/g, '');
-    return cases
-      .filter((c) => activeGroup === 'ALL' || c.group_id === activeGroup)
+    return applyFilters(cases, tagged, { ...f, grp: activeGroup })
       .filter((c) => !term || c.mrn.includes(term))
       .sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '') || b.group_seq - a.group_seq);
-  }, [cases, activeGroup, q]);
+  }, [cases, tagged, f, activeGroup, q]);
+
+  const exportFiltered = async () => {
+    setExporting(true);
+    try {
+      toast({ message: `Downloaded ${await downloadXlsx({ scope: 'CASES', case_ids: filtered.map((c) => c.case_id) })}`, kind: 'success' });
+    } catch (e) {
+      toast({ message: (e as ApiError).message, kind: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const months = useMemo(() => {
     const out: { key: string; items: CaseSummary[] }[] = [];
@@ -237,6 +246,13 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   return (
     <section className="view" aria-label="Procedures">
       <div className="navbar">
+        {!wide && (
+          <button className="menu-btn" onClick={() => setDrawer(true)} data-testid="open-categories">
+            <Icon name="menu" size={20} />
+            <span>Categories</span>
+            {filtering && <span className="menu-dot" aria-label="filters on" />}
+          </button>
+        )}
         <span className="grow" />
         <SaveIndicator />
         {me?.features?.followup_bell && <FollowupBell />}
@@ -258,14 +274,14 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       </div>
       {(groups.length > 1 || can('groups.manage')) && (
         <div className="seg" role="radiogroup" aria-label="Group">
+          <button type="button" role="radio" aria-checked={activeGroup === 'ALL'} className={activeGroup === 'ALL' ? 'on' : ''} onClick={() => pickGroup('ALL')}>
+            All
+          </button>
           {groups.map((g) => (
             <button key={g.group_id} type="button" role="radio" aria-checked={activeGroup === g.group_id} className={activeGroup === g.group_id ? 'on' : ''} onClick={() => pickGroup(g.group_id)}>
               {g.name} <small>{countIn(g.group_id)}</small>
             </button>
           ))}
-          <button type="button" role="radio" aria-checked={activeGroup === 'ALL'} className={activeGroup === 'ALL' ? 'on' : ''} onClick={() => pickGroup('ALL')}>
-            All
-          </button>
           {can('groups.manage') && (
             <button type="button" className="plus" aria-label="Add group" onClick={() => setAddGroup(true)} data-testid="add-group">
               +
@@ -273,6 +289,32 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           )}
         </div>
       )}
+      <div className="filter-bar" data-testid="filter-bar">
+        {(['proc', 'group'] as const).flatMap((side) =>
+          f[side].map((id) => (
+            <span key={id} className="chip c-cat filter-chip" style={{ '--chip': `var(--${itemColor(id)})` } as CSSProperties}>
+              {itemLabel(id)}
+              <button type="button" aria-label={`Remove ${itemLabel(id)}`} onClick={() => toggleFilter(side, id)}>
+                <Icon name="close" size={12} />
+              </button>
+            </span>
+          )),
+        )}
+        <button type="button" className="chip c-neutral filter-chip" onClick={() => setPeriod(true)} data-testid="period">
+          <Icon name="cal" size={12} /> {f.from || f.to ? `${f.from ? fmtDate(f.from) : '…'} – ${f.to ? fmtDate(f.to) : '…'}` : 'Any date'}
+        </button>
+        {filtering && (
+          <button type="button" className="link small" onClick={clearFilters}>
+            Clear
+          </button>
+        )}
+      </div>
+      {drawer && (
+        <SideDrawer title="Categories" onClose={() => setDrawer(false)} testId="category-drawer">
+          <CategoryTree cases={cases} onCustomPeriod={() => setPeriod(true)} />
+        </SideDrawer>
+      )}
+      {period && <PeriodSheet onClose={() => setPeriod(false)} />}
       {bulk && <BulkAddSheet defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id} onClose={() => setBulk(false)} />}
       {addGroup && (
         <GroupNameDialog
@@ -308,12 +350,22 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         </Empty>
       ) : filtered.length === 0 ? (
         <Empty icon="search" title="No matching cases">
-          <p>Try another MRN or group.</p>
+          <p>{filtering ? 'No case matches these filters.' : 'Try another MRN or group.'}</p>
+          {filtering && (
+            <button className="btn" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
         </Empty>
       ) : (
         <>
           <p className="muted small count-line" data-testid="case-count">
             {filtered.length} case{filtered.length === 1 ? '' : 's'}
+            {filtering && can('export.group') && (
+              <button type="button" className="link small export-link" onClick={exportFiltered} disabled={exporting} data-testid="export-filtered">
+                <Icon name="download" size={14} /> {exporting ? 'Preparing…' : `Export these ${filtered.length} to Excel`}
+              </button>
+            )}
           </p>
           {months.map((m) => (
             <div key={m.key}>

@@ -14,7 +14,7 @@ describe('Excel export', () => {
     await newCase(admin, '0990601', h.groups[0].group_id);
     const r = await admin.call('POST', '/api/exports', { scope: 'ALL' });
     expect(r.status).toBe(200);
-    expect(r.data.file_name).toMatch(/^EP_Case_Log_All_\d{4}-\d{2}-\d{2}_\d{4}\.xlsx$/);
+    expect(r.data.file_name).toMatch(/^KAMC_EP_Registry_All_\d{4}-\d{2}-\d{2}_\d{4}\.xlsx$/);
     const x = readXlsx(r.data.base64);
     expect(Object.keys(x)).toEqual(expect.arrayContaining(['Cases', 'Patient', 'Procedures', 'History', 'Users', 'Groups', 'Activity', 'Lookups']));
     const head = x.Cases[0];
@@ -42,5 +42,23 @@ describe('Excel export', () => {
     expect(JSON.stringify(x.Patient)).not.toContain('9990612');
     const log = (await admin.call('GET', '/api/admin/activity')).data.items;
     expect(log.some((i: { kind: string; details: string }) => i.kind === 'EXPORT' && i.details.includes('1 cases'))).toBe(true);
+  });
+
+  it('the filtered list exports only the listed cases, and never a case of another group (R2-6)', async () => {
+    const admin = await as(h, 'admin');
+    const a1 = (await newCase(admin, '9990621', h.groups[0].group_id)).case_id;
+    await newCase(admin, '9990622', h.groups[0].group_id);
+    const b1 = (await newCase(admin, '9990623', h.groups[1].group_id)).case_id;
+    const sara = await as(h, 'sara');
+    const r = await sara.call('POST', '/api/exports', { scope: 'CASES', case_ids: [a1, b1] });
+    expect(r.status).toBe(200);
+    expect(r.data.file_name).toMatch(/^KAMC_EP_Registry_Filtered_/);
+    const x = readXlsx(r.data.base64);
+    expect(Object.keys(x)).not.toContain('Users');
+    expect(x.Cases.slice(1).map((row) => row[x.Cases[0].indexOf('mrn')])).toEqual(['9990621']);
+    expect((await sara.call('POST', '/api/exports', { scope: 'CASES', case_ids: [b1] })).status).toBe(403);
+    expect((await sara.call('POST', '/api/exports', { scope: 'CASES', case_ids: [] })).status).toBe(400);
+    const all = readXlsx((await admin.call('POST', '/api/exports', { scope: 'CASES', case_ids: [a1, b1] })).data.base64);
+    expect(all.Cases.length - 1).toBe(2);
   });
 });

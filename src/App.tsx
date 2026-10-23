@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useStore } from './store';
 import { useAuth } from './auth';
 import { Icon } from './components/Icon';
 import { SaveIndicator, Toasts, useHashRoute, useMediaQuery } from './components/ui';
+import { CategoryTree } from './components/CategoryTree';
+import { PeriodSheet } from './components/PeriodSheet';
 import { CasesView } from './views/CasesView';
 import { CaseView } from './views/CaseView';
 import { PatientsView } from './views/PatientsView';
@@ -16,10 +19,11 @@ const TABS = [
 ];
 
 export function App() {
-  const { loaded } = useStore();
+  const { loaded, cases } = useStore();
   const { me } = useAuth();
   const [route, nav] = useHashRoute();
   const wide = useMediaQuery('(min-width: 960px)');
+  const [period, setPeriod] = useState(false);
   const tab = route[0];
 
   if (!loaded) {
@@ -68,6 +72,11 @@ export function App() {
           </a>
         ))}
         {wide && (
+          <div className="side-cats" onClickCapture={(e) => (e.target as HTMLElement).closest('.cat-name, .cat-period .pill') && activeTab !== 'cases' && nav('cases')}>
+            <CategoryTree cases={cases} onCustomPeriod={() => setPeriod(true)} />
+          </div>
+        )}
+        {wide && (
           <div className="tabbar-foot">
             <SaveIndicator />
             {me && (
@@ -79,6 +88,7 @@ export function App() {
         )}
       </nav>
       <main className="main">{main}</main>
+      {period && <PeriodSheet onClose={() => setPeriod(false)} />}
       <Toasts />
     </div>
   );

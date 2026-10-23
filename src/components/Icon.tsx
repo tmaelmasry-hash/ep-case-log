@@ -12,6 +12,7 @@ const PATHS: Record<string, string> = {
   chevron: 'M9 6l6 6-6 6',
   back: 'M15 6l-6 6 6 6',
   close: 'M6 6l12 12M18 6L6 18',
+  menu: 'M4 7h16M4 12h16M4 17h16',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   doc: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
   scan: 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h8M8 12h8M8 15h5',

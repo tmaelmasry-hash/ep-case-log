@@ -121,6 +121,8 @@ export interface ProcedureSummary {
   type: string | null;
   status: string | null;
   components: string[];
+  /** "ENTITY.field=CODE" of this procedure's own rows, for the sidebar (CATEGORY_FIELDS in shared/categories.ts). */
+  codes?: string[];
 }
 
 export interface CaseSummary {
@@ -137,6 +139,10 @@ export interface CaseSummary {
   core: Tally;
   /** CHA₂DS₂-VASc display (never stored): shown for AF / flutter care; score null = incomplete. */
   cha: { shown: boolean; score: number | null };
+  /** Case-level "ENTITY.field=CODE" (rows without a procedure), for the sidebar. */
+  codes?: string[];
+  /** A follow-up visit or device check due soon or overdue (config/site.json followup_due windows), for the sidebar. */
+  followup?: 'DUE' | 'OVERDUE' | null;
   updated_at: string;
 }
 

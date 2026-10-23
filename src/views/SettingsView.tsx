@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { AccountSection, UsersSection } from './AccountSettings';
 import { ActivitySheet, GroupsSheet, RecycleBinSheet, useRecycleBin } from './AdminSheets';
 import { api, ApiError } from '../lib/api';
+import { downloadXlsx } from '../lib/exportFile';
 
 /** Admin rows (approved phase 3 preview): groups, recycle bin, activity log — each opens in a sheet. */
 function AdminSection() {
@@ -44,17 +45,7 @@ function ExportSection() {
   const run = async (key: string, body: Record<string, unknown>) => {
     setBusy(key);
     try {
-      const f = await api<{ file_name: string; base64: string; cases: number }>('POST', '/api/exports', body);
-      const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0));
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = f.file_name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      toast({ message: `Downloaded ${f.file_name}`, kind: 'success' });
+      toast({ message: `Downloaded ${await downloadXlsx(body)}`, kind: 'success' });
     } catch (e) {
       toast({ message: (e as ApiError).message, kind: 'error' });
     } finally {

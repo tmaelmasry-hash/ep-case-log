@@ -4,6 +4,7 @@ import { codeLabel, displayValue, editable, hasValue, type Dictionary, type Enti
 import { FieldError, decodeValue, encodeValue, mergeOtherSpecify } from '../../shared/validate.ts';
 import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../../shared/readiness.ts';
 import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
+import { CATEGORY_FIELDS } from '../../shared/categories.ts';
 import {
   ID_RE,
   ageOn,
@@ -511,7 +512,7 @@ export function decodeRows(dict: Dictionary, rec: CaseRecord): Record<string, De
   return out;
 }
 
-export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, users: { id: string; name: string }[], nameOf: (id: string) => string): CaseDetail {
+export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, users: { id: string; name: string }[], nameOf: (id: string) => string, followup: CaseSummary['followup'] = null): CaseDetail {
   return {
     meta: { ...rec.meta, group_name: groupName, completed_by_name: rec.meta.completed_by ? nameOf(rec.meta.completed_by) : null },
     rows: decodeRows(dict, rec),
@@ -521,15 +522,32 @@ export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, u
     ai: rec.ai ?? {},
     history_count: rec.history?.length ?? 0,
     users,
-    summary: summarize(dict, rec),
+    summary: summarize(dict, rec, followup),
   };
 }
 
-export function summarize(dict: Dictionary, rec: CaseRecord): CaseSummary {
+/** "ENTITY.field=CODE" of the sidebar fields (shared/categories.ts), by procedure id ("" = case level). */
+function categoryCodes(dict: Dictionary, rec: CaseRecord): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const path of CATEGORY_FIELDS) {
+    const [entity, name] = path.split('.');
+    const f = dict.entities[entity]?.fields.find((x) => x.name === name);
+    if (!f) continue;
+    for (const r of liveRows(rec, entity)) {
+      const v = decodeValue(f, r[name]);
+      const pid = entity === 'EP_PROCEDURES' ? r._id : typeof r.procedure_id === 'string' ? r.procedure_id : '';
+      for (const c of Array.isArray(v) ? v : v === null || v === undefined || v === '' ? [] : [v]) out.set(pid, [...(out.get(pid) ?? []), `${path}=${c}`]);
+    }
+  }
+  return out;
+}
+
+export function summarize(dict: Dictionary, rec: CaseRecord, followup: CaseSummary['followup'] = null): CaseSummary {
   const ep = liveRows(rec, 'EP_EPISODES')[0];
   const ident = liveRows(rec, 'PATIENT_IDENTIFIERS')[0];
   const pat = liveRows(rec, 'PATIENTS')[0];
   const comps = liveRows(rec, 'PROCEDURE_COMPONENTS');
+  const codes = categoryCodes(dict, rec);
   const procedures = liveRows(rec, 'EP_PROCEDURES')
     .map((p) => ({
       id: p._id,
@@ -540,6 +558,7 @@ export function summarize(dict: Dictionary, rec: CaseRecord): CaseSummary {
         .filter((c) => c.procedure_id === p._id)
         .sort((x, y) => Number(x.component_sequence) - Number(y.component_sequence))
         .map((c) => String(c.component_type)),
+      codes: codes.get(p._id) ?? [],
     }))
     .sort((x, y) => (x.start ?? '9999').localeCompare(y.start ?? '9999'));
   const start = (ep?.episode_start_date as string) ?? null;
@@ -559,6 +578,8 @@ export function summarize(dict: Dictionary, rec: CaseRecord): CaseSummary {
       const rows = decodeRows(dict, rec);
       return { shown: chaRelevant(rows), score: cha2ds2vasc(rows).score };
     })(),
+    codes: codes.get('') ?? [],
+    followup,
     updated_at: rec.meta.updated_at,
   };
 }

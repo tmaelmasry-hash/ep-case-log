@@ -4,6 +4,7 @@ import { checkMrn } from '../../shared/mrn.ts';
 import type { CaseRecord, EditBatch } from '../../shared/caseTypes.ts';
 import { siteLocalDate } from '../appconfig.ts';
 import { addHistory, applyEdits, completeCase, copyForward, historyItems, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
+import { followupState } from '../domain/followups.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { AppContext } from '../context.ts';
 import { newId } from '../util.ts';
@@ -37,6 +38,7 @@ export function caseRoutes(app: Router) {
       groups.find((g) => g.group_id === rec.meta.group_id)?.name ?? '',
       users.filter((u) => u.status === 'ACTIVE').map((u) => ({ id: u.user_id, name: u.display_name })),
       nameOf,
+      followupState(site.followup_due, [rec], siteLocalDate(site.timezone, ctx.now())).get(rec.meta.case_id) ?? null,
     );
   }
 
@@ -47,7 +49,8 @@ export function caseRoutes(app: Router) {
     const groups = await groupIdsFor(ctx, req.user!);
     const want = req.query.group && req.query.group !== 'ALL' ? [req.query.group] : groups;
     const cases = (await store.listCases()).filter((c) => !c.meta.is_deleted && groups.includes(c.meta.group_id) && want.includes(c.meta.group_id));
-    return { cases: cases.map((c) => summarize(dict, c)) };
+    const due = followupState(site.followup_due, cases, siteLocalDate(site.timezone, ctx.now()));
+    return { cases: cases.map((c) => summarize(dict, c, due.get(c.meta.case_id) ?? null)) };
   });
 
   app.post('/api/cases', async (req) => {

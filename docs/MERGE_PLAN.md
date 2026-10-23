@@ -14,7 +14,7 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 | D7 | Removed from EP Case Log: images, op-note scan, image inbox, its own sync server / local-only mode, invented fields. |
 | D8 | Brought from EP Workspace: Bulk add MRNs, AI Assistant, MRN prompt + copy-forward, Light follow-up, Excel export, Dashboard + My work, Follow-up bell (built switched off, as in F-19). Not brought: Reports templates + WhatsApp. |
 | D9 | Accounts/hosting: the owner's Google Apps Script account and Cloudflare account (Workers & Pages), named 22 Oct 2026. They hold test items only; the owner asked to delete them. Clean-up is done from a session on the owner's computer (`docs/ACCOUNTS_CLEANUP_HANDOFF.md`), list first, delete only confirmed items. Phases 1–3 run on a local store with synthetic data. |
-| D10 | Clean slate (owner, 23 Oct 2026): after being shown that the accounts held the EP Workspace registry Sheet "EP Registry — Rebuild" with its nightly backups and the Pages project `ep-registry-rebuild`, the owner said to delete everything and treat the new registry as brand new. The owner moved all EP Registry Drive files (Sheets, backups, export folders, their bound scripts) to Drive Trash; Apps Script My projects is empty. Still to do by the owner: delete the Cloudflare Pages project `ep-registry-rebuild`; empty Drive / Apps Script Trash if wanted. **Phase 13 (copy of real EP Workspace data) is dropped**: there is no source left. Supersedes D5. |
+| D10 | Clean slate (owner, 23 Oct 2026): after being shown that the accounts held the EP Workspace registry Sheet "EP Registry — Rebuild" with its nightly backups and the Pages project `ep-registry-rebuild`, the owner said to delete everything and treat the new registry as brand new. The owner moved all EP Registry Drive files (Sheets, backups, export folders, their bound scripts) to Drive Trash; Apps Script My projects is empty. Still to do by the owner: delete the Cloudflare Pages project `ep-registry-rebuild`; empty Drive / Apps Script Trash if wanted (Cloudflare project deleted by the owner the same day). **Correction (23 Oct):** what was deleted was an older copy on Tarek.kamc; the real EP Workspace (`ep-workspace.pages.dev`, Sheet on kamc.ep2026) is untouched and still running. Told this, the owner chose to **start the new registry empty, with no data copy**: phase 13 stays dropped by the owner's choice. Supersedes D5. |
 
 ## Build order (owner approved)
 1. Server, sign-in, Admin/Member
@@ -30,6 +30,22 @@ Owner decisions (Dr. Tarek, 21 Oct 2026, step 2 multiple-choice). Source read: `
 11. AI Assistant (needs API key)
 12. Follow-up bell (off)
 13. ~~One-time copy of real EP Workspace data (explicit approval)~~ dropped by D10
+
+## Round 2 decisions (owner, 23 Oct 2026, after comparing with EP Workspace)
+Restore point before this round: tag `checkpoint-2026-10-23-live` (see `docs/DEPLOY.md`).
+
+| # | Decision |
+|---|---|
+| R2-1 | App name **KAMC EP Registry** (title, manifest, sign-in, PDF). The main list is called **Procedures** (first item "All procedures"); a row is still a case/episode and shows under every category it matches. |
+| R2-2 | Typed fields save **on leaving the field / Enter / Done / closing the sheet**, not after a 0.9 s pause (`src/components/Fields.tsx`); errors show only after leaving. |
+| R2-3 | Colors: **Medical green + slate** (preview option 3: emerald #059669 buttons, slate text, bg #F5F7F6; dark bg #0E1513, accent #34D399). |
+| R2-4 | Category menu: sidebar on desktop, the same tree in a ☰ drawer on phones; parents open their children on click; counts follow the active filters; config-driven (one file maps each item to dictionary codes). Tree: **Ablation** (AF ablation › First / Redo / by energy after M-3; Flutter › Typical CTI / Atypical; SVT › AVNRT / Atrial tachycardia; Accessory pathway ablation (AVRT_WPW); AV node ablation; Ventricular › PVC / Idiopathic VT / Scar VT › Ischemic / Non-ischemic / Other) · **Diagnostic EP study** · **Devices** (Pacemaker › Single / Dual / Leadless; ICD › Single / Dual / S-ICD / EV-ICD; CRT › CRT-P / CRT-D; Conduction system pacing › LBBAP / His / HOT-CRT / LOT-CRT; Extraction and revision › Lead extraction / System explant / Lead revision / Pocket revision; Generator change and upgrade; ILR; Other devices › Leadless LVEP / CCM) · **LAA closure** · **Patient groups**: Pilgrims › Hajj › by Hijri year / Umrah › by Hijri year / Non-pilgrim / Not recorded; Follow-up due › Due / Overdue; Incomplete; Complications · **Unclassified** (automatic, hidden when empty). Items with 0 stay visible. |
+| R2-5 | Pilgrim status always comes from `EP_EPISODES.pilgrim_status` as entered; the year sub-list is the Hijri (Umm al-Qura) year of the case date. Open: whether Muharram counts toward the previous Hajj season. |
+| R2-6 | Filters combine (procedure menu + patient group + period); **Export to Excel of the filtered result** (Admin all groups, Member own group). |
+| R2-7 | Bring from EP Workspace: **M-1** dynamic form rules, **M-3** 48 fields + 15 codes (local amendments), **M-4a** stroke / TIA / thromboembolism split. Cohorts: Hajj & Umrah, Follow-up due, Incomplete, Complications. |
+| R2-8 | New: period filter (From–To + presets), duplicate warning (same MRN + same date), Dashboard follows the selected category, wider search (MRN, No., procedure). |
+| R2-9 | Nothing is removed as a feature. The owner will name individual fields to remove later (remind him). |
+| R2-10 | Build order: (1) timer + name + colors, (2) sidebar / filters / pilgrims / export, (3) M-4a, M-3, M-1, (4) R2-8 extras. Each part on the TEST Sheet with a preview first; deploy only with the owner's yes. |
 
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.

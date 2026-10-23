@@ -5,7 +5,7 @@ import { applyEdits, newCaseRecord } from '../../server/domain/cases.ts';
 import { MemoryStore } from '../../server/store/memory.ts';
 import { ENTITY_TABS, buildLayout } from '../../server/store/sheet-layout.ts';
 import { SheetsStore } from '../../server/store/sheets.ts';
-import type { RegistryStore } from '../../server/store/types.ts';
+import { StaleCaseError, type RegistryStore } from '../../server/store/types.ts';
 import { FakeAppsScript } from './fakeGoogle.ts';
 
 const config = loadConfig();
@@ -57,9 +57,20 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
       const b1 = structuredClone(r1);
       const b2 = structuredClone(r2);
       applyEdits(dict, r1, { changes: [{ entity: 'PATIENTS', id: 'patient_1', field: 'sex_at_birth', value: 'MALE' }] }, a('u1'), new Set());
-      applyEdits(dict, r2, { changes: [{ entity: 'PATIENT_IDENTIFIERS', id: 'patient_1', field: 'date_of_birth', value: '1968-01-20' }] }, a('u2'), new Set());
+      applyEdits(dict, r2, { changes: [{ entity: 'PATIENT_IDENTIFIERS', id: 'patient_1', field: 'date_of_birth', value: '1968-01-20' }] }, a('u2'), new Set()); // same edit as e2 below
       await store.putCase(r1, b1);
-      await store.putCase(r2, b2);
+      // L1: the Sheet store refuses the second save as stale (row_version moved); like the route, read again and redo.
+      const e2 = { changes: [{ entity: 'PATIENT_IDENTIFIERS', id: 'patient_1', field: 'date_of_birth', value: '1968-01-20' }] };
+      try {
+        await store.putCase(r2, b2);
+        expect(kind).toBe('memory');
+      } catch (e) {
+        expect(e).toBeInstanceOf(StaleCaseError);
+        const fresh = (await store.getCase('case_1'))!;
+        const fb = structuredClone(fresh);
+        applyEdits(dict, fresh, e2, a('u2'), new Set());
+        await store.putCase(fresh, fb);
+      }
       const after = (await store.getCase('case_1'))!;
       expect(after.rows.PATIENTS[0].sex_at_birth).toBe('MALE');
       expect(after.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBe('1968-01-20');

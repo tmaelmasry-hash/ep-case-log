@@ -103,10 +103,13 @@ export interface RegistryStore {
   /** Reserves n consecutive numbers; returns the first. */
   allocateSeqs(groupId: string, n: number): Promise<number>;
   listCases(): Promise<CaseRecord[]>;
-  getCase(id: string): Promise<CaseRecord | null>;
+  /** forEdit: a copy kept from a read or save in the last minute may be returned (the Sheet store); the save that
+   *  follows checks row_version and throws StaleCaseError if someone saved the case in between. */
+  getCase(id: string, opts?: { forEdit?: boolean }): Promise<CaseRecord | null>;
   /** Saves a case. With `base` (the case as this request read it, or null for a new case) only the cells that
-   *  changed from base are written, so concurrent saves of different fields all survive. Without it: whole case. */
-  putCase(rec: CaseRecord, base?: CaseRecord | null): Promise<void>;
+   *  changed from base are written, so concurrent saves of different fields all survive. Without it: whole case.
+   *  `activity` lines are written in the same Sheet call. */
+  putCase(rec: CaseRecord, base?: CaseRecord | null, activity?: ActivityInput[]): Promise<void>;
   /** Saves several new cases at once (bulk add). */
   putNewCases(recs: CaseRecord[]): Promise<void>;
   /** Records a bulk add under its idempotency key; false when that key was already used. */
@@ -121,4 +124,11 @@ export interface RegistryStore {
   setCohortTag(cohortId: string, caseId: string, on: boolean, by: string): Promise<void>;
   /** The Google Sheet exports itself (Apps Script); local stores leave this out and the server builds the file. */
   exportXlsx?(req: ExportRequest): Promise<ExportFile>;
+}
+
+/** The case was saved by someone else after `base` was read (row_version moved): read it again and redo the edit. */
+export class StaleCaseError extends Error {
+  constructor() {
+    super('STALE');
+  }
 }

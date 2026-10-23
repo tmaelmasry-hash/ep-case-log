@@ -158,11 +158,12 @@ export class MemoryStore implements RegistryStore {
     return c ? this.clone(c) : null;
   }
 
-  async putCase(rec: CaseRecord, base?: CaseRecord | null) {
+  async putCase(rec: CaseRecord, base?: CaseRecord | null, activity?: ActivityInput[]) {
     const i = this.data.cases.findIndex((x) => x.meta.case_id === rec.meta.case_id);
     const next = base === undefined ? this.clone(rec) : applyPatch(i >= 0 ? this.data.cases[i] : null, this.clone(diffCase(base, rec)));
     if (i >= 0) this.data.cases[i] = next;
     else this.data.cases.push(next);
     await this.persist();
+    if (activity?.length) await this.appendActivity(activity);
   }
 }

@@ -154,8 +154,7 @@ export function aiRoutes(app: Router) {
     const r = reviewAi(config.dict, rec, actions, a);
     if (r.done) {
       Object.assign(rec.meta, { updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
-      await store.putCase(rec, base);
-      await store.appendActivity([{ actor: u.userId, action: 'ai.review', detail: { case_id: rec.meta.case_id, done: r.done } }]);
+      await store.putCase(rec, base, [{ actor: u.userId, action: 'ai.review', detail: { case_id: rec.meta.case_id, done: r.done } }]);
     }
     return { ...r, case: await detail(rec) };
   });

@@ -9,6 +9,7 @@ import { cohortMembership } from './cohorts.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { AppContext } from '../context.ts';
 import { newId } from '../util.ts';
+import { StaleCaseError } from '../store/types.ts';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -18,8 +19,8 @@ export function caseRoutes(app: Router) {
   const { dict, site } = ctx.config;
 
   /** A case the user may open; out of scope looks exactly like not found. */
-  async function requireCase(req: Req, id: string): Promise<CaseRecord> {
-    const rec = await store.getCase(id);
+  async function requireCase(req: Req, id: string, forEdit = false): Promise<CaseRecord> {
+    const rec = await store.getCase(id, { forEdit });
     const groups = await groupIdsFor(ctx, req.user!);
     if (!rec || rec.meta.is_deleted || !groups.includes(rec.meta.group_id)) throw notFound('Case not found.');
     return rec;
@@ -107,8 +108,7 @@ export function caseRoutes(app: Router) {
     addHistory(rec, { kind: 'create', text: `Case created in ${gname} as No. ${seq}` }, { userId: u.userId, now });
     const note = source ? `Copied from ${groupList.find((g) => g.group_id === source.meta.group_id)?.name ?? 'group'} No. ${source.meta.group_seq}` : null;
     const copied = source && note ? copyForward(dict, rec, source, note, { userId: u.userId, now }) : 0;
-    await store.putCase(rec, null);
-    await store.appendActivity([{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq, ...(copied ? { copied_from: source!.meta.case_id, copied_fields: copied } : {}) } }]);
+    await store.putCase(rec, null, [{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq, ...(copied ? { copied_from: source!.meta.case_id, copied_fields: copied } : {}) } }]);
     return { case_id: caseId, group_seq: seq, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied };
   });
 
@@ -119,27 +119,36 @@ export function caseRoutes(app: Router) {
 
   app.patch('/api/cases/:id', async (req) => {
     const u = requireCap(req, 'case.edit');
-    const rec = await requireCase(req, req.params.id);
-    const base = rec && structuredClone(rec);
-    if (rec.meta.collection_status === 'COMPLETED') throw new HttpError(409, 'CASE_COMPLETED', 'This case is completed. Reopen it to make changes.');
     const batch = (req.body ?? {}) as EditBatch;
     const users = new Set((await store.listUsers()).map((x) => x.user_id));
-    const results = applyEdits(dict, rec, batch, { userId: u.userId, now: ctx.now().toISOString() }, users);
-    if (results.some((r) => r.ok)) {
-      await store.putCase(rec, base);
-      // Field and section names only, never values (EP Workspace F-17).
-      const ok = (kind: string, i: number) => !!results.find((r) => r.kind === kind && r.i === i)?.ok;
-      const uniq = (xs: string[]) => [...new Set(xs)].slice(0, 50);
-      const fields = uniq([
-        ...(batch.changes ?? []).filter((_, i) => ok('change', i)).map((c) => `${c.entity}.${c.field === 'other_specify_json' ? c.key : c.field}`),
-        ...(batch.not_available ?? []).filter((_, i) => ok('na', i)).map((n) => `${n.entity}.${n.field}`),
-      ]);
-      const added = uniq((batch.creates ?? []).filter((c, i) => ok('create', i) && dict.entities[c.entity]?.cardinality === 'multi').map((c) => c.entity));
-      const removed = uniq((batch.removes ?? []).filter((_, i) => ok('remove', i)).map((c) => c.entity));
-      const info = (batch.additional ?? []).some((_, i) => ok('additional', i));
-      await store.appendActivity([{ actor: u.userId, action: 'case.edit', detail: { case_id: rec.meta.case_id, fields, added, removed, additional: info } }]);
+    // L1: start from the copy this server kept (no Sheet read); if someone saved the case meanwhile, the save is
+    // refused as stale, and the edit is applied again once to a fresh read.
+    for (let attempt = 0; ; attempt++) {
+      const rec = await requireCase(req, req.params.id, attempt === 0);
+      const base = structuredClone(rec);
+      if (rec.meta.collection_status === 'COMPLETED') throw new HttpError(409, 'CASE_COMPLETED', 'This case is completed. Reopen it to make changes.');
+      const results = applyEdits(dict, rec, batch, { userId: u.userId, now: ctx.now().toISOString() }, users);
+      if (results.some((r) => r.ok)) {
+        // Field and section names only, never values (EP Workspace F-17).
+        const ok = (kind: string, i: number) => !!results.find((r) => r.kind === kind && r.i === i)?.ok;
+        const uniq = (xs: string[]) => [...new Set(xs)].slice(0, 50);
+        const fields = uniq([
+          ...(batch.changes ?? []).filter((_, i) => ok('change', i)).map((c) => `${c.entity}.${c.field === 'other_specify_json' ? c.key : c.field}`),
+          ...(batch.not_available ?? []).filter((_, i) => ok('na', i)).map((n) => `${n.entity}.${n.field}`),
+        ]);
+        const added = uniq((batch.creates ?? []).filter((c, i) => ok('create', i) && dict.entities[c.entity]?.cardinality === 'multi').map((c) => c.entity));
+        const removed = uniq((batch.removes ?? []).filter((_, i) => ok('remove', i)).map((c) => c.entity));
+        const info = (batch.additional ?? []).some((_, i) => ok('additional', i));
+        try {
+          await store.putCase(rec, base, [{ actor: u.userId, action: 'case.edit', detail: { case_id: rec.meta.case_id, fields, added, removed, additional: info } }]);
+        } catch (e) {
+          if (e instanceof StaleCaseError && attempt === 0) continue;
+          if (e instanceof StaleCaseError) throw new HttpError(409, 'STALE_CASE', 'The case changed while saving. Try again.');
+          throw e;
+        }
+      }
+      return { results, case: await detail(ctx, rec) };
     }
-    return { results, case: await detail(ctx, rec) };
   });
 
   /** Mark completed (Admin and Member): only when every core field has a value or "Not available" + reason. */
@@ -152,8 +161,7 @@ export function caseRoutes(app: Router) {
     if (typeof expected === 'number' && expected !== rec.meta.row_version) throw new HttpError(409, 'STALE_CASE', 'The case changed since you checked it. Check again.');
     const r = completeCase(dict, rec, actor(u.userId));
     if (!r.canComplete) throw new HttpError(409, 'NOT_READY', `Not ready to complete: ${r.blockers.length} core field${r.blockers.length === 1 ? '' : 's'} missing.`);
-    await store.putCase(rec, base);
-    await store.appendActivity([{ actor: u.userId, action: 'case.complete', detail: { case_id: rec.meta.case_id, core: `${r.done}/${r.total}` } }]);
+    await store.putCase(rec, base, [{ actor: u.userId, action: 'case.complete', detail: { case_id: rec.meta.case_id, core: `${r.done}/${r.total}` } }]);
     return { ok: true, case: await detail(ctx, rec) };
   });
 
@@ -166,8 +174,7 @@ export function caseRoutes(app: Router) {
     if (!reason) throw badRequest('Say briefly why the case is reopened.', { field: 'reason' });
     if (rec.meta.collection_status !== 'COMPLETED') return { ok: true, case: await detail(ctx, rec) };
     reopenCase(rec, reason, actor(u.userId));
-    await store.putCase(rec, base);
-    await store.appendActivity([{ actor: u.userId, action: 'case.reopen', detail: { case_id: rec.meta.case_id } }]);
+    await store.putCase(rec, base, [{ actor: u.userId, action: 'case.reopen', detail: { case_id: rec.meta.case_id } }]);
     return { ok: true, case: await detail(ctx, rec) };
   });
 
@@ -196,8 +203,7 @@ export function caseRoutes(app: Router) {
     rec.meta.deleted_at = ctx.now().toISOString();
     rec.meta.deleted_by = u.userId;
     addHistory(rec, { kind: 'delete', text: 'Moved to the recycle bin' }, actor(u.userId));
-    await store.putCase(rec, base);
-    await store.appendActivity([{ actor: u.userId, action: 'case.delete', detail: { case_id: rec.meta.case_id } }]);
+    await store.putCase(rec, base, [{ actor: u.userId, action: 'case.delete', detail: { case_id: rec.meta.case_id } }]);
     return { ok: true };
   });
 
@@ -230,8 +236,7 @@ export function caseRoutes(app: Router) {
     if (!rec || !rec.meta.is_deleted || !groups.includes(rec.meta.group_id)) throw notFound('Case not found in the recycle bin.');
     Object.assign(rec.meta, { is_deleted: false, deleted_at: null, deleted_by: null });
     addHistory(rec, { kind: 'restore', text: 'Restored from the recycle bin' }, actor(u.userId));
-    await store.putCase(rec, base);
-    await store.appendActivity([{ actor: u.userId, action: 'case.restore', detail: { case_id: rec.meta.case_id } }]);
+    await store.putCase(rec, base, [{ actor: u.userId, action: 'case.restore', detail: { case_id: rec.meta.case_id } }]);
     return { ok: true };
   });
 }

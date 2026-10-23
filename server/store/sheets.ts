@@ -7,7 +7,7 @@ import type { AppConfig } from '../appconfig.ts';
 import { readinessOf } from '../domain/cases.ts';
 import { diffCase, isEmptyPatch, type CasePatch } from './patch.ts';
 import { CASE_COLUMNS, ROW_META, SUPPORT_TABS, buildLayout, col, type SheetLayout } from './sheet-layout.ts';
-import type { Activity, ActivityInput, CohortTag, ExportFile, ExportRequest, Group, ImportJob, RegistryStore, User } from './types.ts';
+import { StaleCaseError, type Activity, type ActivityInput, type CohortTag, type ExportFile, type ExportRequest, type Group, type ImportJob, type RegistryStore, type User } from './types.ts';
 
 /** The Apps Script web app (or a test double with the same operations). */
 export interface Gateway {
@@ -25,6 +25,19 @@ export class AppsScriptGateway implements Gateway {
     this.target = target;
   }
   async call(action: string, body: Record<string, unknown> = {}): Promise<unknown> {
+    // SHEETS_DEBUG=1 logs each gateway call: action, ops and tabs, time. Never values.
+    if (typeof process !== 'undefined' && process.env?.SHEETS_DEBUG) {
+      const t0 = Date.now();
+      try {
+        return await this.send(action, body);
+      } finally {
+        const ops = (body.ops as Op[] | undefined)?.map((o) => `${o.op}:${o.tab}`).join(',') ?? '';
+        console.log(`[sheets] ${action} ${ops} ${Date.now() - t0}ms`);
+      }
+    }
+    return this.send(action, body);
+  }
+  private async send(action: string, body: Record<string, unknown>): Promise<unknown> {
     const res = await fetch(this.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, action, secret: this.secret, target: this.target }), redirect: 'follow' });
     const text = await res.text();
     let out: { ok: boolean; result?: unknown; error?: string };
@@ -59,13 +72,18 @@ const json = <T>(v: unknown, d: T): T => {
 const rowKey = (caseId: string, entity: string, rowId: string) => `${caseId}/${entity}/${rowId}`;
 
 const NUMBER_META = new Set(['group_seq', 'row_version']);
-const CACHE_MS = 20_000;
+// L1 speed (owner R3-4): users, groups, settings and cohort tags are kept up to a minute in this server instance
+// (our own writes clear them at once); a case read or saved here is reused for the next edit, guarded by row_version.
+const CACHE_MS = 60_000;
 
 export class SheetsStore implements RegistryStore {
   readonly kind = 'sheets' as const;
   readonly layout: SheetLayout;
   private users: { at: number; list: User[] } | null = null;
   private groups: { at: number; list: Group[] } | null = null;
+  private settings: { at: number; map: Map<string, unknown> } | null = null;
+  private tags: { at: number; list: CohortTag[] } | null = null;
+  private cases = new Map<string, { at: number; rec: CaseRecord }>();
 
   private config: AppConfig;
   private gw: Gateway;
@@ -207,11 +225,15 @@ export class SheetsStore implements RegistryStore {
 
   // ── settings ──
   async getSetting<T>(key: string, fallback: T): Promise<T> {
-    const [r] = await this.batch([{ op: 'read', tab: 'Settings', where: { col: 'key', in: [key] } }]);
-    const row = (r.rows ?? [])[0];
-    return row ? json<T>(row.value_json, fallback) : fallback;
+    if (!this.settings || Date.now() - this.settings.at >= CACHE_MS) {
+      const read = this.batch([{ op: 'read', tab: 'Settings' }]).then(([r]) => new Map((r.rows ?? []).filter((x) => x.key).map((x) => [String(x.key), json<unknown>(x.value_json, null)])));
+      this.settings = { at: Date.now(), map: await read };
+    }
+    const v = this.settings.map.get(key);
+    return v === undefined || v === null ? fallback : (structuredClone(v) as T);
   }
   async setSetting(key: string, value: unknown, by: string) {
+    this.settings = null;
     const row = { key, value_json: JSON.stringify(value), updated_at: new Date().toISOString(), updated_by: by };
     const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'Settings', key: 'key', row }]);
     if (!(r as { inserted?: boolean }).inserted) await this.batch([{ op: 'update', tab: 'Settings', key: 'key', id: key, set: row }]);
@@ -219,12 +241,16 @@ export class SheetsStore implements RegistryStore {
 
   // ── cohort tags (owner R2-12): one row per cohort and case; taking a case out flips "on" ──
   async listCohortTags(): Promise<CohortTag[]> {
+    if (this.tags && Date.now() - this.tags.at < CACHE_MS) return structuredClone(this.tags.list);
     const [r] = await this.batch([{ op: 'read', tab: 'CohortTags' }]);
-    return (r.rows ?? [])
+    const list = (r.rows ?? [])
       .filter((x) => x.tag_key)
       .map((x) => ({ cohort_id: String(x.cohort_id), case_id: String(x.case_id), on: x.on === true || x.on === 'TRUE' || x.on === 'true', updated_at: String(x.updated_at), updated_by: String(x.updated_by) }));
+    this.tags = { at: Date.now(), list };
+    return structuredClone(list);
   }
   async setCohortTag(cohortId: string, caseId: string, on: boolean, by: string) {
+    this.tags = null;
     const row = { tag_key: `${cohortId}/${caseId}`, cohort_id: cohortId, case_id: caseId, on, updated_at: new Date().toISOString(), updated_by: by };
     const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'CohortTags', key: 'tag_key', row }]);
     if (!(r as { inserted?: boolean }).inserted) await this.batch([{ op: 'update', tab: 'CohortTags', key: 'tag_key', id: row.tag_key, set: row }]);
@@ -266,8 +292,11 @@ export class SheetsStore implements RegistryStore {
   // ── activity (field names only, never values: the routes decide what goes in detail) ──
   async appendActivity(entries: ActivityInput[]) {
     if (!entries.length) return;
+    await this.batch([this.activityOp(entries)]);
+  }
+  private activityOp(entries: ActivityInput[]): Op {
     const at = new Date().toISOString();
-    await this.batch([{ op: 'append', tab: 'Activity', idCol: 'activity_id', rows: entries.map((e) => ({ at, actor: toCell(e.actor), action: e.action, detail_json: e.detail === undefined ? '' : JSON.stringify(e.detail) })) }]);
+    return { op: 'append', tab: 'Activity', idCol: 'activity_id', rows: entries.map((e) => ({ at, actor: toCell(e.actor), action: e.action, detail_json: e.detail === undefined ? '' : JSON.stringify(e.detail) })) };
   }
   async listActivity(): Promise<Activity[]> {
     const [r] = await this.batch([{ op: 'read', tab: 'Activity' }]);
@@ -330,11 +359,21 @@ export class SheetsStore implements RegistryStore {
     return this.assemble(res[0].rows ?? [], res.slice(1).flatMap((r) => r.rows ?? []), []);
   }
 
-  async getCase(id: string) {
+  async getCase(id: string, opts?: { forEdit?: boolean }) {
+    const kept = this.cases.get(id);
+    if (opts?.forEdit && kept && Date.now() - kept.at < CACHE_MS) return structuredClone(kept.rec);
     const where = { col: 'case_id', in: [id] };
     const tabs = this.entityTabs();
     const res = await this.batch([{ op: 'read', tab: 'Cases', where }, ...tabs.map((tab) => ({ op: 'read', tab, where })), { op: 'read', tab: 'History', where }]);
-    return this.assemble(res[0].rows ?? [], res.slice(1, -1).flatMap((r) => r.rows ?? []), res[res.length - 1].rows ?? [])[0] ?? null;
+    const rec = this.assemble(res[0].rows ?? [], res.slice(1, -1).flatMap((r) => r.rows ?? []), res[res.length - 1].rows ?? [])[0] ?? null;
+    this.keep(rec);
+    return rec;
+  }
+
+  private keep(rec: CaseRecord | null) {
+    if (!rec) return;
+    if (this.cases.size > 200) this.cases.clear();
+    this.cases.set(rec.meta.case_id, { at: Date.now(), rec: structuredClone(rec) });
   }
 
   private rowCells(entity: string, caseId: string, set: Partial<StoredRow>, created: boolean): SheetRow {
@@ -360,10 +399,22 @@ export class SheetsStore implements RegistryStore {
   }
 
   /** Writes what changed from `base` (null = new case). Without base the stored copy is read first. */
-  async putCase(rec: CaseRecord, base?: CaseRecord | null) {
-    const before = base === undefined ? await this.getCase(rec.meta.case_id) : base;
+  async putCase(rec: CaseRecord, base?: CaseRecord | null, activity?: ActivityInput[]) {
+    const id = rec.meta.case_id;
+    const before = base === undefined ? await this.getCase(id) : base;
     const ops = this.caseOps(rec, before);
-    if (ops.length) await this.batch(ops);
+    if (!ops.length) return;
+    // Nothing is written unless the Sheet still holds the row_version this edit started from.
+    if (before) ops.unshift({ op: 'expect', tab: 'Cases', key: 'case_id', id, col: 'row_version', equals: before.meta.row_version });
+    if (activity?.length) ops.push(this.activityOp(activity));
+    try {
+      await this.batch(ops);
+    } catch (e) {
+      this.cases.delete(id);
+      if (/\bSTALE\b/.test(String((e as Error).message))) throw new StaleCaseError();
+      throw e;
+    }
+    this.keep(rec);
   }
 
   /** New cases in one gateway call (bulk add). */

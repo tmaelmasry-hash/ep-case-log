@@ -60,6 +60,15 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 - New dictionary fields: `npm run sheets -- setup` adds the missing columns (never removes or reorders).
 - Apps Script changes: paste the new `Code.js`, then Deploy → Manage deployments → Edit → **New version**.
 
+## Restore points
+| Tag | Worker version | Sheet |
+|---|---|---|
+| `checkpoint-2026-10-23-live` | `136e845d-6ec4-4d0e-8aa1-b3b356b23850` | EP Case Log — Registry (daily backups in "EP Case Log Backups") |
+
+To go back: code `git checkout checkpoint-2026-10-23-live` (or `git reset --hard <tag>` on a branch);
+live app `npx wrangler rollback 136e845d-6ec4-4d0e-8aa1-b3b356b23850`; data: copy the wanted Sheet backup.
+If the Sheet columns changed after the tag, `npm run sheets -- setup` only adds columns, so old code still runs.
+
 ## Notes
 - If the gateway secret is lost: in the Apps Script, Project Settings → Script properties → delete `GATEWAY_SECRET`,
   then `npm run sheets -- secret` (after removing the old line from `.env`), `init`, and `npm run worker:secrets`.

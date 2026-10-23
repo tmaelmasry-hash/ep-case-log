@@ -62,6 +62,14 @@ export interface ImportJob {
   items: ImportItem[];
 }
 
+export interface CohortTag {
+  cohort_id: string;
+  case_id: string;
+  on: boolean;
+  updated_at: string;
+  updated_by: string;
+}
+
 /** What an Excel export holds (EP Workspace P4): which tabs, columns never exported, and (group export) which cases. */
 export interface ExportRequest {
   fileName: string;
@@ -105,9 +113,12 @@ export interface RegistryStore {
   claimImport(job: ImportJob): Promise<boolean>;
   getImport(by: { key?: string; id?: string }): Promise<ImportJob | null>;
   saveImport(job: ImportJob): Promise<void>;
-  /** Site settings set in the app (AI provider choice, AI usage). */
+  /** Site settings set in the app (AI provider choice, AI usage, cohort definitions). */
   getSetting<T>(key: string, fallback: T): Promise<T>;
   setSetting(key: string, value: unknown, by: string): Promise<void>;
+  /** Cases the Admin added to tag cohorts by hand (owner R2-12); `on: false` = taken out again. */
+  listCohortTags(): Promise<CohortTag[]>;
+  setCohortTag(cohortId: string, caseId: string, on: boolean, by: string): Promise<void>;
   /** The Google Sheet exports itself (Apps Script); local stores leave this out and the server builds the file. */
   exportXlsx?(req: ExportRequest): Promise<ExportFile>;
 }

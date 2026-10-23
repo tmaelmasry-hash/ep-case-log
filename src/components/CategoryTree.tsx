@@ -4,10 +4,15 @@ import { useState } from 'react';
 import type { CategoryItem } from '../../shared/categories.ts';
 import { UNCLASSIFIED } from '../../shared/categories.ts';
 import type { CaseSummary } from '../../shared/caseTypes.ts';
-import { applyFilters, clearFilters, itemColor, matcher, setFilters, toggleFilter, useFilters, useTagged } from '../lib/filters';
+import { applyFilters, clearFilters, itemColor, itemLabel, matcher, setFilters, toggleFilter, useFilters, useTagged } from '../lib/filters';
 import { hijriPresets } from '../lib/hijri';
 import { fmtDate, todayISO } from '../lib/util';
 import { Icon } from './Icon';
+import { CohortSheet } from './CohortSheet';
+import { cohortKey, useCohortOverrides, useCohorts } from '../lib/cohorts';
+import { BuiltinCohortSheet } from './BuiltinCohortSheet';
+import { useAuth } from '../auth';
+import type { CohortDef } from '../../shared/cohorts.ts';
 
 function loadOpen(): Set<string> {
   try {
@@ -42,6 +47,12 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
   const f = useFilters();
   const tagged = useTagged(cases);
   const [open, setOpen] = useState(loadOpen);
+  const custom = useCohorts();
+  const admin = useAuth().can('cohorts.manage');
+  const [editing, setEditing] = useState<CohortDef | 'new' | null>(null);
+  const overrides = useCohortOverrides();
+  const [editBuiltin, setEditBuiltin] = useState<string | null>(null);
+  const hidden = (id: string) => !!overrides[id]?.hidden;
   const forProc = applyFilters(cases, tagged, f, 'proc');
   const forGroup = applyFilters(cases, tagged, f, 'group');
   const count = (pool: CaseSummary[], id: string) => pool.reduce((n, c) => n + (tagged.get(c.case_id)!.has(id) ? 1 : 0), 0);
@@ -77,17 +88,23 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
             <span className="cat-ic" aria-hidden>
               <Icon name={iconOf(it.id)} size={depth === 0 ? 16 : 13} />
             </span>
-            <span className="grow">{it.label}</span>
+            <span className="grow">{itemLabel(it.id)}</span>
             <span className={`cat-count${n ? '' : ' zero'}`}>{n}</span>
           </button>
+          {admin && side === 'group' && matcher.item(it.id) && (
+            <button type="button" className="cat-arrow" aria-label={`Edit ${itemLabel(it.id)}`} onClick={() => setEditBuiltin(it.id)}>
+              <Icon name="edit" size={14} />
+            </button>
+          )}
         </div>
         {hasKids && open.has(it.id) && <ul className="cat-list">{kids.map((k) => tree(k as CategoryItem, side, depth + 1))}</ul>}
       </li>
     );
   };
 
-  function tree(it: CategoryItem, side: 'proc' | 'group', depth: number): JSX.Element {
+  function tree(it: CategoryItem, side: 'proc' | 'group', depth: number): JSX.Element | null {
     if (!matcher.item(it.id)) return row(it, side, depth, []); // a year child
+    if (side === 'group' && hidden(it.id)) return null;
     const kids: { id: string; label: string }[] = it.years
       ? matcher.yearsOf(it.id, [...tagged.values()]).map((y) => ({ id: `${it.id}@${y}`, label: `${it.label} ${y}` }))
       : matcher.children(it.id);
@@ -120,7 +137,58 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
         {unclassified > 0 && row({ id: UNCLASSIFIED, label: 'Unclassified' }, 'proc', 0, [])}
       </ul>
       <div className="cat-head">Cohorts</div>
-      <ul className="cat-list">{roots.filter((r) => r.section === 'groups').map((r) => tree(r, 'group', 0))}</ul>
+      <ul className="cat-list">
+        {roots.filter((r) => r.section === 'groups').map((r) => tree(r, 'group', 0))}
+        {custom.map((c) => {
+          const key = cohortKey(c.id);
+          const on = f.group.includes(key);
+          const n = count(forGroup, key);
+          return (
+            <li key={key}>
+              <div className={`cat-row top${on ? ' on' : ''}`} style={{ paddingLeft: 4, ['--dot' as string]: `var(--${c.color})` }}>
+                <span className="cat-arrow" />
+                <button type="button" className="cat-name" aria-pressed={on} onClick={() => toggleFilter('group', key)} data-testid="cat-custom" title={c.note || undefined}>
+                  <span className="cat-ic" aria-hidden>
+                    <Icon name={c.kind === 'rule' ? 'filter' : 'clip'} size={16} />
+                  </span>
+                  <span className="grow">{c.name}</span>
+                  <span className={`cat-count${n ? '' : ' zero'}`}>{n}</span>
+                </button>
+                {admin && (
+                  <button type="button" className="cat-arrow" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
+                    <Icon name="edit" size={14} />
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+        {admin && (
+          <li>
+            <button type="button" className="link small cat-new" onClick={() => setEditing('new')} data-testid="new-cohort">
+              <Icon name="plus" size={14} /> New cohort
+            </button>
+          </li>
+        )}
+      </ul>
+      {admin && Object.keys(overrides).some(hidden) && (
+        <>
+          <div className="cat-head">Hidden cohorts</div>
+          <ul className="cat-list">
+            {Object.keys(overrides)
+              .filter((id) => hidden(id) && matcher.item(id))
+              .map((id) => (
+                <li key={id}>
+                  <button type="button" className="link small cat-new" onClick={() => setEditBuiltin(id)}>
+                    <Icon name="edit" size={14} /> {itemLabel(id)}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </>
+      )}
+      {editBuiltin && <BuiltinCohortSheet id={editBuiltin} onClose={() => setEditBuiltin(null)} />}
+      {editing && <CohortSheet cohort={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
       <div className="cat-head">Period</div>
       <div className="cat-period" data-testid="period-menu">
         {presets.map(([label, a, b]) => {

@@ -5,6 +5,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import categories from '../../config/categories.json';
 import { CategoryMatcher, type CategoryConfig } from '../../shared/categories.ts';
 import type { CaseSummary } from '../../shared/caseTypes.ts';
+import { cohortKey, cohortOf, overrideOf } from './cohorts';
 
 export const matcher = new CategoryMatcher(categories as unknown as CategoryConfig);
 
@@ -63,9 +64,9 @@ export function useFilters(): Filters {
   );
 }
 
-/** Tags of every case (memoised per list). */
+/** Tags of every case (memoised per list), with its custom cohorts as "C:<id>". */
 export function useTagged(cases: CaseSummary[]) {
-  return useMemo(() => new Map(cases.map((c) => [c.case_id, matcher.tagsOf(c)])), [cases]);
+  return useMemo(() => new Map(cases.map((c) => [c.case_id, new Set([...matcher.tagsOf(c), ...(c.cohorts ?? []).map(cohortKey)])])), [cases]);
 }
 
 export const inPeriod = (c: CaseSummary, f: Filters) => (!f.from || (c.episode_start_date ?? '') >= f.from) && (!f.to || (c.episode_start_date ?? '9999') <= f.to);
@@ -87,15 +88,19 @@ export function applyFilters(cases: CaseSummary[], tagged: Map<string, Set<strin
 export function itemLabel(id: string): string {
   const [base, year] = id.split('@');
   if (base === 'UNCLASSIFIED') return 'Unclassified';
+  const custom = cohortOf(id);
+  if (custom) return custom.name;
   const it = matcher.item(base);
-  return it ? `${it.label}${year ? ` ${year}` : ''}` : id;
+  return it ? `${overrideOf(base)?.label ?? it.label}${year ? ` ${year}` : ''}` : id;
 }
 
 /** Color token of an item: its own, else its nearest parent's. */
 export function itemColor(id: string): string {
+  const custom = cohortOf(id);
+  if (custom) return custom.color;
   let it = matcher.item(id.split('@')[0]);
-  while (it && !it.color && it.parent) it = matcher.item(it.parent);
-  return it?.color ?? 'accent';
+  while (it && !it.color && !overrideOf(it.id)?.color && it.parent) it = matcher.item(it.parent);
+  return (it && overrideOf(it.id)?.color) ?? it?.color ?? 'accent';
 }
 
 /** Category color of one procedure component (for the procedure chips). */

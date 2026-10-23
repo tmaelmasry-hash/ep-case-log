@@ -1,6 +1,6 @@
 import type { CaseRecord } from '../../shared/caseTypes.ts';
 import { applyPatch, diffCase } from './patch.ts';
-import type { Activity, ActivityInput, Group, ImportJob, RegistryStore, User } from './types.ts';
+import type { Activity, ActivityInput, CohortTag, Group, ImportJob, RegistryStore, User } from './types.ts';
 
 export interface StoreData {
   users: User[];
@@ -9,6 +9,7 @@ export interface StoreData {
   cases: CaseRecord[];
   imports?: ImportJob[];
   settings?: Record<string, { value: unknown; updated_at: string; updated_by: string }>;
+  cohortTags?: CohortTag[];
 }
 
 export function emptyData(): StoreData {
@@ -107,6 +108,19 @@ export class MemoryStore implements RegistryStore {
   async getSetting<T>(key: string, fallback: T): Promise<T> {
     const s = this.data.settings?.[key];
     return s ? (this.clone(s.value) as T) : fallback;
+  }
+
+  async listCohortTags() {
+    return this.clone(this.data.cohortTags ?? []);
+  }
+
+  async setCohortTag(cohortId: string, caseId: string, on: boolean, by: string) {
+    const list = (this.data.cohortTags ??= []);
+    const row = { cohort_id: cohortId, case_id: caseId, on, updated_at: new Date().toISOString(), updated_by: by };
+    const i = list.findIndex((t) => t.cohort_id === cohortId && t.case_id === caseId);
+    if (i >= 0) list[i] = row;
+    else list.push(row);
+    await this.persist();
   }
 
   async setSetting(key: string, value: unknown, by: string) {

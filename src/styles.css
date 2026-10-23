@@ -2536,3 +2536,44 @@ table.dt .bar {
   display: block;
   font-weight: 400;
 }
+/* Custom cohorts (owner R2-12) */
+.cat-new {
+  margin: 6px 8px;
+}
+.cohort-colors {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+.cohort-colors .swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.cohort-colors .swatch.on {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--card);
+}
+.cohort-cond {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin: 8px 0;
+  display: grid;
+  gap: 6px;
+}
+.cond-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cond-vals {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field-results {
+  max-height: 260px;
+  overflow: auto;
+}

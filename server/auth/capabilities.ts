@@ -7,7 +7,7 @@ export type Capability =
   | 'case.reassign' | 'case.delete' | 'case.restore'
   | 'ai.extract' | 'report.pdf'
   | 'export.group' | 'export.all'
-  | 'dashboard.view' | 'mywork.view' | 'users.manage' | 'groups.manage' | 'settings.manage' | 'audit.view';
+  | 'dashboard.view' | 'mywork.view' | 'users.manage' | 'groups.manage' | 'settings.manage' | 'audit.view' | 'cohorts.manage';
 
 const MEMBER: Capability[] = [
   'case.read', 'case.create', 'case.edit', 'case.complete', 'case.reopen', 'case.delete',
@@ -15,7 +15,7 @@ const MEMBER: Capability[] = [
 ];
 const ADMIN: Capability[] = [
   ...MEMBER, 'case.import', 'case.reassign', 'case.restore', 'export.all',
-  'dashboard.view', 'users.manage', 'groups.manage', 'settings.manage', 'audit.view',
+  'dashboard.view', 'users.manage', 'groups.manage', 'settings.manage', 'audit.view', 'cohorts.manage',
 ];
 
 export function capabilitiesOf(role: Role): Capability[] {

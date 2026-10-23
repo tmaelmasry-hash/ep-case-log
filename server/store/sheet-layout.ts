@@ -41,6 +41,7 @@ export const SUPPORT_TABS: Record<string, string[]> = {
   Activity: ['activity_id', 'at', 'actor', 'action', 'detail_json'],
   Lookups: ['entity', 'field', 'code', 'label'],
   Settings: ['key', 'value_json', 'updated_at', 'updated_by'],
+  CohortTags: ['tag_key', 'cohort_id', 'case_id', 'on', 'updated_at', 'updated_by'],
   Imports: ['import_job_id', 'idempotency_key', 'actor_user_id', 'group_id', 'list_fingerprint', 'status', 'total_rows', 'added', 'created_at', 'finished_at', 'items_json'],
 };
 

@@ -143,6 +143,8 @@ export interface CaseSummary {
   codes?: string[];
   /** A follow-up visit or device check due soon or overdue (config/site.json followup_due windows), for the sidebar. */
   followup?: 'DUE' | 'OVERDUE' | null;
+  /** Custom cohorts (owner R2-12) the case belongs to: rule cohorts it meets and tag cohorts it was added to. */
+  cohorts?: string[];
   updated_at: string;
 }
 

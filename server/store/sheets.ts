@@ -7,7 +7,7 @@ import type { AppConfig } from '../appconfig.ts';
 import { readinessOf } from '../domain/cases.ts';
 import { diffCase, isEmptyPatch, type CasePatch } from './patch.ts';
 import { CASE_COLUMNS, ROW_META, SUPPORT_TABS, buildLayout, col, type SheetLayout } from './sheet-layout.ts';
-import type { Activity, ActivityInput, ExportFile, ExportRequest, Group, ImportJob, RegistryStore, User } from './types.ts';
+import type { Activity, ActivityInput, CohortTag, ExportFile, ExportRequest, Group, ImportJob, RegistryStore, User } from './types.ts';
 
 /** The Apps Script web app (or a test double with the same operations). */
 export interface Gateway {
@@ -215,6 +215,19 @@ export class SheetsStore implements RegistryStore {
     const row = { key, value_json: JSON.stringify(value), updated_at: new Date().toISOString(), updated_by: by };
     const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'Settings', key: 'key', row }]);
     if (!(r as { inserted?: boolean }).inserted) await this.batch([{ op: 'update', tab: 'Settings', key: 'key', id: key, set: row }]);
+  }
+
+  // ── cohort tags (owner R2-12): one row per cohort and case; taking a case out flips "on" ──
+  async listCohortTags(): Promise<CohortTag[]> {
+    const [r] = await this.batch([{ op: 'read', tab: 'CohortTags' }]);
+    return (r.rows ?? [])
+      .filter((x) => x.tag_key)
+      .map((x) => ({ cohort_id: String(x.cohort_id), case_id: String(x.case_id), on: x.on === true || x.on === 'TRUE' || x.on === 'true', updated_at: String(x.updated_at), updated_by: String(x.updated_by) }));
+  }
+  async setCohortTag(cohortId: string, caseId: string, on: boolean, by: string) {
+    const row = { tag_key: `${cohortId}/${caseId}`, cohort_id: cohortId, case_id: caseId, on, updated_at: new Date().toISOString(), updated_by: by };
+    const [r] = await this.batch([{ op: 'appendIfAbsent', tab: 'CohortTags', key: 'tag_key', row }]);
+    if (!(r as { inserted?: boolean }).inserted) await this.batch([{ op: 'update', tab: 'CohortTags', key: 'tag_key', id: row.tag_key, set: row }]);
   }
 
   // ── bulk add jobs ──

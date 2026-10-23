@@ -78,3 +78,68 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await expect(rows).toHaveCount(1);
   await expect(page.getByTestId('filter-bar')).not.toContainText('AF ablation');
 });
+
+test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a rule shows its live count', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info);
+  const name = `Study ${m}`;
+  await page.getByTestId('new-case').click();
+  const sheet = page.getByTestId('new-case-sheet');
+  await sheet.locator('#new-mrn').fill(m);
+  await sheet.locator('#new-date').fill('2026-03-12');
+  await sheet.getByRole('button', { name: 'Create case' }).click();
+  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  const caseUrl = page.url();
+
+  // New tag cohort from the menu.
+  await page.goto('/#/cases');
+  const menu = page.getByTestId('open-categories');
+  const phone = await menu.isVisible();
+  if (phone) await menu.click();
+  await page.getByTestId('new-cohort').click();
+  const cs = page.getByTestId('cohort-sheet');
+  await cs.locator('#cohort-name').fill(name);
+  await cs.getByRole('radio', { name: 'By rule' }).click();
+  await cs.getByRole('searchbox', { name: 'Search fields' }).fill('pilgrim');
+  await cs.getByRole('button', { name: /Pilgrim status/ }).first().click();
+  await cs.getByRole('button', { name: 'Hajj', exact: true }).click();
+  await expect(cs.getByTestId('cohort-count')).toContainText(/\d+ cases? match(es)? now/);
+  await cs.getByRole('radio', { name: 'By tag' }).click();
+  await cs.getByRole('button', { name: 'Save cohort' }).click();
+  await expect(cs).toHaveCount(0);
+  if (phone) await page.getByTestId('category-drawer').getByRole('button', { name: 'Done' }).click();
+
+  // Tag the case from inside it.
+  await page.goto(caseUrl);
+  await page.getByTestId('cohorts-row').click();
+  await page.getByTestId('case-cohorts-sheet').getByRole('checkbox', { name }).check();
+  await expect(page.getByTestId('case-cohorts-sheet').getByRole('checkbox', { name })).toBeChecked();
+  await page.getByTestId('case-cohorts-sheet').getByRole('button', { name: 'Close' }).click();
+
+  // Filter by it.
+  await page.goto('/#/cases');
+  if (phone) await menu.click();
+  await page.getByTestId('cat-custom').filter({ hasText: name }).click();
+  if (phone) await page.getByTestId('category-drawer').getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('filter-bar')).toContainText(name);
+  await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
+  await expect(page.getByTestId('case-row')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+});
+
+test('Admin renames and hides a built-in cohort, then brings it back from Hidden cohorts', async ({ page }) => {
+  await open(page);
+  const menu = page.getByTestId('open-categories');
+  const phone = await menu.isVisible();
+  if (phone) await menu.click();
+  await page.getByRole('button', { name: 'Edit Complications', exact: true }).click();
+  const s = page.getByTestId('builtin-cohort-sheet');
+  await s.locator('#builtin-name').fill('Complications seen');
+  await s.getByRole('checkbox', { name: 'Hide from the menu' }).check();
+  await s.getByRole('button', { name: 'Save', exact: true }).last().click();
+  await expect(s).toHaveCount(0);
+  await expect(page.getByTestId('cat-COMPLICATIONS')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Complications seen' }).click(); // listed under Hidden cohorts
+  await page.getByTestId('builtin-cohort-sheet').getByRole('button', { name: 'Reset to default' }).click();
+  await expect(page.getByTestId('cat-COMPLICATIONS')).toContainText('Complications');
+});

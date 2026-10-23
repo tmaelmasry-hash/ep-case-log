@@ -12,6 +12,7 @@ import { followupRoutes } from './routes/followups.ts';
 import { exportRoutes } from './routes/exports.ts';
 import { aiRoutes } from './routes/ai.ts';
 import { caseRoutes } from './routes/cases.ts';
+import { cohortRoutes } from './routes/cohorts.ts';
 
 const PUBLIC = [/^\/api\/health$/, /^\/api\/auth\/login$/];
 /** Reachable while a temporary password must still be changed. */
@@ -31,6 +32,7 @@ export function buildRouter(ctx: AppContext): Router {
   authRoutes(app);
   adminRoutes(app);
   caseRoutes(app);
+  cohortRoutes(app);
   bulkRoutes(app);
   dashboardRoutes(app);
   followupRoutes(app);

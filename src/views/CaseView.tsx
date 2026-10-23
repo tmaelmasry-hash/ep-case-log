@@ -16,6 +16,8 @@ import { api, ApiError } from '../lib/api';
 import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
 import { AiSheet, aiPending } from './AiAssistant';
+import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
+import { useCohorts } from '../lib/cohorts';
 
 // ── readiness shared by every sheet of the open case ──
 interface CaseCtx {
@@ -926,6 +928,7 @@ type OpenSheet =
   | { kind: 'ready' }
   | { kind: 'history' }
   | { kind: 'ai' }
+  | { kind: 'cohorts' }
   | null;
 
 export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => void; wide: boolean }) {
@@ -933,6 +936,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const { can } = useAuth();
   const { toast, refreshCases } = useStore();
   const [sheet, setSheet] = useState<OpenSheet>(null);
+  const cohorts = useCohorts();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [na, setNa] = useState<{ entity: string; field: string; pid: string | null } | null>(null);
   const [reopening, setReopening] = useState(false);
@@ -1212,6 +1216,16 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
               <Icon name="chevron" size={16} className="muted" />
             </button>
           )}
+          {(cohorts.length > 0 || can('cohorts.manage')) && (
+            <button className="grow-row" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row">
+              <span className="row-ic">
+                <Icon name="patients" size={22} />
+              </span>
+              <span className="grow">Cohorts</span>
+              <span className="muted small">{(d.summary.cohorts ?? []).length || ''}</span>
+              <Icon name="chevron" size={16} className="muted" />
+            </button>
+          )}
           <button className="grow-row" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row">
             <span className="row-ic">
               <Icon name="cal" size={22} />
@@ -1271,6 +1285,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'cohorts' && <CaseCohortsSheet caseId={d.meta.case_id} member={d.summary.cohorts ?? []} onChanged={() => Promise.all([ed.reload(), refreshCases()])} onClose={() => setSheet(null)} />}
         {na && naField && (
           <NaDialog
             label={naField.label}

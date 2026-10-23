@@ -6,8 +6,8 @@ Work in steps, preview before building anything visible, multiple-choice questio
 
 ## Where things are
 - Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`.
-- **Local `main` is 6 commits ahead of GitHub (not pushed):** `394b2c3` part 1 · `81d0916` part 2 · `0da3e49` cohorts ·
-  `d0152df` part 3 · `da0e246` part 4 (+ the handoff commit). Push only with the owner's yes.
+- **Everything is pushed to GitHub** (23 Oct): `394b2c3` part 1 · `81d0916` part 2 · `0da3e49` cohorts · `d0152df` part 3 ·
+  `da0e246` part 4 · `ad27c0d` handoff. Round 2 is **not deployed** yet.
 - Restore point before round 2: tag `checkpoint-2026-10-23-live` (pushed). How to roll back: `docs/DEPLOY.md` → Restore points.
 - Old app (reference, read only): `E:\EP_REGISTRY_REBUILD\ep-workspace` — EP Workspace, **still live** on
   `ep-workspace.pages.dev` with real data on the **kamc.ep2026** account, and still developed in another session
@@ -41,13 +41,12 @@ Tests at the end: `npm test` 207 passed · `npm run e2e` 60 passed · `npm run e
 failed once and passed on re-run).
 
 ## What to do next (ask the owner, one at a time)
-1. **Push** the 6 local commits to GitHub.
-2. **Deploy round 2** (owner's yes first): `npx wrangler whoami` must show **tarek.kamc@gmail.com** — the other
+1. **Deploy round 2** (owner's yes first): `npx wrangler whoami` must show **tarek.kamc@gmail.com** — the other
    session switches Wrangler to kamc.ep2026 on this PC. If not: `npx wrangler logout`, then `npx wrangler login`
    (owner signs in as Tarek.kamc). Then `node scripts/sheets.ts setup` on the **main** Sheet (adds the 48 columns,
    the Structural and CohortTags tabs; adds only), then `npm run deploy`, check the live site, record the new version
    id as a restore point in `docs/DEPLOY.md`.
-3. Open questions for the owner:
+2. Open questions for the owner:
    - Reminder (he asked): which individual form fields to remove (R2-9).
    - AF ablation by energy submenu? (energies field exists since M-3; he last said AF = First / Redo only.)
    - Leadless LVEP / CCM items under Devices? (codes exist since M-3.)

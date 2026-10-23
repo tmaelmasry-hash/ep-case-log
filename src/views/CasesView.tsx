@@ -235,7 +235,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const countIn = (id: string) => cases.filter((c) => c.group_id === id).length;
 
   return (
-    <section className="view" aria-label="Cases">
+    <section className="view" aria-label="Procedures">
       <div className="navbar">
         <span className="grow" />
         <SaveIndicator />
@@ -251,7 +251,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           </button>
         )}
       </div>
-      <h1 className="large-title">Cases</h1>
+      <h1 className="large-title">Procedures</h1>
       <div className="search">
         <Icon name="search" size={18} />
         <input type="search" inputMode="numeric" placeholder="Search MRN" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN" />

@@ -1,23 +1,35 @@
 :root {
-  --bg: #f2f2f7;
+  --bg: #f2f5fb;
   --card: #ffffff;
-  --text: #111827;
+  --text: #1f2937;
   --muted: #6b7280;
-  --line: #e5e7eb;
-  --fill: #eef0f4;
-  --accent: #007aff;
+  --line: #e2e7f0;
+  --fill: #e9eef7;
+  --accent: #2f62d6;
   --accent-ink: #ffffff;
-  --accent-soft: #e5f0ff;
-  --nav: #ebebf0;
-  --danger: #c62828;
-  --warn: #9a6700;
-  --warn-bg: #fff4d6;
-  --ok: #1a7f37;
-  --cat-ablation: #d64545;
-  --cat-device: #1f6fd6;
-  --cat-structural: #8a4fd1;
-  --cat-diagnostic: #0f8a7a;
+  --accent-soft: #e3ecfd;
+  --nav: #e8edf6;
+  --danger: #c8323c;
+  --warn: #9a6200;
+  --warn-bg: #fdf0d5;
+  --ok: #077a37;
+  --ok-fill: #10b455;
+  --cat-ablation: #e0745a;
+  --cat-device: #2f62d6;
+  --cat-structural: #10b455;
+  --cat-diagnostic: #2e8fb0;
   --cat-other: #6b7280;
+  --info: #2e8fb0;
+  --cat-af: #e0745a;
+  --cat-flutter: #c7609a;
+  --cat-svt: #d9952b;
+  --cat-ap: #8a63d2;
+  --cat-avn: #5b6bd6;
+  --cat-vent: #c2453f;
+  --cat-eps: #2e8fb0;
+  --cat-dev: #2f62d6;
+  --cat-laa: #10b455;
+  --cat-pilgrim: #0f9e8e;
   --radius: 14px;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   color-scheme: light;
@@ -29,45 +41,69 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0d1117;
-    --card: #161b22;
-    --text: #e6e8eb;
-    --muted: #9aa4b2;
-    --line: #2a313c;
-    --fill: #222a35;
-    --accent: #5b9bff;
-    --accent-ink: #0b1220;
-    --accent-soft: #1b2a44;
-    --nav: #0b1220;
-    --danger: #ff6b6b;
-    --warn: #f2c14e;
-    --warn-bg: #3a2f12;
-    --ok: #3fb950;
-    --cat-ablation: #ff7b7b;
-    --cat-device: #66a3ff;
-    --cat-structural: #b78cff;
-    --cat-diagnostic: #3cc9b4;
+    --bg: #12151b;
+    --card: #1a1f27;
+    --text: #e6e9ee;
+    --muted: #9aa3b2;
+    --line: #2a303a;
+    --fill: #222833;
+    --accent: #7a9ef0;
+    --accent-ink: #12151b;
+    --accent-soft: #1e2a44;
+    --nav: #0e1116;
+    --danger: #ef7b82;
+    --warn: #e5b04f;
+    --warn-bg: #352b16;
+    --ok: #4ade80;
+    --ok-fill: #22c55e;
+    --cat-ablation: #f07f65;
+    --cat-device: #7a9ef0;
+    --cat-structural: #5cc79b;
+    --cat-diagnostic: #5db9d6;
+    --info: #5db9d6;
+    --cat-af: #f07f65;
+    --cat-flutter: #e08bb9;
+    --cat-svt: #e8b75c;
+    --cat-ap: #ae90ec;
+    --cat-avn: #8e9af0;
+    --cat-vent: #e8807a;
+    --cat-eps: #5db9d6;
+    --cat-dev: #7a9ef0;
+    --cat-laa: #5cc79b;
+    --cat-pilgrim: #4fd0bf;
     color-scheme: dark;}
 }
 :root[data-theme='dark'] {
-    --bg: #0d1117;
-    --card: #161b22;
-    --text: #e6e8eb;
-    --muted: #9aa4b2;
-    --line: #2a313c;
-    --fill: #222a35;
-    --accent: #5b9bff;
-    --accent-ink: #0b1220;
-    --accent-soft: #1b2a44;
-    --nav: #0b1220;
-    --danger: #ff6b6b;
-    --warn: #f2c14e;
-    --warn-bg: #3a2f12;
-    --ok: #3fb950;
-    --cat-ablation: #ff7b7b;
-    --cat-device: #66a3ff;
-    --cat-structural: #b78cff;
-    --cat-diagnostic: #3cc9b4;
+    --bg: #12151b;
+    --card: #1a1f27;
+    --text: #e6e9ee;
+    --muted: #9aa3b2;
+    --line: #2a303a;
+    --fill: #222833;
+    --accent: #7a9ef0;
+    --accent-ink: #12151b;
+    --accent-soft: #1e2a44;
+    --nav: #0e1116;
+    --danger: #ef7b82;
+    --warn: #e5b04f;
+    --warn-bg: #352b16;
+    --ok: #4ade80;
+    --ok-fill: #22c55e;
+    --cat-ablation: #f07f65;
+    --cat-device: #7a9ef0;
+    --cat-structural: #5cc79b;
+    --cat-diagnostic: #5db9d6;
+    --info: #5db9d6;
+    --cat-af: #f07f65;
+    --cat-flutter: #e08bb9;
+    --cat-svt: #e8b75c;
+    --cat-ap: #ae90ec;
+    --cat-avn: #8e9af0;
+    --cat-vent: #e8807a;
+    --cat-eps: #5db9d6;
+    --cat-dev: #7a9ef0;
+    --cat-laa: #5cc79b;
+    --cat-pilgrim: #4fd0bf;
     color-scheme: dark;}
 
 * {
@@ -527,6 +563,15 @@ p {
   filter: brightness(1.08);
   background: var(--accent);
 }
+.btn.success {
+  background: var(--ok-fill);
+  color: #fff;
+  border-color: transparent;
+}
+.btn.success:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--ok-fill);
+}
 .btn.danger {
   background: var(--danger);
   color: #fff;
@@ -548,6 +593,7 @@ p {
 .btn.danger-text {
   border-color: transparent;
   background: transparent;
+  color: var(--danger);
 }
 .link {
   display: inline-flex;
@@ -755,7 +801,7 @@ select {
   transition: transform 0.15s;
 }
 .switch input:checked + .switch-ui {
-  background: var(--ok);
+  background: var(--ok-fill);
 }
 .switch input:checked + .switch-ui::after {
   transform: translateX(20px);
@@ -870,6 +916,10 @@ select {
 }
 .sheet-head .link:first-child {
   justify-self: start;
+}
+/* Cancel next to Done: red, so it reads apart from Done (owner, 23 Oct) */
+.sheet-head .link.cancel {
+  color: var(--danger);
 }
 .sheet-body {
   overflow: auto;
@@ -1568,11 +1618,11 @@ select {
   white-space: nowrap;
 }
 .s-prog {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--warn-bg);
+  color: var(--warn);
 }
 .s-done {
-  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  background: color-mix(in srgb, var(--ok-fill) 15%, transparent);
   color: var(--ok);
 }
 .seg {
@@ -1801,7 +1851,7 @@ select {
   align-items: center;
 }
 .banner.done {
-  background: color-mix(in srgb, var(--ok) 13%, transparent);
+  background: color-mix(in srgb, var(--ok-fill) 13%, transparent);
   color: var(--ok);
 }
 .banner .grow {
@@ -1868,7 +1918,7 @@ select {
   color: var(--danger);
 }
 .ic.ok {
-  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  background: color-mix(in srgb, var(--ok-fill) 15%, transparent);
   color: var(--ok);
 }
 .ic.warn {
@@ -1946,7 +1996,7 @@ textarea.box {
   color: var(--text);
 }
 .kind.add {
-  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  background: color-mix(in srgb, var(--ok-fill) 15%, transparent);
   color: var(--ok);
 }
 .kind.del {
@@ -2120,7 +2170,7 @@ table.dt .bar {
   height: 100%;
 }
 .sbar i.c {
-  background: var(--ok);
+  background: var(--ok-fill);
 }
 .sbar i.s {
   background: var(--accent);
@@ -2141,7 +2191,7 @@ table.dt .bar {
   vertical-align: middle;
 }
 .legend i.c {
-  background: var(--ok);
+  background: var(--ok-fill);
 }
 .legend i.s {
   background: var(--accent);

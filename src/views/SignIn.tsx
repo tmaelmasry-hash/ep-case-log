@@ -9,7 +9,7 @@ function Brand() {
       <div className="app-icon" aria-hidden>
         <Icon name="spike" size={34} />
       </div>
-      <h1>EP Case Log</h1>
+      <h1>KAMC EP Registry</h1>
       <p className="muted">Electrophysiology registry</p>
     </div>
   );

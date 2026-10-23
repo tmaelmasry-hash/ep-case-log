@@ -972,7 +972,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         <Empty icon="cases" title={ed.notFound ? 'Case not found' : 'Could not open the case'}>
           <p>{ed.notFound ? 'It may have been deleted, or it is in a group you cannot see.' : ed.error}</p>
           <button className="btn" onClick={() => (ed.notFound ? nav('cases') : ed.reload())}>
-            {ed.notFound ? 'Back to cases' : 'Try again'}
+            {ed.notFound ? 'Back to procedures' : 'Try again'}
           </button>
         </Empty>
       </section>
@@ -1050,7 +1050,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         <div className="navbar">
           {!wide ? (
             <a href="#/cases" className="back link">
-              <Icon name="back" size={22} /> Cases
+              <Icon name="back" size={22} /> Procedures
             </a>
           ) : (
             <span />

@@ -229,7 +229,7 @@ test('without the server the app says so clearly and recovers when it is back', 
   await expect(page.getByRole('heading', { name: 'Cannot reach the registry server' })).toBeVisible();
   await context.setOffline(false);
   await page.getByRole('button', { name: 'Try again' }).click();
-  await expect(page.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
 });
 
 test('layout fits the screen on every page', async ({ page }, info) => {

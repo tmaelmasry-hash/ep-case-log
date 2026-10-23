@@ -77,7 +77,7 @@ export function AccountSection() {
 }
 
 function CredentialsSheet({ creds, onClose }: { creds: Credentials; onClose: () => void }) {
-  const text = [`EP Case Log: ${creds.app_url}`, `Username: ${creds.username}`, creds.password ? `Password: ${creds.password}` : 'Password: the one you were given', creds.must_change_password ? 'You will choose your own password at first sign-in.' : ''].filter(Boolean).join('\n');
+  const text = [`KAMC EP Registry: ${creds.app_url}`, `Username: ${creds.username}`, creds.password ? `Password: ${creds.password}` : 'Password: the one you were given', creds.must_change_password ? 'You will choose your own password at first sign-in.' : ''].filter(Boolean).join('\n');
   const [copied, setCopied] = useState(false);
   return (
     <Sheet title="Send to the User" onClose={onClose} onDone={onClose} testId="credentials-sheet">

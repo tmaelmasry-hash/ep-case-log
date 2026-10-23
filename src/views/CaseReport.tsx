@@ -57,7 +57,7 @@ export function CaseReport({ d, rows, readiness }: { d: CaseDetail; rows: (entit
   return (
     <article className="report" data-testid="case-report">
       <header>
-        <h1>EP Case Log — Case report</h1>
+        <h1>KAMC EP Registry — Case report</h1>
         <div>
           MRN {d.meta.mrn} · {d.meta.group_name} No. {d.meta.group_seq} · {d.meta.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'} · core fields {readiness.done} of {readiness.total}
         </div>

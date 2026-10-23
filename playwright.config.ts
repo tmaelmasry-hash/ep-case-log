@@ -9,7 +9,9 @@ export default defineConfig({
   reporter: [['list']],
   use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'retain-on-failure' },
   webServer: {
-    command: `PORT=${PORT} E2E_PASSWORD=${process.env.E2E_PASSWORD ?? 'synthetic-e2e-pass'} node server/main.ts --e2e`,
+    command: 'node server/main.ts --e2e',
+    // env instead of a VAR=x prefix so the command also runs on Windows
+    env: { PORT: String(PORT), E2E_PASSWORD: process.env.E2E_PASSWORD ?? 'synthetic-e2e-pass' },
     url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 20_000,

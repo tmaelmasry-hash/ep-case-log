@@ -44,25 +44,30 @@ export function controlKind(f: FormField, row: DecodedRow | null): Kind {
   }
 }
 
-/** Text and number inputs keep what is typed and save it on leaving the field or after a short pause. */
+/** Text and number inputs keep what is typed and save it only on leaving the field, on Enter (single line), or when the
+ *  sheet closes with the field still open — never mid-typing, so a half-typed number is not saved or flagged (R2-2). */
 function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unknown; onCommit: (v: string | null) => void; kind: 'number' | 'text' | 'longtext'; f: FormField }) {
   const [text, setText] = useState(value === null || value === undefined ? '' : String(value));
   const focused = useRef(false);
-  const timer = useRef<number | undefined>(undefined);
   const last = useRef(text);
+  const pending = useRef(text);
+  const commitRef = useRef(onCommit);
+  commitRef.current = onCommit;
   useEffect(() => {
     if (!focused.current) {
       const t = value === null || value === undefined ? '' : String(value);
       setText(t);
       last.current = t;
+      pending.current = t;
     }
   }, [value]);
   const commit = (t: string) => {
-    window.clearTimeout(timer.current);
     if (t === last.current) return;
     last.current = t;
-    onCommit(t.trim() === '' ? null : t);
+    commitRef.current(t.trim() === '' ? null : t);
   };
+  // Closing the sheet unmounts the input without a blur event: save what was typed.
+  useEffect(() => () => commit(pending.current), []);
   const common = {
     id,
     value: text,
@@ -73,9 +78,7 @@ function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unkno
     },
     onChange: (e: { target: { value: string } }) => {
       setText(e.target.value);
-      window.clearTimeout(timer.current);
-      const t = e.target.value;
-      timer.current = window.setTimeout(() => commit(t), 900);
+      pending.current = e.target.value;
     },
     autoComplete: 'off',
     'aria-label': f.label,
@@ -83,7 +86,15 @@ function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unkno
   if (kind === 'longtext') return <textarea className="ios-text" rows={2} maxLength={f.maxLength} {...common} />;
   return (
     <span className="with-unit">
-      <input className="ios-value" placeholder="Enter" inputMode={kind === 'number' ? (f.type === 'integer' ? 'numeric' : 'decimal') : 'text'} maxLength={f.maxLength} {...common} />
+      <input
+        className="ios-value"
+        placeholder="Enter"
+        inputMode={kind === 'number' ? (f.type === 'integer' ? 'numeric' : 'decimal') : 'text'}
+        enterKeyHint="done"
+        maxLength={f.maxLength}
+        onKeyDown={(e) => e.key === 'Enter' && commit(text)}
+        {...common}
+      />
       {f.unit && <span className="muted small">{f.unit}</span>}
     </span>
   );

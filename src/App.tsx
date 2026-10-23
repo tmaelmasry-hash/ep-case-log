@@ -9,7 +9,7 @@ import { StatsView } from './views/StatsView';
 import { SettingsView } from './views/SettingsView';
 
 const TABS = [
-  { key: 'cases', label: 'Cases', icon: 'cases' },
+  { key: 'cases', label: 'Procedures', icon: 'cases' },
   { key: 'patients', label: 'Patients', icon: 'patients' },
   { key: 'stats', label: 'Dashboard', icon: 'stats' },
   { key: 'settings', label: 'Settings', icon: 'settings' },
@@ -26,7 +26,7 @@ export function App() {
     return (
       <div className="loading" aria-busy="true">
         <div className="spinner" />
-        <span>Loading cases…</span>
+        <span>Loading procedures…</span>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export function App() {
             <span className="brand-mark" aria-hidden>
               <Icon name="spike" size={22} />
             </span>
-            <span>EP Case Log</span>
+            <span>KAMC EP Registry</span>
           </div>
         )}
         {TABS.map((t) => (

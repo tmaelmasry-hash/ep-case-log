@@ -11,10 +11,10 @@ test('wrong password is refused with a clear message; right one opens the app', 
   await signIn(page, 'sara', 'not-the-password');
   await expect(page.getByText('Username or password is not correct.')).toBeVisible();
   await signIn(page, 'sara');
-  await expect(page.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
   // Session survives a reload.
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
 });
 
 test('a Member does not see Users; sign out asks first and returns to sign-in', async ({ page }) => {
@@ -62,7 +62,7 @@ test('Admin adds a user; the user must choose their own password, then signs in 
   await expect(p2.getByText('The two new passwords are not the same.')).toBeVisible();
   await p2.getByLabel('New password again').fill('omar-own-pass-1');
   await p2.getByRole('button', { name: 'Save and continue' }).click();
-  await expect(p2.getByRole('heading', { name: 'Cases', exact: true })).toBeVisible();
+  await expect(p2.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
   await ctx2.close();
 
   // Admin disables the account (with confirmation); the user can no longer sign in.

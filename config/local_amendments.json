@@ -1,0 +1,305 @@
+{
+ "_note": "KAMC local amendments from the owner's field review (24 Oct 2026, docs/FIELD_REVIEW.md phase 3). Laid on top of the dictionary and its EP Workspace amendments (config/dictionary/amendments.json, which stays a copy). Same rules: new fields and codes only, never a change to what the dictionary says; the replaced dictionary fields are hidden by case_layout.json form.hidden and keep their columns.",
+ "version": "kamc/fr3-2026-10-24",
+ "fields": {
+  "PATIENTS": [
+   {
+    "name": "nationality_code",
+    "label": "Nationality",
+    "type": "lookup",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "FR3-1",
+    "source": "owner field review 24 Oct: list of the commonest pilgrim and resident nationalities, Saudi Arabia first; replaces the free-text nationality on the form",
+    "after": "nationality",
+    "codes": [
+     {
+      "code": "SAUDI_ARABIA",
+      "label": "Saudi Arabia"
+     },
+     {
+      "code": "INDONESIA",
+      "label": "Indonesia"
+     },
+     {
+      "code": "PAKISTAN",
+      "label": "Pakistan"
+     },
+     {
+      "code": "INDIA",
+      "label": "India"
+     },
+     {
+      "code": "BANGLADESH",
+      "label": "Bangladesh"
+     },
+     {
+      "code": "EGYPT",
+      "label": "Egypt"
+     },
+     {
+      "code": "NIGERIA",
+      "label": "Nigeria"
+     },
+     {
+      "code": "TURKIYE",
+      "label": "Türkiye"
+     },
+     {
+      "code": "IRAN",
+      "label": "Iran"
+     },
+     {
+      "code": "ALGERIA",
+      "label": "Algeria"
+     },
+     {
+      "code": "SUDAN",
+      "label": "Sudan"
+     },
+     {
+      "code": "MALAYSIA",
+      "label": "Malaysia"
+     },
+     {
+      "code": "IRAQ",
+      "label": "Iraq"
+     },
+     {
+      "code": "MOROCCO",
+      "label": "Morocco"
+     },
+     {
+      "code": "YEMEN",
+      "label": "Yemen"
+     },
+     {
+      "code": "AFGHANISTAN",
+      "label": "Afghanistan"
+     },
+     {
+      "code": "JORDAN",
+      "label": "Jordan"
+     },
+     {
+      "code": "SYRIA",
+      "label": "Syria"
+     },
+     {
+      "code": "PHILIPPINES",
+      "label": "Philippines"
+     },
+     {
+      "code": "ETHIOPIA",
+      "label": "Ethiopia"
+     },
+     {
+      "code": "NEPAL",
+      "label": "Nepal"
+     },
+     {
+      "code": "SENEGAL",
+      "label": "Senegal"
+     },
+     {
+      "code": "NIGER",
+      "label": "Niger"
+     },
+     {
+      "code": "MALI",
+      "label": "Mali"
+     },
+     {
+      "code": "UZBEKISTAN",
+      "label": "Uzbekistan"
+     },
+     {
+      "code": "SOMALIA",
+      "label": "Somalia"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ]
+   },
+   {
+    "name": "residence_category",
+    "label": "Residence status",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "FR3-2",
+    "source": "owner field review 24 Oct: Saudi citizen / Resident / International visitor; replaces residence status on the form",
+    "after": "residence_status",
+    "codes": [
+     {
+      "code": "SAUDI_CITIZEN",
+      "label": "Saudi citizen"
+     },
+     {
+      "code": "RESIDENT",
+      "label": "Resident"
+     },
+     {
+      "code": "INTERNATIONAL_VISITOR",
+      "label": "International visitor"
+     }
+    ]
+   }
+  ],
+  "RHYTHM_MONITORING": [
+   {
+    "name": "pac_burden_pct",
+    "label": "PAC burden",
+    "type": "decimal",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "FR3-3",
+    "source": "owner field review 24 Oct: after PVC burden",
+    "after": "pvc_burden_pct",
+    "unit": "%",
+    "min": 0,
+    "max": 100
+   }
+  ],
+  "ECHO_STUDIES": [
+   {
+    "name": "significant_valve_lesions",
+    "label": "Significant valve lesion(s)",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "FR3-5",
+    "source": "owner field review 24 Oct: several lesions may coexist; same codes as significant_valve_lesion without 'Multiple'; None stands alone",
+    "after": "significant_valve_lesion",
+    "codes": [
+     {
+      "code": "NONE",
+      "label": "None"
+     },
+     {
+      "code": "AORTIC_STENOSIS_MODERATE",
+      "label": "Aortic stenosis moderate"
+     },
+     {
+      "code": "AORTIC_STENOSIS_SEVERE",
+      "label": "Aortic stenosis severe"
+     },
+     {
+      "code": "AORTIC_REGURGITATION_MODERATE",
+      "label": "Aortic regurgitation moderate"
+     },
+     {
+      "code": "AORTIC_REGURGITATION_SEVERE",
+      "label": "Aortic regurgitation severe"
+     },
+     {
+      "code": "MITRAL_STENOSIS_MODERATE",
+      "label": "Mitral stenosis moderate"
+     },
+     {
+      "code": "MITRAL_STENOSIS_SEVERE",
+      "label": "Mitral stenosis severe"
+     },
+     {
+      "code": "MITRAL_REGURGITATION_MODERATE",
+      "label": "Mitral regurgitation moderate"
+     },
+     {
+      "code": "MITRAL_REGURGITATION_SEVERE",
+      "label": "Mitral regurgitation severe"
+     },
+     {
+      "code": "TRICUSPID_REGURGITATION_MODERATE",
+      "label": "Tricuspid regurgitation moderate"
+     },
+     {
+      "code": "TRICUSPID_REGURGITATION_SEVERE",
+      "label": "Tricuspid regurgitation severe"
+     },
+     {
+      "code": "PROSTHETIC_VALVE_DYSFUNCTION",
+      "label": "Prosthetic valve dysfunction"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ],
+    "exclusive": [
+     "NONE"
+    ]
+   }
+  ],
+  "ADVANCED_IMAGING": [
+   {
+    "name": "scar_locations",
+    "label": "Scar location(s)",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "FR3-6",
+    "source": "owner field review 24 Oct: scar may be in several regions; same codes as scar_location without 'Multiple'",
+    "after": "scar_location",
+    "codes": [
+     {
+      "code": "ANTERIOR",
+      "label": "Anterior"
+     },
+     {
+      "code": "ANTEROSEPTAL",
+      "label": "Anteroseptal"
+     },
+     {
+      "code": "SEPTAL",
+      "label": "Septal"
+     },
+     {
+      "code": "INFERIOR",
+      "label": "Inferior"
+     },
+     {
+      "code": "INFEROLATERAL",
+      "label": "Inferolateral"
+     },
+     {
+      "code": "LATERAL",
+      "label": "Lateral"
+     },
+     {
+      "code": "APICAL",
+      "label": "Apical"
+     },
+     {
+      "code": "RV",
+      "label": "RV"
+     },
+     {
+      "code": "DIFFUSE",
+      "label": "Diffuse"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ]
+   }
+  ]
+ },
+ "codes": {
+  "RHYTHM_MONITORING.monitor_type": [
+   {
+    "code": "INPATIENT_MONITOR",
+    "label": "Inpatient monitor",
+    "amendment": "FR3-4"
+   }
+  ]
+ },
+ "copy_forward": {
+  "PATIENTS": [
+   "nationality_code",
+   "residence_category"
+  ]
+ }
+}

@@ -134,12 +134,15 @@ export interface RawDictionary {
   core: CoreSpec;
   /** Owner-approved local amendments (M-3, M-4a, M-4b), laid on top of the dictionary. */
   amendments?: Amendments;
+  /** KAMC's own amendments from the owner's field review (config/local_amendments.json), laid on top of those. */
+  localAmendments?: Amendments;
   /** Dynamic-form rules (M-1, config/rules.json). */
   rules?: RulesConfig;
 }
 
 export function buildDictionary(input: RawDictionary): Dictionary {
-  const am = applyAmendments(input.entities, input.layout, input.amendments);
+  const base = applyAmendments(input.entities, input.layout, input.amendments);
+  const am = applyAmendments(base.entities, base.layout, input.localAmendments);
   const raw = { ...input, entities: am.entities, layout: am.layout };
   const entities: Record<string, EntityDef> = {};
   const add = (name: string, form: RawEntity, extension: boolean) => {

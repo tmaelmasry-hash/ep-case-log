@@ -93,7 +93,18 @@ Acute AF endpoint: kept (with PV status at case end). Imaging modality: kept, re
 - **Patient:** height, weight and BMI (calculated, not stored) in the Patient sheet with sex and date of birth;
   removed from Baseline risk profile.
 
-**Phase 3 — new items (local amendments, like M-3; never in the dictionary files).** Owner choices 24 Oct:
+## Phase 3 — new items (built 24 Oct, not yet deployed)
+`config/local_amendments.json` (items FR3-1…FR3-6), laid by `shared/amendments.ts` after the EP Workspace amendments
+(`config/dictionary/amendments.json` stays an unchanged copy): **Nationality** list (FR3-1, `PATIENTS.nationality_code`),
+**Residence status** Saudi citizen / Resident / International visitor (FR3-2, `residence_category`), **PAC burden**
+after PVC burden (FR3-3), monitor type **Inpatient monitor** (FR3-4), **Significant valve lesion(s)** multi-choice with
+None alone (FR3-5), **Scar location(s)** multi-choice (FR3-6). The replaced dictionary fields (nationality,
+residence status, significant valve lesion, scar location) are hidden and keep their columns; the new ones are
+copied forward like the old. "NSVT or VT detected" shows as **NSVT / VT detected**. Sheet: 5 new columns
+(`sheets setup`; TEST Sheet done 24 Oct). Hiding significant valve lesion (R) is the owner's choice (a conflict
+with the dictionary, accepted like the others).
+
+Owner choices 24 Oct:
 - Nationality: Saudi Arabia first, then ~25 common pilgrim / resident nationalities, then Other; type-ahead.
   List (owner approved 24 Oct): Saudi Arabia, Indonesia, Pakistan, India, Bangladesh, Egypt, Nigeria, Türkiye,
   Iran, Algeria, Sudan, Malaysia, Iraq, Morocco, Yemen, Afghanistan, Jordan, Syria, Philippines, Ethiopia, Nepal,

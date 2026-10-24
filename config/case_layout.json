@@ -620,7 +620,11 @@
    "OUTCOME_EVENTS.burden_source_device_check_id",
    "OUTCOME_EVENTS.linked_procedure_id",
    "OUTCOME_EVENTS.linked_complication_id",
-   "OUTCOME_EVENTS.linked_device_infection_id"
+   "OUTCOME_EVENTS.linked_device_infection_id",
+   "PATIENTS.nationality",
+   "PATIENTS.residence_status",
+   "ECHO_STUDIES.significant_valve_lesion",
+   "ADVANCED_IMAGING.scar_location"
   ],
   "not_core": [
    "EP_PROCEDURES.urgency",
@@ -633,7 +637,8 @@
    "PATIENTS.sex_at_birth": "Sex",
    "RHYTHM_MONITORING.target_arrhythmia_detected": "Arrhythmia detected",
    "ADVANCED_IMAGING.modality_code": "Imaging modality",
-   "ADVANCED_IMAGING.indication_code": "Indication of imaging"
+   "ADVANCED_IMAGING.indication_code": "Indication of imaging",
+   "RHYTHM_MONITORING.nsvt_or_vt_detected": "NSVT / VT detected"
   },
   "code_order": {
    "PATIENTS.sex_at_birth": [
@@ -669,7 +674,8 @@
     "HOLTER",
     "MOBILE_TELEMETRY",
     "ILR",
-    "CIED"
+    "CIED",
+    "INPATIENT_MONITOR"
    ]
   },
   "date_only": [

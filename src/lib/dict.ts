@@ -4,6 +4,7 @@ import extension from '../../config/dictionary/extension_entities.json';
 import labels from '../../config/dictionary/labels.json';
 import core from '../../config/dictionary/core_dataset.json';
 import amendments from '../../config/dictionary/amendments.json';
+import localAmendments from '../../config/local_amendments.json';
 import rules from '../../config/rules.json';
 import layout from '../../config/case_layout.json';
 import site from '../../config/site.json';
@@ -23,6 +24,7 @@ export const dict = buildDictionary({
   layout: layout as unknown as CaseLayout,
   core: core as unknown as CoreSpec,
   amendments: amendments as unknown as Amendments,
+  localAmendments: localAmendments as unknown as Amendments,
   rules: rules as unknown as RulesConfig,
 });
 

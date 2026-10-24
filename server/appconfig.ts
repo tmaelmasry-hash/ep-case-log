@@ -53,6 +53,7 @@ export interface RawConfig {
   site: Site;
   aiFixtures: { notes: AiFixture[] };
   amendments?: Amendments;
+  localAmendments?: Amendments;
   rules?: RulesConfig;
 }
 

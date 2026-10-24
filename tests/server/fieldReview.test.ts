@@ -41,6 +41,25 @@ describe('field review (case_layout form)', () => {
     expect(encodeValue(date, '2026-09-14T09:20', {})).toBe('2026-09-14'); // an older device may still send a time
   });
 
+  it('phase 3: KAMC amendments replace nationality, residence, valve lesion and scar location on the form', () => {
+    expect(shown('PATIENTS')).toEqual(expect.arrayContaining(['nationality_code', 'residence_category']));
+    expect(shown('PATIENTS')).not.toContain('nationality');
+    expect(shown('PATIENTS')).not.toContain('residence_status');
+    expect(field('PATIENTS', 'nationality_code').codes![0].code).toBe('SAUDI_ARABIA');
+    expect(field('PATIENTS', 'residence_category').codes!.map((c) => c.code)).toEqual(['SAUDI_CITIZEN', 'RESIDENT', 'INTERNATIONAL_VISITOR']);
+    const valve = field('ECHO_STUDIES', 'significant_valve_lesions');
+    expect(valve).toMatchObject({ type: 'lookup_array', exclusive: ['NONE'] });
+    expect(valve.codes!.map((c) => c.code)).not.toContain('MULTIPLE_SIGNIFICANT_LESIONS');
+    expect(shown('ECHO_STUDIES')).not.toContain('significant_valve_lesion');
+    expect(field('ADVANCED_IMAGING', 'scar_locations').type).toBe('lookup_array');
+    const rm = shown('RHYTHM_MONITORING');
+    expect(rm.indexOf('pac_burden_pct')).toBe(rm.indexOf('pvc_burden_pct') + 1);
+    expect(offeredCodes(field('RHYTHM_MONITORING', 'monitor_type'))).toContain('INPATIENT_MONITOR');
+    expect(field('RHYTHM_MONITORING', 'nsvt_or_vt_detected').label).toBe('NSVT / VT detected');
+    expect(def('PATIENTS').copy_forward).toEqual(expect.arrayContaining(['nationality_code', 'residence_category']));
+    expect(encodeValue(valve, ['MITRAL_STENOSIS_SEVERE', 'TRICUSPID_REGURGITATION_MODERATE'], {})).toBe('["MITRAL_STENOSIS_SEVERE","TRICUSPID_REGURGITATION_MODERATE"]');
+  });
+
   it('start-up check: a field or code that is not in the dictionary stops the build', () => {
     const raw = readRawConfig();
     const withForm = (form: object): RawDictionary => ({ ...raw, layout: { ...raw.layout, form } });

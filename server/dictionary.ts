@@ -21,6 +21,7 @@ export function readRawConfig(): RawConfig {
     site: read('site.json'),
     aiFixtures: read('ai_fixtures.json'),
     amendments: read('dictionary/amendments.json'),
+    localAmendments: read('local_amendments.json'),
     rules: read('rules.json'),
   };
 }

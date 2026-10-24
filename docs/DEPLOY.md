@@ -73,6 +73,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | (commit after `e154eb7`, round 3 device form + CHA line) | `a246be0b-69aa-4b64-9398-8df4bd90ed9e` | same Sheet, no Sheet change |
 | `d081bd4` (L1 speed) | `79b163ee-7f64-47ec-94ef-6d312ab802b2` | same Sheet, no Sheet change |
 | `ba680f2` (L2 local-first) | `89f24cb1-2452-458d-8650-e917c46a6f75` | same Sheet, no Sheet change; browsers keep a device copy (IndexedDB `kamc-registry-<user id>`) |
+| `5f4c653` (L3 offline open + offline new case) | `f008ad2e-d051-4559-9584-271022ac6a8a` | same Sheet, no Sheet change; the last signed-in user is remembered per browser (localStorage `kamc-registry-me`) |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

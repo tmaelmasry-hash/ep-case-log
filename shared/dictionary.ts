@@ -88,6 +88,8 @@ export interface FormOverrides {
   code_order?: Record<string, string[]>;
   offer?: Record<string, string[]>;
   date_only?: string[];
+  /** Hajj season for the automatic Hajj timing (Hijri [month, day]; owner 24 Oct: 1 Dhu al-Qa'dah → 15 Muharram). */
+  hajj_season?: { start: [number, number]; end: [number, number]; rites: [[number, number], [number, number]] };
 }
 
 /** One item of config/dictionary/core_dataset.json (EP Workspace "Ready to complete?"). */

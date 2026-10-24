@@ -6,6 +6,7 @@ import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../.
 import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import { CATEGORY_FIELDS } from '../../shared/categories.ts';
 import { caseEnv, consequences, misfit } from '../../shared/rules.ts';
+import { deriveChanges } from '../../shared/derive.ts';
 import {
   ID_RE,
   ageOn,
@@ -409,12 +410,45 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
   (batch.not_available ?? []).slice(0, 50).forEach((n, i) => run('na', i, () => applyNotAvailable(dict, rec, n, a)));
 
   if (results.some((r) => r.ok)) {
+    applyDerived(dict, rec, a);
     rec.meta.updated_at = a.now;
     rec.meta.updated_by = a.userId;
     rec.meta.row_version++;
     rec.meta.collector_user_id ??= a.userId;
   }
   return results;
+}
+
+/** Values the app fills by itself (shared/derive.ts), stored after each save with a history line like any edit.
+ *  They skip the form checks (several of these fields are hidden) but still go through the dictionary codes. */
+export function applyDerived(dict: Dictionary, rec: CaseRecord, a: Actor) {
+  const season = dict.layout.form?.hajj_season;
+  if (!season) return;
+  const ctx = { caseId: rec.meta.case_id, episodeId: rec.meta.episode_id, patientId: rec.meta.patient_id, slot: (e: string, s: string) => expectedSlot(dict, e, s), season };
+  // One value may lead to another (an AF section's type → the diagnosis subtype); a few passes settle it.
+  for (let pass = 0; pass < 3; pass++) {
+    const decoded = decodeRows(dict, rec);
+    const changes = deriveChanges(dict, (e) => decoded[e] ?? [], ctx);
+    if (!changes.length) return;
+    for (const ch of changes) {
+      const def = dict.entities[ch.entity];
+      const f = def.fields.find((x) => x.name === ch.field)!;
+      const row = findLive(rec, ch.entity, ch.id) ?? (ch.create ? ensureSingleRow(dict, rec, ch.entity, ch.create.parent_id, a) : undefined);
+      if (!row) continue;
+      const before = decodeValue(f, row[ch.field]);
+      try {
+        row[ch.field] = encodeValue(f, ch.value, row);
+      } catch {
+        continue; // a value the dictionary refuses is never stored
+      }
+      afterChange(def, row, ch.field);
+      row._updated_at = a.now;
+      row._updated_by = a.userId;
+      const after = decodeValue(f, row[ch.field]);
+      // Links the app keeps are not worth a history line; filled answers are.
+      if (f.type !== 'fk' && JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where: whereText(placeOf(dict, rec, def.entity, row)), old: before, new: after }, a);
+    }
+  }
 }
 
 /** "Not available" + reason on an empty core field, or clear it (reason null). */

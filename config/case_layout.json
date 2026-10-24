@@ -455,7 +455,7 @@
   "OTHER_EP": "Other EP / Not classified"
  },
  "form": {
-  "_note": "Owner field review (24 Oct 2026, KAMC Field Review page). Only changes how the form shows dictionary fields; never adds or edits fields or codes. hidden = not shown, not checked by Ready to complete, not offered to the AI, not printed; the Sheet keeps the column and saved values stay. not_core = shown but no longer a core (★) item. labels = shown label. code_order = these codes first, the rest in dictionary order. offer = only these codes are offered (a saved other value still shows). date_only = a date&time field entered as a date.",
+  "_note": "Owner field review (24 Oct 2026, KAMC Field Review page). Only changes how the form shows dictionary fields; never adds or edits fields or codes. hidden = not shown, not checked by Ready to complete, not offered to the AI, not printed; the Sheet keeps the column and saved values stay. not_core = shown but no longer a core (★) item. labels = shown label. code_order = these codes first, the rest in dictionary order. offer = only these codes are offered (a saved other value still shows). date_only = a date&time field entered as a date. hajj_season = Hijri [month, day] of the season start and end and of the rites, for the automatic Hajj timing (shared/derive.ts).",
   "hidden": [
    "EP_PROCEDURES.baseline_clinical_snapshot_id",
    "EP_PROCEDURES.scheduled_date",
@@ -674,6 +674,26 @@
   },
   "date_only": [
    "EP_PROCEDURES.procedure_start_datetime"
-  ]
+  ],
+  "hajj_season": {
+   "start": [
+    11,
+    1
+   ],
+   "end": [
+    1,
+    15
+   ],
+   "rites": [
+    [
+     12,
+     8
+    ],
+    [
+     12,
+     13
+    ]
+   ]
+  }
  }
 }

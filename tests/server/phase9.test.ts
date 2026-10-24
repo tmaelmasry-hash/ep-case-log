@@ -49,7 +49,7 @@ describe('dashboard', () => {
     expect(d.progress).toMatchObject({ total: 2, started: 1, mrn_only: 1, completed: 0 });
     expect(d.progress.by_collector[0]).toMatchObject({ name: 'Sara', total: 2 });
     const svt = d.clinical.by_type.find((t: { id: string }) => t.id === 'SVT_ABLATION');
-    expect(svt).toMatchObject({ procedures: 2, by_month: { '2026-03': 1 }, no_date: 1 });
+    expect(svt).toMatchObject({ procedures: 2, by_month: { '2026-03': 2 }, no_date: 0 }); // a procedure without a date takes the episode date (field review phase 2)
     expect(d.clinical.acute_success.find((a: { id: string }) => a.id === 'SVT_ABLATION')).toMatchObject({ success: 1, not_recorded: 1, pct: 100 });
     expect(d.clinical.complications).toMatchObject({ reviewed: 1, present: 0, not_reviewed: 1 });
     expect(JSON.stringify(d)).not.toContain('9990501');

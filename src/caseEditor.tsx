@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { CaseDetail, DecodedRow } from '../shared/caseTypes.ts';
 import { idPrefix, slotId } from '../shared/caseTypes.ts';
+import { deriveChanges } from '../shared/derive.ts';
 import { naKey, type NotAvailable } from '../shared/readiness.ts';
 import { dict } from './lib/dict';
 import { api, ApiError } from './lib/api';
@@ -188,6 +189,20 @@ export function useCaseEditor(caseId: string): CaseEditor {
         for (const def of Object.values(dict.entities)) {
           if (def.nest_under?.entity === op.entity) rows[def.entity] = (rows[def.entity] ?? []).filter((r) => r[def.nest_under!.fk] !== op.id);
           if (op.entity === 'EP_PROCEDURES' && def.scope === 'procedure') rows[def.entity] = (rows[def.entity] ?? []).filter((r) => r.procedure_id !== op.id);
+        }
+      }
+    }
+    // Values the app fills (shared/derive.ts, also stored by the server): shown at once, offline too.
+    const season = dict.layout.form?.hajj_season;
+    if (detail && season) {
+      const ctx = { caseId: detail.meta.case_id, episodeId: detail.meta.episode_id, patientId: detail.meta.patient_id, slot: (e: string, s: string) => slotId(idPrefix(dict.entities[e].pk), e, s), season };
+      for (let pass = 0; pass < 3; pass++) {
+        const list = deriveChanges(dict, (e) => rows[e] ?? [], ctx);
+        if (!list.length) break;
+        for (const d of list) {
+          let row = rows[d.entity]?.find((r) => r._id === d.id);
+          if (!row && d.create) (rows[d.entity] ??= []).push((row = { _id: d.id, [dict.entities[d.entity].pk]: d.id }));
+          if (row) row[d.field] = d.value;
         }
       }
     }

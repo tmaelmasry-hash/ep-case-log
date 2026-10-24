@@ -4,25 +4,25 @@ Read this first, then `docs/MERGE_PLAN.md` (all owner decisions; R2-* round 2, R
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 Work in steps, preview before building anything visible, multiple-choice questions, stop after each step.
 
-## START HERE — field review (owner, 24 Oct: "هنبدأ بالحقول")
-The next chat starts with **reviewing every form field, one at a time**, then the open questions below.
-- **Review page (artifact, private to the owner):** https://claude.ai/artifact/Vxm8gc69gr5J3fuQgphLYr — "KAMC Field
-  Review". 527 form fields in 39 sections, in the case-page order (procedure first, then patient & history, studies &
-  follow-up). For each field: label, section, key (`ENTITY.field`), type, requirement (R / RC / C / O), ★ core, choices,
-  "when it applies" text, local amendment. The owner marks **Keep / Remove / Later** + a note; saved in the page's
-  database, collection `decisions`, doc id = `ENTITY.field`, body `{decision: 'keep'|'remove'|'later'|null, note, at}`.
-- **Claude's view per field** goes in collection `advice`, doc id = `ENTITY.field`, body
-  `{verdict: 'keep'|'remove'|'discuss', why: '<one or two plain sentences>'}` — write it with the `ArtifactData` tool
-  (`batch`, up to 50 per call); the page shows it live under the field. The owner wants an opinion per field
-  ("قول لي أشيله ولا أسيبه"), going section by section with him in the chat.
-- Read his choices with `ArtifactData` `list` on `decisions` (limit 1000). Field list source: the page's `fields.json`
-  (made by `node <scratch>/export-fields.ts` from `server/appconfig.ts` + `formFields`; regenerate if the dictionary changes).
-- **How to act on "Remove" (decide with the owner before building):** the dictionary is never edited. Hiding a field
-  must be a config layer (e.g. a `hidden_fields` list in `config/case_layout.json` used by `formFields`, readiness and
-  the Sheet layout keeps the column). Removing a **core (★)** field or an R field conflicts with the dictionary's
-  completeness rules → flag it to the owner as a real conflict (CLAUDE.md: ask). Existing values stay in the Sheet.
-- Suggested opening prompt for the new chat: «اقرأ docs/HANDOFF_NEXT_CHAT.md وابدأ مراجعة الحقول قسم قسم في صفحة
-  KAMC Field Review: اكتب رأيك في كل حقل في advice، وأنا هختار Keep / Remove / Later.»
+## START HERE — colors (owner, 24 Oct)
+The field review is **done and live** (record: `docs/FIELD_REVIEW.md`; review page
+https://claude.ai/artifact/Vxm8gc69gr5J3fuQgphLYr). Next task, asked by the owner: change the app colors to the
+**Makkah Health Cluster** visual identity, colors only (no logo, name or text), centralised in the CSS tokens
+(`src/styles.css` `:root` + both dark blocks; also the few literal colors such as `.pill-set button.on` white text).
+- Preview (private artifact) waiting for the owner's yes: https://claude.ai/artifact/YAAESity3hAwXZH687hbFj —
+  accent navy `#15508A` (buttons, chosen answers, active menu, links), sky `#1592CE` for highlights / progress /
+  charts; dark: accent `#6FB6E6`. Category, warning and success colors unchanged; device / EPS chips follow the blues.
+- These values are an **approximation** from the cluster's public website stylesheet and emblem (no published brand
+  guideline found); say so. Do not use the old KAMC palette. Check contrast; check desktop and phone, light and dark.
+
+## Field review (done 24 Oct, Workers 18778f9e → 2589911c → 71edff53)
+- Phase 1: 164 fields hidden by `config/case_layout.json` form (dictionary untouched; Sheet columns stay), labels,
+  choice order, Procedure date only, chosen answers in blue.
+- Phase 2: procedure "What was done" list (17 items) with the type set automatically; `shared/derive.ts` fills Hajj
+  timing (season 1 Dhu al-Qa'dah → 15 Muharram), diagnosis, eGFR, procedure date, links; Done / Not done for tilt and
+  imaging; Device interrogation row; height / weight / BMI in Patient.
+- Phase 3: `config/local_amendments.json` (nationality list, residence category, PAC burden, Inpatient monitor,
+  multi-choice valve lesions and scar locations); main and TEST Sheets have the 5 new columns.
 
 ## Where things are
 - Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, **all pushed**.
@@ -51,7 +51,7 @@ Tests: unit/server 217 · e2e 66 · e2e:worker 66.
 
 ## What to do next (ask the owner, one at a time)
 - The owner has not yet saved a real case on the live site after local-first; ask how it feels (speed, indicator).
-- Open questions: which form fields to remove (R2-9, he asked to be reminded); AF ablation by energy submenu;
+- Open questions: AF ablation by energy submenu;
   Leadless LVEP / CCM under Devices; other SVTs without dictionary code; new EP Workspace items (M-4c…) — ask first.
 - Optional speed: a new Apps Script version reading all tabs in one call (opening a case the first time ~5–6 s);
   needs the owner to paste Code.js and publish a new version.

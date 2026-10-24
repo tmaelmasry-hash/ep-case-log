@@ -1,33 +1,37 @@
 :root {
-  --bg: #f2f5fb;
+  --bg: #f3f6f9;
   --card: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --line: #e2e7f0;
-  --fill: #e9eef7;
-  --accent: #2f62d6;
+  --text: #1b2530;
+  --muted: #5f6b78;
+  --line: #dce4ec;
+  --fill: #e8eef4;
+  --accent: #15508a;
   --accent-ink: #ffffff;
-  --accent-soft: #e3ecfd;
-  --nav: #e8edf6;
+  --accent-soft: #e2edf7;
+  /* Makkah Health Cluster identity, approximated from its public website and emblem (no published codes). */
+  --highlight: #1592ce;
+  --brand: #15508a;
+  --brand-deep: #0b2f4a;
+  --nav: #e9eff5;
   --danger: #c8323c;
   --warn: #9a6200;
   --warn-bg: #fdf0d5;
   --ok: #077a37;
   --ok-fill: #10b455;
   --cat-ablation: #e0745a;
-  --cat-device: #2f62d6;
+  --cat-device: #15508a;
   --cat-structural: #10b455;
-  --cat-diagnostic: #2e8fb0;
+  --cat-diagnostic: #1278b0;
   --cat-other: #6b7280;
-  --info: #2e8fb0;
+  --info: #1278b0;
   --cat-af: #e0745a;
   --cat-flutter: #c7609a;
   --cat-svt: #d9952b;
   --cat-ap: #8a63d2;
   --cat-avn: #5b6bd6;
   --cat-vent: #c2453f;
-  --cat-eps: #2e8fb0;
-  --cat-dev: #2f62d6;
+  --cat-eps: #1278b0;
+  --cat-dev: #15508a;
   --cat-laa: #10b455;
   --cat-pilgrim: #0f9e8e;
   --radius: 14px;
@@ -41,67 +45,73 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #12151b;
-    --card: #1a1f27;
-    --text: #e6e9ee;
-    --muted: #9aa3b2;
-    --line: #2a303a;
-    --fill: #222833;
-    --accent: #7a9ef0;
-    --accent-ink: #12151b;
-    --accent-soft: #1e2a44;
-    --nav: #0e1116;
+    --bg: #0f151c;
+    --card: #17202a;
+    --text: #e4eaf0;
+    --muted: #97a4b2;
+    --line: #263241;
+    --fill: #1f2a36;
+    --accent: #6fb6e6;
+    --accent-ink: #0b1a28;
+    --accent-soft: #16304a;
+    --highlight: #4fb3e8;
+    --brand: #15508a;
+    --brand-deep: #0b2f4a;
+    --nav: #0b1118;
     --danger: #ef7b82;
     --warn: #e5b04f;
     --warn-bg: #352b16;
     --ok: #4ade80;
     --ok-fill: #22c55e;
     --cat-ablation: #f07f65;
-    --cat-device: #7a9ef0;
+    --cat-device: #6fb6e6;
     --cat-structural: #5cc79b;
-    --cat-diagnostic: #5db9d6;
-    --info: #5db9d6;
+    --cat-diagnostic: #4fb3e8;
+    --info: #4fb3e8;
     --cat-af: #f07f65;
     --cat-flutter: #e08bb9;
     --cat-svt: #e8b75c;
     --cat-ap: #ae90ec;
     --cat-avn: #8e9af0;
     --cat-vent: #e8807a;
-    --cat-eps: #5db9d6;
-    --cat-dev: #7a9ef0;
+    --cat-eps: #4fb3e8;
+    --cat-dev: #6fb6e6;
     --cat-laa: #5cc79b;
     --cat-pilgrim: #4fd0bf;
     color-scheme: dark;}
 }
 :root[data-theme='dark'] {
-    --bg: #12151b;
-    --card: #1a1f27;
-    --text: #e6e9ee;
-    --muted: #9aa3b2;
-    --line: #2a303a;
-    --fill: #222833;
-    --accent: #7a9ef0;
-    --accent-ink: #12151b;
-    --accent-soft: #1e2a44;
-    --nav: #0e1116;
+    --bg: #0f151c;
+    --card: #17202a;
+    --text: #e4eaf0;
+    --muted: #97a4b2;
+    --line: #263241;
+    --fill: #1f2a36;
+    --accent: #6fb6e6;
+    --accent-ink: #0b1a28;
+    --accent-soft: #16304a;
+    --highlight: #4fb3e8;
+    --brand: #15508a;
+    --brand-deep: #0b2f4a;
+    --nav: #0b1118;
     --danger: #ef7b82;
     --warn: #e5b04f;
     --warn-bg: #352b16;
     --ok: #4ade80;
     --ok-fill: #22c55e;
     --cat-ablation: #f07f65;
-    --cat-device: #7a9ef0;
+    --cat-device: #6fb6e6;
     --cat-structural: #5cc79b;
-    --cat-diagnostic: #5db9d6;
-    --info: #5db9d6;
+    --cat-diagnostic: #4fb3e8;
+    --info: #4fb3e8;
     --cat-af: #f07f65;
     --cat-flutter: #e08bb9;
     --cat-svt: #e8b75c;
     --cat-ap: #ae90ec;
     --cat-avn: #8e9af0;
     --cat-vent: #e8807a;
-    --cat-eps: #5db9d6;
-    --cat-dev: #7a9ef0;
+    --cat-eps: #4fb3e8;
+    --cat-dev: #6fb6e6;
     --cat-laa: #5cc79b;
     --cat-pilgrim: #4fd0bf;
     color-scheme: dark;}
@@ -253,8 +263,8 @@ p {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #5eead4;
-  color: #14213d;
+  background: var(--brand);
+  color: #fff;
 }
 .tabbar-foot {
   margin-top: auto;
@@ -1048,7 +1058,7 @@ select {
   flex: 1;
 }
 .toast .link {
-  color: #8ab4ff;
+  color: #9fd2f2;
 }
 .toast.error {
   background: #8e1c1c;
@@ -1271,7 +1281,7 @@ select {
   color: #000;
 }
 .report header {
-  border-bottom: 2px solid #14213d;
+  border-bottom: 2px solid var(--brand-deep);
   margin-bottom: 10pt;
   padding-bottom: 4pt;
 }
@@ -1281,7 +1291,7 @@ select {
 .report h2 {
   font-size: 13pt;
   margin: 14pt 0 4pt;
-  color: #14213d;
+  color: var(--brand-deep);
 }
 .report h3 {
   font-size: 11.5pt;
@@ -1364,7 +1374,7 @@ select {
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(160deg, #1c3f8f, #0a1f4f);
+  background: linear-gradient(160deg, var(--brand), var(--brand-deep));
 }
 .auth-title {
   font-size: 1.15rem;
@@ -1410,7 +1420,7 @@ select {
   font-size: 1.05rem;
   font-weight: 600;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .ios-btn:disabled {
   opacity: 0.6;
@@ -1457,7 +1467,7 @@ select {
 }
 .is-wide .tabbar a.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .is-wide .tabbar a:hover:not(.active) {
   background: rgb(0 0 0 / 0.05);
@@ -1467,7 +1477,7 @@ select {
   color: var(--muted);
 }
 .brand-mark {
-  background: linear-gradient(160deg, #1c3f8f, #0a1f4f);
+  background: linear-gradient(160deg, var(--brand), var(--brand-deep));
   color: #fff;
 }
 
@@ -1690,7 +1700,7 @@ select {
 .pill-set button.on,
 .choice-seg button.on {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 /* Field review phase 2: "What was done" groups in the procedure sheet. */
 .item-group {
@@ -1864,7 +1874,7 @@ select {
 .progress > span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--highlight);
 }
 .core-ok {
   color: var(--ok);

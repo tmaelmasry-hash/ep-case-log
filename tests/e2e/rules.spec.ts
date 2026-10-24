@@ -17,8 +17,7 @@ test('mapping system follows "mapping used"; turning it off asks before removing
   await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'Ablation' }).click();
-  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   const used = ps.getByRole('radiogroup', { name: 'Electroanatomic mapping used' });
   const system = ps.getByRole('radiogroup', { name: 'Mapping system' });
   await expect(system).toHaveCount(0);

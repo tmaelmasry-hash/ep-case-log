@@ -1692,6 +1692,15 @@ select {
   background: var(--accent);
   color: #fff;
 }
+/* Field review phase 2: "What was done" groups in the procedure sheet. */
+.item-group {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 8px 0 6px;
+}
 /* Owner field review (24 Oct): a chosen Yes / No / Unknown (and every short choice) is blue, like the pills. */
 .choice-seg button.on {
   box-shadow: none;

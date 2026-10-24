@@ -10,7 +10,7 @@ test('add a 6-month follow-up to a procedure with a quick event', async ({ page 
   await page.getByTestId('followups-sheet').getByRole('button', { name: 'Done' }).click();
 
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await page.getByTestId('procedure-sheet').getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'Ablation' }).click();
+  await page.getByTestId('procedure-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
 

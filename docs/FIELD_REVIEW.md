@@ -65,25 +65,46 @@ Acute AF endpoint: kept (with PV status at case end). Imaging modality: kept, re
 - **Lead status events** (3): Clinician confirmed same date order, Source device check, Source lead procedure
 - **Follow-up visit** (5): Contact method (R), Rhythm monitor, Followup device check, Followup echo, Outcomes reviewed through date
 - **Outcome event** (10): Followup, Same day event temporal relation, Hospitalization encounter reference, Episode duration, Duration assessment, Burden source monitor, Burden source device check, Linked procedure (RC), Linked complication, Linked device infection
-## Still to build (owner notes on the review page)
-**Phase 2 — behaviour (preview first):**
-- Procedure: one tick list of 17 items (AF, Flutter, AVNRT, Accessory pathway, AT / other SVT, AV node, PVC, VT,
-  Pacemaker, ICD, CRT, CSP, Generator change / upgrade, Lead extraction / revision, ILR, EPS, LAA); each opens its
-  section, several stack; primary procedure type set from the ticks (R3-1 extended).
-- Auto-fill: baseline snapshot and study links; Hajj timing from the episode / procedure date and the Hajj season
-  (owner 24 Oct: season **1 Dhu al-Qa'dah → 15 Muharram**, adjustable later; inside it **Before Hajj** until
-  7 Dhu al-Hijjah, **During Hajj** 8–13 Dhu al-Hijjah, **After Hajj** to the season end; outside it "Outside
-  pilgrimage season"; Umrah-related when the patient is Umrah) — hidden as a field; Primary EP diagnosis and subtype from the procedure; eGFR calculated from creatinine,
-  age and sex; implant date precision; CSP target from the strategy.
-- Episode start date and procedure date: one date.
-- Labs, echo, Holter: "which procedure" chooser only when the case has more than one procedure.
-- Tilt test and each imaging type (CMR / CT / TEE): first question Done / Not done; Done opens the fields.
-- Device section renamed **Device interrogation**, shown when Patient history says previous device implant;
-  Device checks merged into it; Check channels merged into the device check.
-- Height, weight (BMI) with sex and date of birth in one basic patient section.
-- Holter duration as number + unit (hours / days; months for a loop recorder).
 
-**Phase 3 — new items (local amendments, like M-3; never in the dictionary files):**
+## Phase 2 — behaviour (owner approved the preview 24 Oct; built, not yet deployed)
+- **Procedure: "What was done"** (`src/lib/procedureTypes.ts` PROCEDURE_ITEMS, `ProcedureSheet`): 17 items in three
+  groups (Ablation: AF, Flutter, AVNRT, Accessory pathway, AT / other SVT, AV node, PVC, VT · Devices: Pacemaker,
+  ICD, CRT, Conduction system pacing, Generator change / upgrade, Lead extraction / revision, ILR · Other: EP study,
+  LAA closure), right under the procedure date. Each item ticks its dictionary components and opens their sections;
+  CRT and CSP open Device implant + CRT / CSP; Generator change sets Device action. Pacemaker / ICD / CRT narrow the
+  case device types. Unticking asks first when a section has answers. The Primary procedure type is no longer
+  picked: it follows the ticks (ablation first, then device work, LAA, ILR, EPS).
+- **Filled by the app** (`shared/derive.ts`; the server stores them after every save, the browser shows them at once,
+  offline too): procedure date from the episode date when empty; procedure type; Hajj timing (season
+  1 Dhu al-Qa'dah → 15 Muharram; Before / During 8–13 Dhu al-Hijjah / After; Umrah-related; outside the season;
+  not filled for non-pilgrims; `case_layout.json` form.hajj_season); primary EP diagnosis and subtype from the first
+  procedure that says one (only into empty answers — a person's choice stays); eGFR (CKD-EPI 2021, from
+  creatinine µmol/L, age at the lab date and sex; read only while creatinine is there); CSP target from the strategy;
+  implant date precision; the hidden links (episode, the only procedure, baseline snapshot, latest baseline echo,
+  case device).
+- **Studies:** "For procedure" only when the case has two or more procedures (the only one is linked by itself).
+  Labs have no procedure field in the dictionary (only the episode), so they cannot be tied to one procedure.
+  Tilt-table test and each imaging type (CMR, Cardiac CT, TEE) start with **Done / Not done**; Done adds the study
+  (with its type) and opens it, Not done asks and removes it. Holter **duration** = number + hours / days / months
+  (stored in hours).
+- **Device interrogation:** the Devices row is renamed and shown only when Baseline risk profile says Existing CIED =
+  Yes, a procedure of the case is device work, or device rows exist. Device checks and their lead numbers were
+  already inside the device (nested rows).
+- **Patient:** height, weight and BMI (calculated, not stored) in the Patient sheet with sex and date of birth;
+  removed from Baseline risk profile.
+
+**Phase 3 — new items (local amendments, like M-3; never in the dictionary files).** Owner choices 24 Oct:
+- Nationality: Saudi Arabia first, then ~25 common pilgrim / resident nationalities, then Other; type-ahead.
+  List (owner approved 24 Oct): Saudi Arabia, Indonesia, Pakistan, India, Bangladesh, Egypt, Nigeria, Türkiye,
+  Iran, Algeria, Sudan, Malaysia, Iraq, Morocco, Yemen, Afghanistan, Jordan, Syria, Philippines, Ethiopia, Nepal,
+  Senegal, Niger, Mali, Uzbekistan, Somalia, Other.
+- Residence: a **new amendment field** (Saudi citizen / Resident / International visitor) replaces the dictionary
+  one on the form (like M-4b); the old one is hidden and keeps its column.
+- "NSVT or VT detected" shown as **NSVT / VT detected** (label only; the field covers both).
+- Valve lesion (echo) and scar location (CMR): **new multi-choice amendment fields**, same codes; the single-choice
+  ones are hidden.
+
+Items:
 - PAC burden (after PVC burden); "Inpatient monitor" monitor type.
 - Residence status choices: Saudi citizen / Resident / International visitor.
 - Nationality as a type-ahead list of the commonest nationalities (pilgrims first).

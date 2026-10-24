@@ -41,11 +41,11 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   // A procedure with AF: its core count includes the AF ablation items.
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await expect(ps.getByTestId('module-AF_ABLATIONS')).toBeVisible();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByTestId('procedure-row')).toContainText('core 0/14');
+  await expect(page.getByTestId('procedure-row')).toContainText('core 2/14'); // date and type are filled by the app (field review phase 2)
 
   // Everything else filled (synthetic), except LA/LAA thrombus status and date of birth.
   await fillCore(page, id, ['AF_ABLATIONS.la_laa_thrombus_status', 'PATIENT_IDENTIFIERS.date_of_birth']);

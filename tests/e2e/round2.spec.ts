@@ -46,14 +46,14 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');
   await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
   const rows = page.getByTestId('case-row');
   await expect(rows).toHaveCount(1);
-  await expect(rows.locator('.chip.c-cat')).toHaveText('AF'); // colored by its category
+  await expect(rows.locator('.chip.c-cat').first()).toHaveText(/^AF\b/); // colored by its category ("AF Ablation" once the type is set)
 
   await inMenu(page, { id: 'SVT' });
   await expect(page.getByTestId('filter-bar')).toContainText('SVT ablation');
@@ -160,7 +160,7 @@ test('part 4: same MRN and date warns of a duplicate; search by No. and procedur
   const no = (await page.getByTestId('case-head').textContent())!.match(/No\. (\d+)/)![1];
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');

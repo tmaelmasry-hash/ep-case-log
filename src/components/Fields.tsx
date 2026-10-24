@@ -101,6 +101,50 @@ function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unkno
   );
 }
 
+/** Owner field review: monitoring length as a number + hours / days / months (a month = 30 days); stored in hours. */
+const UNITS = [
+  ['hours', 1],
+  ['days', 24],
+  ['months', 720],
+] as const;
+
+function DurationInput({ id, hours, onCommit }: { id: string; hours: unknown; onCommit: (h: number | null) => void }) {
+  const h = typeof hours === 'number' ? hours : hours === null || hours === undefined || hours === '' ? null : Number(hours);
+  const fit = h === null ? 1 : h > 0 && h % 720 === 0 ? 720 : h > 0 && h % 24 === 0 ? 24 : 1;
+  const [unit, setUnit] = useState<number>(fit);
+  const [text, setText] = useState(h === null ? '' : String(h / fit));
+  useEffect(() => {
+    setUnit(fit);
+    setText(h === null ? '' : String(h / fit));
+  }, [h]); // eslint-disable-line react-hooks/exhaustive-deps
+  const commit = (t: string, u: number) => {
+    const n = Number(t.replace(',', '.'));
+    if (t.trim() === '') onCommit(null);
+    else if (Number.isFinite(n) && n >= 0) onCommit(Math.round(n * u * 10) / 10);
+  };
+  return (
+    <span className="with-unit">
+      <input id={id} className="ios-value" inputMode="decimal" placeholder="Enter" aria-label="Duration" value={text} onChange={(e) => setText(e.target.value)} onBlur={() => commit(text, unit)} onKeyDown={(e) => e.key === 'Enter' && commit(text, unit)} />
+      <select
+        className="ios-select"
+        aria-label="Duration unit"
+        value={unit}
+        onChange={(e) => {
+          const u = Number(e.target.value);
+          setUnit(u);
+          commit(text, u);
+        }}
+      >
+        {UNITS.map(([name, f]) => (
+          <option key={name} value={f}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}
+
 export interface FkOption {
   value: string;
   label: string;
@@ -148,6 +192,7 @@ export function FieldRow({
   copied,
   ai,
   offered,
+  locked,
 }: {
   def: EntityDef;
   f: FormField;
@@ -166,17 +211,20 @@ export function FieldRow({
   ai?: AiMark;
   /** M-1: codes the rules offer here (the current value always stays visible). */
   offered?: (code: string) => boolean;
+  /** Filled by the app (field review phase 2): shown read only with this note, e.g. "calculated". */
+  locked?: string;
 }) {
   const value = row?.[f.name] ?? null;
   const keep = (c: string) => !offered || offered(c) || (Array.isArray(value) ? value.includes(c) : value === c);
   const kind = controlKind(f, row);
   const id = `f-${def.entity}-${f.name}-${rowId}`.replace(/[^A-Za-z0-9_-]/g, '_');
   const star = dict.core.has(`${def.entity}.${f.name}`);
-  const ro = readOnly || !editable(def, f);
+  const ro = readOnly || !editable(def, f) || !!locked;
   const lab = (
     <span className="lab">
       {f.label}
       {star && <span className="req" title="Core field"> *</span>}
+      {locked && <span className="muted small"> ({locked})</span>}
       {copied && (
         <span className="copied-tag" title={copied} data-testid="copied-tag">
           Copied
@@ -208,7 +256,7 @@ export function FieldRow({
     return (
       <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
         {lab}
-        <span className="val">{shown || (na?.state === 'not_available' ? `Not available · ${na.reason}` : '—')}</span>
+        <span className="val">{(shown && f.unit && !f.codes ? `${shown} ${f.unit}` : shown) || (na?.state === 'not_available' ? `Not available · ${na.reason}` : '—')}</span>
       </div>
     );
   }
@@ -247,6 +295,18 @@ export function FieldRow({
         {err}
         {other}
         {naLine}
+      </div>
+    );
+  }
+
+  if (`${def.entity}.${f.name}` === 'RHYTHM_MONITORING.analyzable_duration_hours') {
+    return (
+      <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
+        <label htmlFor={id} className="lab-wrap">
+          {lab}
+        </label>
+        <DurationInput id={id} hours={value} onCommit={(h) => onChange(f.name, h)} />
+        {err && <div className="frow-err">{err}</div>}
       </div>
     );
   }
@@ -307,6 +367,9 @@ export function EntityFields({
   copiedOf,
   aiOf,
   only,
+  skip,
+  offerOf,
+  lockedOf,
   ruling,
 }: {
   entity: string;
@@ -322,12 +385,24 @@ export function EntityFields({
   aiOf?: (field: string) => AiMark | undefined;
   /** Show only these fields (in this order). */
   only?: string[];
+  /** Leave these fields out here (shown elsewhere, or filled by the app). */
+  skip?: string[];
+  /** Narrow the choices of a field on this screen (e.g. pacemaker types after ticking Pacemaker). */
+  offerOf?: (field: string) => string[] | undefined;
+  /** A field the app fills here: read only, with this note. */
+  lockedOf?: (field: string) => string | undefined;
   /** M-1 dynamic-form rules for a field of this row: hidden, offered choices, notes. */
   ruling?: (field: string) => FieldRuling | undefined;
 }) {
   const def = dict.entities[entity];
   const all = only ? only.map((n) => formFields(def).find((f) => f.name === n)).filter((f): f is FormField => !!f) : formFields(def);
-  const list = all.filter((f) => ruling?.(f.name)?.visible !== false);
+  const list = all.filter((f) => ruling?.(f.name)?.visible !== false && !skip?.includes(f.name));
+  const offeredHere = (field: string) => {
+    const rule = ruling?.(field)?.offered;
+    const mine = offerOf?.(field);
+    if (!rule && !mine) return undefined;
+    return (c: string) => (!rule || rule(c)) && (!mine || mine.includes(c));
+  };
   return (
     <div className="group">
       {list.map((f) => (
@@ -346,7 +421,8 @@ export function EntityFields({
             onNa={onNa ? () => onNa(f.name) : undefined}
             copied={copiedOf?.(f.name)}
             ai={aiOf?.(f.name)}
-            offered={ruling?.(f.name)?.offered}
+            offered={offeredHere(f.name)}
+            locked={lockedOf?.(f.name)}
           />
           {ruling?.(f.name)?.warnings.map((w) => (
             <p key={w.id} className="warn-text small rule-note" data-testid="rule-note">

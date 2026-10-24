@@ -1,7 +1,7 @@
 // Case page (approved EP Log-style preview): header card, then grouped rows; each row opens its form in a sheet.
 // Case = one EP_EPISODE; PROCEDURES lists the episode's EP_PROCEDURES, each with its components and modules.
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { codeLabel, displayValue, formFields, hasValue, offeredCodes, type FormField } from '../../shared/dictionary.ts';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { codeLabel, displayValue, formFields, hasValue, type FormField } from '../../shared/dictionary.ts';
 import { ageOn, type CaseDetail, type DecodedRow, type HistoryItem } from '../../shared/caseTypes.ts';
 import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness, type Tally } from '../../shared/readiness.ts';
 import { dict, fieldOf, label } from '../lib/dict';
@@ -14,12 +14,13 @@ import { Confirm, Empty, SaveIndicator, Sheet } from '../components/ui';
 import { EntityFields, type FkOption, type NaInfo } from '../components/Fields';
 import { api, ApiError } from '../lib/api';
 import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
+import { bmi } from '../../shared/derive.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
 import { AiSheet, aiPending } from './AiAssistant';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
-import { componentToTick, offeredComponents, showsDevice, showsLeads } from '../lib/procedureTypes';
+import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../lib/procedureTypes';
 import { seqText } from '../lib/offlineCase';
 import { sync, useOnline } from '../lib/sync';
 
@@ -84,8 +85,23 @@ function useFk(ed: CaseEditor) {
   };
 }
 
+/** Field review phase 2: a study's "procedure" link is asked only when the case has two or more procedures (the app
+ *  links the only one), and the procedure type is set from the ticked items, never picked. */
+function autoSkip(ed: CaseEditor, entity: string): string[] {
+  const out: string[] = [];
+  if (entity === 'EP_PROCEDURES') out.push('primary_procedure_type');
+  else if (ed.rows('EP_PROCEDURES').length < 2 && dict.entities[entity].scope !== 'procedure') out.push('procedure_id');
+  return out;
+}
+
+/** A value the app calculates here (shared/derive.ts) is read only. */
+function lockedNote(entity: string, field: string, row: DecodedRow | null): string | undefined {
+  if (entity === 'LAB_RESULTS' && field === 'egfr_ml_min_1_73m2' && hasValue(row?.creatinine_umol_l)) return 'calculated';
+  return undefined;
+}
+
 /** One row of an entity as a form; creates the row on the first edit when it does not exist yet. */
-function RowForm({ ed, entity, rowId, parentId, row, only }: { ed: CaseEditor; entity: string; rowId: string; parentId?: string | null; row: DecodedRow | null; only?: string[] }) {
+function RowForm({ ed, entity, rowId, parentId, row, only, skip, offerOf }: { ed: CaseEditor; entity: string; rowId: string; parentId?: string | null; row: DecodedRow | null; only?: string[]; skip?: string[]; offerOf?: (field: string) => string[] | undefined }) {
   const fk = useFk(ed);
   const c = useCase();
   const exists = !!row;
@@ -111,6 +127,9 @@ function RowForm({ ed, entity, rowId, parentId, row, only }: { ed: CaseEditor; e
         copiedOf={(field) => ed.detail?.copied?.[`${entity}.${field}`]}
         aiOf={(field) => ed.detail?.ai?.[`${entity}|${rowId}|${field}`] ?? ed.detail?.ai?.[`${entity}|${rowId}|${field}#ai`]}
         only={only}
+        skip={[...(skip ?? []), ...autoSkip(ed, entity)]}
+        offerOf={offerOf}
+        lockedOf={(field) => lockedNote(entity, field, row)}
         ruling={ruling}
         onChange={(field, value, key) => {
           // A change that makes other answers not apply asks first (EP Workspace M-1: Remove n answers / Keep).
@@ -257,6 +276,103 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   );
 }
 
+/** Device interrogation (owner, field review): shown when the risk profile says the patient has a device, when a
+ *  procedure of this case is device work, or when device rows exist. */
+function deviceRowApplies(ed: CaseEditor): boolean {
+  if (ed.rows('DEVICES').length || ed.rows('DEVICE_LEADS').length) return true;
+  if (ed.rows('CLINICAL_PROFILE_SNAPSHOTS').some((r) => r.existing_cied === 'YES')) return true;
+  return showsDevice(ed.rows('PROCEDURE_COMPONENTS').map((c) => String(c.component_type)));
+}
+
+/** Height and weight live with the patient's basics (owner, field review); BMI is calculated, never stored. */
+const BASICS = ['height_cm', 'weight_kg'];
+
+function PatientBasics({ ed }: { ed: CaseEditor }) {
+  const id = ed.slot('CLINICAL_PROFILE_SNAPSHOTS', ed.detail!.meta.case_id);
+  const row = ed.rows('CLINICAL_PROFILE_SNAPSHOTS').find((r) => r._id === id) ?? null;
+  const b = bmi(row?.height_cm, row?.weight_kg);
+  return (
+    <div data-testid="patient-basics">
+      <RowForm ed={ed} entity="CLINICAL_PROFILE_SNAPSHOTS" rowId={id} row={row} only={BASICS} />
+      <div className="group">
+        <div className="frow inline">
+          <span className="lab">
+            BMI <span className="muted small">(calculated)</span>
+          </span>
+          <span className="val" data-testid="bmi">
+            {b ?? '—'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Field review phase 2: these studies start with "Done / Not done"; Done adds the study (with its type) and opens it. */
+const DONE_FIRST: Record<string, { label: string; values?: Record<string, string> }[]> = {
+  TILT_TESTS: [{ label: 'Tilt-table test' }],
+  ADVANCED_IMAGING: [
+    { label: 'CMR', values: { modality_code: 'CMR' } },
+    { label: 'Cardiac CT', values: { modality_code: 'CARDIAC_CT' } },
+    { label: 'TEE', values: { modality_code: 'TEE' } },
+  ],
+};
+
+function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: string; options: { label: string; values?: Record<string, string> }[]; onOpen: (id: string) => void }) {
+  const def = dict.entities[entity];
+  const [ask, setAsk] = useState<string[] | null>(null);
+  const mine = (o: { values?: Record<string, string> }) => ed.rows(entity).filter((r) => Object.entries(o.values ?? {}).every(([k, v]) => r[k] === v));
+  return (
+    <div data-testid={`done-${entity}`}>
+      <h3 className="sechead">{entity === 'ADVANCED_IMAGING' ? 'Imaging' : def.label}</h3>
+      <div className="group">
+        {options.map((o) => {
+          const rows = mine(o);
+          return (
+            <div key={o.label}>
+              <div className="frow stack">
+                <span className="lab">{o.label}</span>
+                <div className="mini-seg choice-seg" role="radiogroup" aria-label={o.label}>
+                  <button type="button" role="radio" aria-checked={rows.length > 0} className={rows.length ? 'on' : ''} disabled={ed.readOnly} onClick={() => (rows.length ? onOpen(rows[0]._id) : onOpen(ed.addRow(entity, null, o.values)))}>
+                    Done
+                  </button>
+                  <button type="button" role="radio" aria-checked={!rows.length} className={rows.length ? '' : 'on'} disabled={ed.readOnly} onClick={() => rows.length && setAsk(rows.map((r) => r._id))}>
+                    Not done
+                  </button>
+                </div>
+              </div>
+              {rows.map((r, i) => (
+                <button key={r._id} className="grow-row" onClick={() => onOpen(r._id)} data-testid="list-row">
+                  <span className="grow">{rowTitle(entity, r, i)}</span>
+                  <span className="muted small">{filledCount(entity, r)} filled</span>
+                  <Icon name="chevron" size={16} className="muted" />
+                </button>
+              ))}
+              {rows.length > 0 && !ed.readOnly && (
+                <button className="grow-row add" onClick={() => onOpen(ed.addRow(entity, null, o.values))}>
+                  <Icon name="plus" size={18} /> Add another
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {ask && (
+        <Confirm
+          title="Not done?"
+          message={`This removes ${ask.length === 1 ? 'the study' : `${ask.length} studies`} and ${ask.length === 1 ? 'its' : 'their'} values from this case.`}
+          confirmLabel="Remove"
+          onCancel={() => setAsk(null)}
+          onConfirm={() => {
+            for (const rid of ask) ed.removeRow(entity, rid);
+            setAsk(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 /** A layout row (e.g. "Patient", "ECG", "Devices"): one-per-case sections as forms, repeatable ones as lists. */
 function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEditor; title: string; entities: string[]; focus?: string; cha?: ChaResult | null; onClose: () => void }) {
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
@@ -273,13 +389,16 @@ function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEd
           return (
             <div key={entity}>
               {entities.length > 1 && <h3 className="sechead">{def.label}</h3>}
-              <RowForm ed={ed} entity={entity} rowId={id} row={row} />
+              <RowForm ed={ed} entity={entity} rowId={id} row={row} skip={entity === 'CLINICAL_PROFILE_SNAPSHOTS' ? BASICS : undefined} />
               {entity === 'CLINICAL_PROFILE_SNAPSHOTS' && cha && <ChaLine cha={cha} />}
+              {entity === 'PATIENTS' && <PatientBasics ed={ed} />}
               {row && <NestedLists ed={ed} parentEntity={entity} parentId={id} onOpen={(e, cid) => setOpen({ entity: e, id: cid })} />}
             </div>
           );
         }
         const rows = ed.rows(entity);
+        const done = DONE_FIRST[entity];
+        if (done) return <DoneFirst key={entity} ed={ed} entity={entity} options={done} onOpen={(rid) => setOpen({ entity, id: rid })} />;
         return (
           <div key={entity}>
             <h3 className="sechead">{def.label}</h3>
@@ -308,15 +427,36 @@ function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEd
 
 const MODULES = Object.values(dict.entities).filter((d) => d.module);
 
+/** Items ticked on this device for a procedure, kept until the answers that tell device items apart exist. */
+function usePickedItems(procedureId: string): [string[], (v: string[]) => void] {
+  const key = `kamc-proc-items-${procedureId}`;
+  const [v, setV] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
+    } catch {
+      return [];
+    }
+  });
+  const set = (next: string[]) => {
+    setV(next);
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      /* storage blocked: kept for this screen only */
+    }
+  };
+  return [v, set];
+}
+
 /** R3-1: the case device (type, manufacturer, model) and its leads, entered inside a device procedure. Same rows as Devices. */
-function DeviceSection({ ed, leads, onOpen }: { ed: CaseEditor; leads: boolean; onOpen: (entity: string, id: string) => void }) {
+function DeviceSection({ ed, leads, offer, onOpen }: { ed: CaseEditor; leads: boolean; offer?: string[]; onOpen: (entity: string, id: string) => void }) {
   const devId = ed.slot('DEVICES', ed.detail!.meta.case_id);
   const dev = ed.rows('DEVICES').find((r) => r._id === devId) ?? null;
   const rows = ed.rows('DEVICE_LEADS');
   return (
     <div data-testid="device-section">
       <h3 className="sechead">{dict.entities.DEVICES.label}</h3>
-      <RowForm ed={ed} entity="DEVICES" rowId={devId} row={dev} />
+      <RowForm ed={ed} entity="DEVICES" rowId={devId} row={dev} offerOf={(f) => (f === 'current_device_type' && offer?.length ? offer : undefined)} />
       {leads && (
         <>
           <h3 className="sechead">Leads</h3>
@@ -349,22 +489,12 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const i = procs.findIndex((p) => p._id === id);
   const p = procs[i];
   const [extra, setExtra] = useState<string[]>([]);
-  const [confirm, setConfirm] = useState<null | 'procedure' | { componentId: string; module: string }>(null);
+  const [confirm, setConfirm] = useState<null | 'procedure' | { componentIds: string[]; module: string }>(null);
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
-  const [allTypes, setAllTypes] = useState(false);
   const comps = ed.rows('PROCEDURE_COMPONENTS').filter((c) => c.procedure_id === id);
   const types = comps.map((c) => String(c.component_type));
-  const compField = fieldOf('PROCEDURE_COMPONENTS', 'component_type');
   const ptype = p?.primary_procedure_type;
-
-  // R3-1: choosing the procedure type ticks its component (only on a change made here, never just by opening).
-  const lastType = useRef(ptype);
-  useEffect(() => {
-    if (lastType.current === ptype) return;
-    lastType.current = ptype;
-    const tick = ed.readOnly ? null : componentToTick(ptype, types);
-    if (tick) ed.addRow('PROCEDURE_COMPONENTS', id, { component_type: tick });
-  }, [ptype]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [picked, setPicked] = usePickedItems(id);
 
   if (open) return <RowSheet ed={ed} entity={open.entity} id={open.id} onClose={() => setOpen(null)} />;
   if (!p)
@@ -380,15 +510,33 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const shown = MODULES.filter((m) => m.module!.some((t) => types.includes(t)) || moduleRow(m.entity) || extra.includes(m.entity) || needed(m.entity));
   const offer = MODULES.filter((m) => !shown.includes(m));
 
-  const toggleComponent = (code: string) => {
-    const existing = comps.find((c) => c.component_type === code);
-    if (!existing) {
-      ed.addRow('PROCEDURE_COMPONENTS', id, { component_type: code });
+  const facts: ItemFacts = {
+    components: types,
+    deviceType: ed.rows('DEVICES')[0]?.current_device_type,
+    strategy: moduleRow('CRT_CSP_PROCEDURES')?.cpp_strategy,
+    deviceAction: moduleRow('DEVICE_IMPLANTS')?.device_action,
+    picked,
+  };
+  const ticked = PROCEDURE_ITEMS.filter((x) => itemOn(x, facts));
+  const deviceOffer = [...new Set(PROCEDURE_ITEMS.filter((x) => x.deviceTypes && (ticked.includes(x) || picked.includes(x.id))).flatMap((x) => x.deviceTypes!))];
+
+  // Owner field review phase 2: tick what was done; each item adds its components (and opens their sections).
+  const toggleItem = (item: ProcedureItem) => {
+    if (!ticked.includes(item)) {
+      for (const code of item.components) if (!types.includes(code)) ed.addRow('PROCEDURE_COMPONENTS', id, { component_type: code });
+      setPicked([...picked.filter((x) => x !== item.id), item.id]);
+      if (item.preset && !hasValue(moduleRow(item.preset.entity)?.[item.preset.field])) {
+        const slot = moduleRow(item.preset.entity)?._id ?? ed.slot(item.preset.entity, id);
+        ed.setField(item.preset.entity, slot, item.preset.field, item.preset.value, { create: { parent_id: id } });
+      }
       return;
     }
-    const mod = MODULES.find((m) => m.module!.includes(code) && moduleRow(m.entity) && filledCount(m.entity, moduleRow(m.entity)!) > 2);
-    if (mod) setConfirm({ componentId: existing._id, module: mod.label });
-    else ed.removeRow('PROCEDURE_COMPONENTS', existing._id);
+    setPicked(picked.filter((x) => x !== item.id));
+    const drop = componentsToDrop(item, facts);
+    const mod = MODULES.find((m) => m.module!.some((t) => drop.includes(t)) && moduleRow(m.entity) && filledCount(m.entity, moduleRow(m.entity)!) > 2);
+    const ids = comps.filter((c) => drop.includes(String(c.component_type))).map((c) => c._id);
+    if (mod && ids.length) setConfirm({ componentIds: ids, module: mod.label });
+    else for (const cid of ids) ed.removeRow('PROCEDURE_COMPONENTS', cid);
   };
 
   const review = ed.slot('EXT_PROCEDURE_REVIEW', id);
@@ -396,32 +544,31 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
 
   return (
     <Sheet title={procedureTitle(p, i)} onClose={onClose} onDone={onClose} testId="procedure-sheet">
-      <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} />
+      <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={["procedure_start_datetime"]} />
 
-      <h3 className="sechead">{ptype === 'ABLATION' ? 'Ablation of' : 'Procedure components'}</h3>
-      <div className="group">
+      <h3 className="sechead">What was done</h3>
+      <div className="group" data-field="EP_PROCEDURES.primary_procedure_type">
         <div className="frow stack">
-          <div className="pill-set" role="group" aria-label="Procedure components">
-            {(allTypes ? offeredCodes(compField, null) : offeredComponents(ptype, offeredCodes(compField, null), types)).map((c) => (
-              <button key={c} type="button" aria-pressed={types.includes(c)} className={types.includes(c) ? 'on' : ''} disabled={ed.readOnly} onClick={() => toggleComponent(c)}>
-                {codeLabel(compField, c)}
-              </button>
-            ))}
-          </div>
-          {!ed.readOnly && (
-            <span className="hint">
-              Each component opens its own section below.{' '}
-              {!allTypes && offeredComponents(ptype, offeredCodes(compField, null), types).length < offeredCodes(compField, null).length && (
-                <button type="button" className="link small" onClick={() => setAllTypes(true)}>
-                  Show all
-                </button>
-              )}
-            </span>
-          )}
+          {(['Ablation', 'Devices', 'Other'] as const).map((g) => (
+            <div key={g}>
+              <div className="item-group">{g}</div>
+              <div className="pill-set" role="group" aria-label={g}>
+                {PROCEDURE_ITEMS.filter((x) => x.group === g).map((x) => (
+                  <button key={x.id} type="button" aria-pressed={ticked.includes(x)} className={ticked.includes(x) ? 'on' : ''} disabled={ed.readOnly} onClick={() => toggleItem(x)}>
+                    {x.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <span className="hint" data-testid="procedure-type">
+            {ptype ? `Procedure type: ${label('EP_PROCEDURES', 'primary_procedure_type', String(ptype))} — set from your ticks.` : 'Tick what was done; each item opens its own section below.'}
+          </span>
         </div>
       </div>
+      <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} skip={["procedure_start_datetime"]} />
 
-      {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
+      {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} offer={deviceOffer} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
 
       {shown.map((m) => {
         const row = moduleRow(m.entity);
@@ -491,7 +638,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
           danger={false}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
-            ed.removeRow('PROCEDURE_COMPONENTS', confirm.componentId);
+            for (const cid of confirm.componentIds) ed.removeRow('PROCEDURE_COMPONENTS', cid);
             setConfirm(null);
           }}
         />
@@ -1260,6 +1407,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <h2 className="sechead">{g.label}</h2>
             <div className="group">
               {g.rows.map((r) => {
+                if (r.id === 'devices' && !deviceRowApplies(ed)) return null;
                 const later = r.entities.map((e) => dict.entities[e].later).find(Boolean);
                 const t = readiness.bySection[r.id];
                 return (

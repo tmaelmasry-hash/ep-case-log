@@ -11,7 +11,7 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
   await expect(page.getByTestId('cha-line')).toHaveCount(0); // no AF care yet
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await page.getByTestId('procedure-sheet').getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('procedure-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('cha-chip')).toHaveCount(0);
@@ -56,23 +56,24 @@ test('a CIED implant opens device sections only: Device implant ticked, device +
   await createCase(page, m);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'CIED implant' }).click();
+  await ps.getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
   await saved(page);
-  const comps = ps.getByRole('group', { name: 'Procedure components' });
-  await expect(comps.getByRole('button', { name: 'Device implant' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(comps.getByRole('button', { name: 'AF', exact: true })).toHaveCount(0);
+  await expect(ps.getByTestId('procedure-type')).toContainText('CIED implant');
   await expect(ps.getByTestId('module-DEVICE_IMPLANTS')).toBeVisible();
   await expect(ps.getByTestId('device-section')).toBeVisible();
   await expect(ps.getByTestId('device-leads')).toBeVisible();
-  for (const f of ['electroanatomic_mapping_used', 'intracardiac_echo_used', 'transseptal_access']) await expect(ps.locator(`[data-field="EP_PROCEDURES.${f}"]`)).toHaveCount(0);
+  // Only pacemaker types are offered for the case device.
+  const types = ps.locator('[data-field="DEVICES.current_device_type"] option');
+  await expect(types.filter({ hasText: 'ICD' })).toHaveCount(0);
+  await expect(types.filter({ hasText: 'Pacemaker, dual chamber' })).toHaveCount(1);
+  for (const f of ['electroanatomic_mapping_used', 'intracardiac_echo_used', 'transseptal_access', 'first_or_redo']) await expect(ps.locator(`[data-field="EP_PROCEDURES.${f}"]`)).toHaveCount(0);
 
   // An ablation of AF shows the ablation fields and no device sections.
-  await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'Ablation' }).click();
+  await ps.getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click(); // untick
   await saved(page);
-  await comps.getByRole('button', { name: 'Device implant' }).click(); // untick (it stays offered while chosen)
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await saved(page);
-  await comps.getByRole('button', { name: 'AF', exact: true }).click();
-  await saved(page);
+  await expect(ps.getByTestId('procedure-type')).toContainText('Ablation');
   await expect(ps.locator('[data-field="EP_PROCEDURES.electroanatomic_mapping_used"]')).toBeVisible();
   await expect(ps.locator('[data-field="EP_PROCEDURES.transseptal_access"]')).toBeVisible();
   await expect(ps.getByTestId('device-section')).toHaveCount(0);

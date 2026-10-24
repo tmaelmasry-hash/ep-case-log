@@ -391,7 +391,7 @@
     },
     {
      "id": "devices",
-     "label": "Devices",
+     "label": "Device interrogation",
      "icon": "chip",
      "entities": [
       "DEVICES",

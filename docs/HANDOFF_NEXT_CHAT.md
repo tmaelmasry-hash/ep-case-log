@@ -28,6 +28,7 @@ the **next thing to fix**. Ask him what he found; do not start anything before t
    Navy `#15508A` accent, sky `#1592CE` highlight, `#1278B0` info / EPS; dark accent `#6FB6E6`. **Approximation** from
    the cluster's public website and emblem (no published codes found). Tokens in `src/styles.css`
    (`--accent`, `--highlight`, `--brand`, `--brand-deep`). Preview: https://claude.ai/artifact/YAAESity3hAwXZH687hbFj.
+Colors deployed 24 Oct: commit `4655a38` → Worker `59a60ab8`.
 Tests now: unit/server 235 · e2e 68 · e2e:worker 68.
 
 ## Open items (ask the owner, one at a time; none started)

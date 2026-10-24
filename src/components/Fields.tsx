@@ -108,14 +108,23 @@ const UNITS = [
   ['months', 720],
 ] as const;
 
+/** The unit picked for an empty duration, kept when the row redraws (e.g. when the server answers). */
+const pickedUnit = new Map<string, number>();
+
 function DurationInput({ id, hours, onCommit }: { id: string; hours: unknown; onCommit: (h: number | null) => void }) {
   const h = typeof hours === 'number' ? hours : hours === null || hours === undefined || hours === '' ? null : Number(hours);
-  const fit = h === null ? 1 : h > 0 && h % 720 === 0 ? 720 : h > 0 && h % 24 === 0 ? 24 : 1;
-  const [unit, setUnit] = useState<number>(fit);
+  const fit = h === null ? (pickedUnit.get(id) ?? 1) : h > 0 && h % 720 === 0 ? 720 : h > 0 && h % 24 === 0 ? 24 : 1;
+  const [unit, setUnitState] = useState<number>(fit);
+  const setUnit = (u: number) => {
+    pickedUnit.set(id, u);
+    setUnitState(u);
+  };
   const [text, setText] = useState(h === null ? '' : String(h / fit));
+  // A saved value shows in its best unit; while empty, the unit the person picked stays.
   useEffect(() => {
+    if (h === null) return;
     setUnit(fit);
-    setText(h === null ? '' : String(h / fit));
+    setText(String(h / fit));
   }, [h]); // eslint-disable-line react-hooks/exhaustive-deps
   const commit = (t: string, u: number) => {
     const n = Number(t.replace(',', '.'));
@@ -132,7 +141,7 @@ function DurationInput({ id, hours, onCommit }: { id: string; hours: unknown; on
         onChange={(e) => {
           const u = Number(e.target.value);
           setUnit(u);
-          commit(text, u);
+          if (text.trim() !== '') commit(text, u);
         }}
       >
         {UNITS.map(([name, f]) => (

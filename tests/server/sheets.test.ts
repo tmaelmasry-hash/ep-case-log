@@ -88,7 +88,7 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
     const edit = async (value: string) => {
       const r = (await store.getCase('case_1'))!;
       const base = structuredClone(r);
-      applyEdits(dict, r, { changes: [{ entity: 'EP_EPISODES', id: r.meta.episode_id, field: 'episode_end_date', value }] }, a('u1'), new Set());
+      applyEdits(dict, r, { changes: [{ entity: 'EP_EPISODES', id: r.meta.episode_id, field: 'episode_start_date', value }] }, a('u1'), new Set());
       await store.putCase(r, base);
     };
     await edit('2026-03-13');

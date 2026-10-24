@@ -237,7 +237,7 @@ export function FieldRow({
     return (
       <div className="frow stack" data-field={`${def.entity}.${f.name}`}>
         {lab}
-        <div className={kind === 'segmented' ? 'mini-seg' : 'pill-set'} role={kind === 'multi' ? 'group' : 'radiogroup'} aria-label={f.label} id={id}>
+        <div className={kind === 'segmented' ? 'mini-seg choice-seg' : 'pill-set'} role={kind === 'multi' ? 'group' : 'radiogroup'} aria-label={f.label} id={id}>
           {codes.map((c) => (
             <button key={c} type="button" role={kind === 'multi' ? undefined : 'radio'} aria-checked={kind === 'multi' ? undefined : isOn(c)} aria-pressed={kind === 'multi' ? isOn(c) : undefined} className={isOn(c) ? 'on' : ''} onClick={() => pick(c)}>
               {labelOf(c)}

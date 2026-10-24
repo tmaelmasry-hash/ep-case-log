@@ -8,7 +8,7 @@ test('My work lists my open case with what is missing; Admin sees the dashboard,
   await createCase(page, m);
   await page.goto('/#/stats');
   await expect(page.getByTestId('mywork')).toBeVisible();
-  await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('missing: Sex at birth');
+  await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('missing: Sex');
   await expect(page.getByRole('radio', { name: 'Dashboard' })).toHaveCount(0);
 
   await page.context().clearCookies();

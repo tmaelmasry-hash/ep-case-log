@@ -191,7 +191,7 @@ describe('editing', () => {
     const r = await sara.call('PATCH', `/api/cases/${id}`, {
       changes: [
         { entity: 'EP_EPISODES', id: ep, field: 'pilgrim_status', value: 'MAYBE' },
-        { entity: 'EP_EPISODES', id: ep, field: 'episode_end_date', value: '2026-02-30' },
+        { entity: 'EP_EPISODES', id: ep, field: 'episode_start_date', value: '2026-02-30' },
         { entity: 'PATIENT_IDENTIFIERS', id: pat, field: 'mrn', value: '1199999' },
         { entity: 'EP_EPISODES', id: ep, field: 'pilgrim_status', value: 'HAJJ' },
         { entity: 'EP_EPISODES', id: ep, field: 'no_such_field', value: 'x' },
@@ -326,10 +326,10 @@ describe('editing', () => {
     r = await sara.call('PATCH', `/api/cases/${id}`, { additional: [{ op: 'remove', id: info }] });
     expect(r.data.case.additional).toHaveLength(0);
     const ep = r.data.case.meta.episode_id;
-    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_EPISODES', id: ep, field: 'referring_service', value: 'CARDIOLOGY' }] });
+    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_EPISODES', id: ep, field: 'pilgrim_status', value: 'UMRAH' }] });
     const log = JSON.stringify(await store.listActivity());
-    expect(log).toContain('EP_EPISODES.referring_service');
-    expect(log).not.toContain('CARDIOLOGY');
+    expect(log).toContain('EP_EPISODES.pilgrim_status');
+    expect(log).not.toContain('UMRAH');
   });
 
   it('delete moves the case out of every list', async () => {

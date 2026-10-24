@@ -3,7 +3,7 @@
 import { expect, test } from '@playwright/test';
 import { signIn } from './helpers';
 
-test('fluoroscopy time follows "fluoroscopy used"; turning it off asks before removing the time', async ({ page }, info) => {
+test('mapping system follows "mapping used"; turning it off asks before removing the system', async ({ page }, info) => {
   await page.goto('/#/cases');
   const form = page.getByRole('form', { name: 'Sign in' });
   await expect(form.or(page.getByRole('navigation', { name: 'Main' }))).toBeVisible();
@@ -17,24 +17,26 @@ test('fluoroscopy time follows "fluoroscopy used"; turning it off asks before re
   await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
-  const used = ps.getByRole('radiogroup', { name: 'Fluoroscopy used' });
-  await expect(ps.getByLabel('Fluoroscopy time')).toHaveCount(0);
+  await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'Ablation' }).click();
+  await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
+  const used = ps.getByRole('radiogroup', { name: 'Electroanatomic mapping used' });
+  const system = ps.getByRole('radiogroup', { name: 'Mapping system' });
+  await expect(system).toHaveCount(0);
   await used.getByRole('radio', { name: 'Yes', exact: true }).click();
-  await ps.getByLabel('Fluoroscopy time').fill('9');
-  await ps.getByLabel('Fluoroscopy time').blur();
+  await system.getByRole('radio', { name: 'Carto' }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
 
   // Keep: nothing changes.
   await used.getByRole('radio', { name: 'No', exact: true }).click();
-  await expect(page.getByTestId('rule-consequences')).toContainText('Fluoroscopy time');
+  await expect(page.getByTestId('rule-consequences')).toContainText('Mapping system');
   await page.getByRole('button', { name: 'Cancel' }).last().click();
   await expect(used.getByRole('radio', { name: 'Yes', exact: true })).toHaveAttribute('aria-checked', 'true');
-  await expect(ps.getByLabel('Fluoroscopy time')).toHaveValue('9');
+  await expect(system.getByRole('radio', { name: 'Carto' })).toHaveAttribute('aria-checked', 'true');
 
-  // Remove: the time goes, and the field hides.
+  // Remove: the system goes, and the field hides.
   await used.getByRole('radio', { name: 'No', exact: true }).click();
   await page.getByRole('button', { name: 'Remove 1 answer' }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await expect(used.getByRole('radio', { name: 'No', exact: true })).toHaveAttribute('aria-checked', 'true');
-  await expect(ps.getByLabel('Fluoroscopy time')).toHaveCount(0);
+  await expect(system).toHaveCount(0);
 });

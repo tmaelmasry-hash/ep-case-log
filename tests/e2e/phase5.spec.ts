@@ -7,7 +7,7 @@ test('an MRN with a case is answered with it; a new case copies the history, mar
   await open(page);
   await createCase(page, m);
   await page.getByTestId('section-patient').click();
-  await page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Female' }).click();
+  await page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' }).click();
   await saved(page);
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
 

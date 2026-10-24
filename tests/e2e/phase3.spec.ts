@@ -45,7 +45,7 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   await expect(ps.getByTestId('module-AF_ABLATIONS')).toBeVisible();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByTestId('procedure-row')).toContainText('core 0/17');
+  await expect(page.getByTestId('procedure-row')).toContainText('core 0/14');
 
   // Everything else filled (synthetic), except LA/LAA thrombus status and date of birth.
   await fillCore(page, id, ['AF_ABLATIONS.la_laa_thrombus_status', 'PATIENT_IDENTIFIERS.date_of_birth']);

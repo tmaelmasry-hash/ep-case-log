@@ -31,7 +31,7 @@ test('L3: the app opens without internet; a new case gets "No. pending", is fill
   // Filled offline.
   await page.getByTestId('section-patient').click();
   const ps = page.getByTestId('section-sheet');
-  await ps.getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Male', exact: true }).click();
+  await ps.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Male', exact: true }).click();
   await ps.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText(/Offline · \d+ waiting/);
 
@@ -43,7 +43,7 @@ test('L3: the app opens without internet; a new case gets "No. pending", is fill
   await page.reload();
   await expect(page.getByTestId('case-head')).toContainText(/No\. \d+/);
   await page.getByTestId('section-patient').click();
-  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Male', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Male', exact: true })).toHaveAttribute('aria-checked', 'true');
 });
 
 test('an edit made without connection waits on the device, survives a reload, and syncs when back', async ({ page }, info) => {
@@ -57,7 +57,7 @@ test('an edit made without connection waits on the device, survives a reload, an
   await page.route('**/api/cases/**', block);
   await page.getByTestId('section-patient').click();
   const ps = page.getByTestId('section-sheet');
-  await ps.getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Female' }).click();
+  await ps.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' }).click();
   await expect(ind).toHaveText(/Offline · \d+ waiting/);
   await ps.getByRole('button', { name: 'Done' }).click();
 
@@ -66,7 +66,7 @@ test('an edit made without connection waits on the device, survives a reload, an
   await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
   await expect(ind).toHaveText(/waiting|Syncing/);
   await page.getByTestId('section-patient').click();
-  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
 
   // Back online: it is sent by itself (Sync now speeds it up) and is in the server's copy.
@@ -94,5 +94,5 @@ test('an edit made without connection waits on the device, survives a reload, an
   }, id);
   await page.reload();
   await page.getByTestId('section-patient').click();
-  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');
 });

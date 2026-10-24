@@ -79,7 +79,7 @@ describe('My work', () => {
     const w = (await sara.call('GET', '/api/mywork')).data;
     expect(w.totals).toMatchObject({ mine: 1, in_progress: 1 });
     expect(w.items[0]).toMatchObject({ mrn: '9990511', stage: 'MRN_ONLY' });
-    expect(w.items[0].missing).toContain('Sex at birth');
+    expect(w.items[0].missing).toContain('Sex');
     expect(w.reminders.map((r: { kind: string }) => r.kind)).toContain('mrn_only');
   });
 });

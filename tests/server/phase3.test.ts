@@ -129,14 +129,14 @@ describe('readiness for each procedure', () => {
     expect(r.checks.every((c) => c.procedure_id === null)).toBe(true);
     expect(r.checks.find((c) => c.key === 'PATIENT_IDENTIFIERS.mrn')!.state).toBe('ok');
     expect(r.checks.find((c) => c.key === 'EP_EPISODES.episode_start_date')!.state).toBe('ok');
-    expect(r.checks.find((c) => c.key === 'EP_EPISODES.hajj_timing')!.state).toBe('not_applicable');
+    expect(r.checks.find((c) => c.key === 'EP_EPISODES.hajj_timing')).toBeUndefined(); // hidden since the 24 Oct field review
 
     const eps = await addProcedure(sara, id, ['DIAGNOSTIC_EPS']);
     const af = await addProcedure(sara, id, ['AF', 'FLUTTER']);
     r = await readiness(id);
     const common = dict.coreSpec.common.filter((x) => x.entity === 'EP_PROCEDURES' || dict.entities[x.entity].scope === 'procedure').length;
     const afItems = (dict.coreSpec.categories.AF_ABLATION as unknown[]).length;
-    expect(r.byProcedure[eps].total).toBe(common);
+    expect(r.byProcedure[eps].total).toBe(common - 1); // first or redo: ablation only (field review 24 Oct)
     expect(r.byProcedure[af].total).toBe(common + afItems);
     expect(r.checks.filter((c) => c.entity === 'AF_ABLATIONS').every((c) => c.procedure_id === af)).toBe(true);
     expect(r.canComplete).toBe(false);
@@ -266,9 +266,9 @@ describe('case history', () => {
     const sara = await Client.as('sara');
     const id = await newCase(sara);
     const p = await addProcedure(sara, id, ['AF']);
-    const edit = (value: unknown) => sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'fluoroscopy_time_min', value }] });
-    expect((await edit('15')).data.results[0].ok).toBe(false); // M-1: fluoroscopy time applies once fluoroscopy was used
-    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'fluoroscopy_used', value: true }] });
+    const slot = expectedSlot(dict, 'CLINICAL_PROFILE_SNAPSHOTS', id);
+    await sara.call('PATCH', `/api/cases/${id}`, { creates: [{ entity: 'CLINICAL_PROFILE_SNAPSHOTS', id: slot }] });
+    const edit = (value: unknown) => sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'CLINICAL_PROFILE_SNAPSHOTS', id: slot, field: 'weight_kg', value }] });
     expect((await edit('15')).data.results[0].ok).toBe(true);
     clock = new Date(clock.getTime() + 10 * 60_000);
     await edit('1');
@@ -282,9 +282,8 @@ describe('case history', () => {
     expect(items[0]).toMatchObject({ kind: 'na', text: 'Procedure 1 · Acute AF endpoint: Not available (Not documented in the record)', by: 'Sara' });
     const edits = items.filter((x) => x.kind === 'edit');
     expect(edits.map((x) => [x.old, x.new])).toEqual([
-      ['15 min', '12.5 min'],
-      ['—', '15 min'],
-      ['—', 'Yes'], // fluoroscopy used
+      ['15 kg', '12.5 kg'],
+      ['—', '15 kg'],
     ]);
     expect(items.some((x) => x.kind === 'add' && x.text === 'Component AF added to Procedure 1')).toBe(true);
     expect(items[items.length - 1]).toMatchObject({ kind: 'create', text: `Case created in ${groups[0].name} as No. 1` });
@@ -345,13 +344,13 @@ describe('activity log', () => {
     const id = await newCase(sara);
     const p = await addProcedure(sara, id, ['AF']);
     await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'urgency', value: 'URGENT' }] });
-    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'care_setting', value: 'INPATIENT' }] });
+    await sara.call('PATCH', `/api/cases/${id}`, { changes: [{ entity: 'EP_PROCEDURES', id: p, field: 'anesthesia', value: 'GENERAL' }] });
     expect((await sara.call('GET', '/api/admin/activity')).status).toBe(403);
     const items = (await admin.call('GET', '/api/admin/activity')).data.items as { kind: string; mrn: string | null; details: string; actor: string }[];
     const edit = items.find((x) => x.kind === 'EDIT')!;
     expect(edit).toMatchObject({ mrn: '9990101', actor: 'Sara' });
     expect(edit.details).toContain('Urgency');
-    expect(edit.details).toContain('Care setting');
+    expect(edit.details).toContain('Anesthesia');
     expect(edit.details).not.toContain('URGENT');
     expect(items.filter((x) => x.kind === 'EDIT' || x.kind === 'ADD')).toHaveLength(1);
     expect(items.some((x) => x.kind === 'NEW CASE')).toBe(true);

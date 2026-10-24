@@ -49,7 +49,7 @@ test('create a case, add two procedures with components and module fields; it pe
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   let ps = page.getByTestId('procedure-sheet');
   await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'EPS' }).click();
-  await ps.getByLabel('Procedure date & time').fill('2026-03-12T10:00');
+  await ps.getByLabel('Procedure date').fill('2026-03-12');
   // R3-1: choosing EPS ticks Diagnostic EPS by itself.
   await expect(ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'Diagnostic EPS' })).toHaveAttribute('aria-pressed', 'true');
   await expect(ps.getByTestId('module-DIAGNOSTIC_EPS')).toBeVisible();
@@ -61,7 +61,7 @@ test('create a case, add two procedures with components and module fields; it pe
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   ps = page.getByTestId('procedure-sheet');
   await ps.getByRole('radiogroup', { name: 'Primary procedure type' }).getByRole('radio', { name: 'Ablation' }).click();
-  await ps.getByLabel('Procedure date & time').fill('2026-03-13T09:10');
+  await ps.getByLabel('Procedure date').fill('2026-03-13');
   await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
   await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'Flutter', exact: true }).click();
   const af = ps.getByTestId('module-AF_ABLATIONS');
@@ -69,16 +69,17 @@ test('create a case, add two procedures with components and module fields; it pe
   await expect(ps.getByTestId('module-FLUTTER_ABLATIONS')).toBeVisible();
   await af.getByRole('radiogroup', { name: 'Energy source' }).getByRole('radio', { name: 'PFA' }).click();
   await af.getByRole('radiogroup', { name: 'PV status at case end' }).getByRole('radio', { name: 'All target PVs isolated' }).click();
-  // M-1: fluoroscopy time shows once fluoroscopy was used.
-  await expect(ps.getByLabel('Fluoroscopy time')).toHaveCount(0);
-  await ps.getByRole('radiogroup', { name: 'Fluoroscopy used' }).getByRole('radio', { name: 'Yes', exact: true }).click();
+  // M-1: the reconnected vein count shows only at a redo with reconnection present.
+  await expect(af.getByLabel('Reconnected PV count')).toHaveCount(0);
+  await ps.getByRole('radiogroup', { name: 'First or redo' }).getByRole('radio', { name: 'Redo', exact: true }).click();
+  await af.getByRole('radiogroup', { name: 'PV reconnection present at redo' }).getByRole('radio', { name: 'Yes', exact: true }).click();
   // A number field refuses text, with a message under the field.
-  await ps.getByLabel('Fluoroscopy time').fill('abc');
-  await ps.getByLabel('Fluoroscopy time').blur();
-  await expect(ps.getByText('Fluoroscopy time: enter a number.')).toBeVisible();
-  await ps.getByLabel('Fluoroscopy time').fill('12.5');
-  await ps.getByLabel('Fluoroscopy time').blur();
-  await expect(ps.getByText('Fluoroscopy time: enter a number.')).toBeHidden();
+  await af.getByLabel('Reconnected PV count').fill('abc');
+  await af.getByLabel('Reconnected PV count').blur();
+  await expect(ps.getByText('Reconnected PV count: enter a whole number.')).toBeVisible();
+  await af.getByLabel('Reconnected PV count').fill('2');
+  await af.getByLabel('Reconnected PV count').blur();
+  await expect(ps.getByText('Reconnected PV count: enter a whole number.')).toBeHidden();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
 
@@ -92,7 +93,7 @@ test('create a case, add two procedures with components and module fields; it pe
   await page.getByTestId('procedure-row').nth(1).click();
   ps = page.getByTestId('procedure-sheet');
   await expect(ps.getByTestId('module-AF_ABLATIONS').getByRole('radio', { name: 'PFA' })).toHaveAttribute('aria-checked', 'true');
-  await expect(ps.getByLabel('Fluoroscopy time')).toHaveValue('12.5');
+  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Reconnected PV count')).toHaveValue('2');
   await ps.getByRole('button', { name: 'Done' }).click();
 
   // List: one case, two procedure chips, grouped under March 2026.
@@ -115,7 +116,7 @@ test('patient & history: age from date of birth, diagnosis subtype follows the d
   const s = page.getByTestId('section-sheet');
   await expect(s.locator('[data-field="PATIENT_IDENTIFIERS.mrn"]')).toContainText(m);
   await s.getByLabel('Date of birth').fill('1968-01-20');
-  await s.getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Male', exact: true }).click();
+  await s.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Male', exact: true }).click();
   await saved(page);
   await s.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('case-head')).toContainText('58M');

@@ -65,9 +65,11 @@ export function encodeValue(f: FormField, v: unknown, row: Record<string, unknow
       return n;
     }
     case 'date': {
-      const m = DATE.exec(String(v));
+      // A date & time field the owner wants as a date only still takes a time from an older device: the date is kept.
+      const s = f.date_only && DATETIME.test(String(v).slice(0, 16)) ? String(v).slice(0, 10) : String(v);
+      const m = DATE.exec(s);
       if (!m || !validDate(+m[1], +m[2], +m[3])) throw new FieldError(`${label}: enter a valid date.`);
-      return String(v);
+      return s;
     }
     case 'datetime': {
       const s = String(v).slice(0, 16);

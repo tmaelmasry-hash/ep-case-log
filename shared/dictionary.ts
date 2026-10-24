@@ -32,6 +32,10 @@ export interface FormField {
   auto_other?: boolean;
   help?: string;
   rule?: string;
+  /** Hidden by the owner's field review (case_layout form.hidden): never on a form; the stored column stays. */
+  hidden?: boolean;
+  /** A dictionary date & time field shown and stored as a date (case_layout form.date_only). */
+  date_only?: boolean;
 }
 
 export interface RawEntity {
@@ -73,6 +77,17 @@ export interface CaseLayout {
   core_item_requires_component?: Record<string, string[] | string>;
   /** Labels of the core categories (keys starting with _ are notes). */
   category_labels?: Record<string, string>;
+  /** Owner field review (24 Oct 2026): how the form shows dictionary fields. Keys are "ENTITY.field". */
+  form?: FormOverrides;
+}
+
+export interface FormOverrides {
+  hidden?: string[];
+  not_core?: string[];
+  labels?: Record<string, string>;
+  code_order?: Record<string, string[]>;
+  offer?: Record<string, string[]>;
+  date_only?: string[];
 }
 
 /** One item of config/dictionary/core_dataset.json (EP Workspace "Ready to complete?"). */
@@ -156,8 +171,15 @@ export function buildDictionary(input: RawDictionary): Dictionary {
       if (!ok) throw new Error(`${ent.entity}: module component type ${t} is not a dictionary code`);
     }
   }
-  const items = [...raw.core.common, ...Object.values(raw.core.categories).flatMap((x) => (Array.isArray(x) ? x : []))];
-  for (const it of items) if (!entities[it.entity]?.fields.some((f) => f.name === it.field)) throw new Error(`core_dataset names unknown field ${it.entity}.${it.field}`);
+  const allItems = [...raw.core.common, ...Object.values(raw.core.categories).flatMap((x) => (Array.isArray(x) ? x : []))];
+  for (const it of allItems) if (!entities[it.entity]?.fields.some((f) => f.name === it.field)) throw new Error(`core_dataset names unknown field ${it.entity}.${it.field}`);
+  const dropped = applyForm(entities, raw.layout.form);
+  const keep = (it: CoreItem) => !dropped.has(`${it.entity}.${it.field}`);
+  const coreSpec: CoreSpec = {
+    common: raw.core.common.filter(keep),
+    categories: Object.fromEntries(Object.entries(raw.core.categories).map(([k, v]) => [k, Array.isArray(v) ? v.filter(keep) : v])),
+  };
+  const items = allItems.filter(keep);
   for (const [cat, types] of Object.entries(raw.layout.core_categories ?? {})) {
     if (cat.startsWith('_')) continue;
     if (!(cat in raw.core.categories)) throw new Error(`case_layout core_categories names unknown category ${cat}`);
@@ -166,7 +188,51 @@ export function buildDictionary(input: RawDictionary): Dictionary {
   const core = new Set(items.map((c) => `${c.entity}.${c.field}`));
   const problems = checkRules(raw.rules, entities);
   if (problems.length) throw new Error(problems.slice(0, 5).join('; '));
-  return { entities, layout: raw.layout, core, coreSpec: raw.core, rules: compileRules(raw.rules) };
+  return { entities, layout: raw.layout, core, coreSpec, rules: compileRules(raw.rules) };
+}
+
+/** Lays the owner's field review (case_layout form) on the entities. Refuses names and codes that are not in the
+ *  dictionary. Returns the "ENTITY.field" keys that stop being core items (hidden or not_core). */
+function applyForm(entities: Record<string, EntityDef>, form: FormOverrides | undefined): Set<string> {
+  const dropped = new Set<string>();
+  if (!form) return dropped;
+  const fieldOf = (key: string, what: string) => {
+    const [e, n] = key.split('.');
+    const f = entities[e]?.fields.find((x) => x.name === n);
+    if (!f) throw new Error(`config/case_layout.json form.${what}: ${key} is not a dictionary field`);
+    return f;
+  };
+  const codesIn = (f: FormField, key: string, what: string, codes: string[]) => {
+    for (const c of codes) if (!f.codes?.some((x) => x.code === c)) throw new Error(`config/case_layout.json form.${what}: ${c} is not a code of ${key}`);
+  };
+  for (const key of form.hidden ?? []) {
+    fieldOf(key, 'hidden').hidden = true;
+    dropped.add(key);
+  }
+  for (const key of form.not_core ?? []) {
+    fieldOf(key, 'not_core');
+    dropped.add(key);
+  }
+  for (const [key, label] of Object.entries(form.labels ?? {})) fieldOf(key, 'labels').label = label;
+  for (const [key, order] of Object.entries(form.code_order ?? {})) {
+    const f = fieldOf(key, 'code_order');
+    codesIn(f, key, 'code_order', order);
+    f.codes = [...order.map((c) => f.codes!.find((x) => x.code === c)!), ...f.codes!.filter((x) => !order.includes(x.code))];
+  }
+  for (const [key, offer] of Object.entries(form.offer ?? {})) {
+    const f = fieldOf(key, 'offer');
+    codesIn(f, key, 'offer', offer);
+    f.offer = f.offer ? f.offer.filter((c) => offer.includes(c)) : [...offer];
+  }
+  for (const key of form.date_only ?? []) {
+    const f = fieldOf(key, 'date_only');
+    if (f.type !== 'datetime') throw new Error(`config/case_layout.json form.date_only: ${key} is not a date & time field`);
+    f.type = 'date';
+    f.date_only = true;
+  }
+  // A hidden history field is not copied into a new case (nobody could check the "Copied" mark).
+  for (const ent of Object.values(entities)) if (ent.copy_forward) ent.copy_forward = ent.copy_forward.filter((n) => !form.hidden?.includes(`${ent.entity}.${n}`));
+  return dropped;
 }
 
 /** Fields that never appear on a form: links filled by the app, polymorphic keys, the "Other — specify" store. */
@@ -176,11 +242,13 @@ export const READONLY = new Set(['PATIENT_IDENTIFIERS.mrn', 'PROCEDURE_COMPONENT
 
 export function formFields(def: EntityDef): FormField[] {
   return def.fields.filter(
-    (f) => !f.auto && !f.auto_other && f.type !== 'json_object' && f.type !== 'fk_polymorphic' && !HIDDEN.has(`${def.entity}.${f.name}`) && !(def.auto_parent && f.name in def.auto_parent) && !(def.nest_under && def.nest_under.fk === f.name),
+    (f) => !f.hidden && !f.auto && !f.auto_other && f.type !== 'json_object' && f.type !== 'fk_polymorphic' && !HIDDEN.has(`${def.entity}.${f.name}`) && !(def.auto_parent && f.name in def.auto_parent) && !(def.nest_under && def.nest_under.fk === f.name),
   );
 }
 
 export function editable(def: EntityDef, f: FormField): boolean {
+  // A hidden link stays writable: the app fills it (quick follow-up events, auto-linked studies); a person never sees it.
+  if (f.hidden && f.type === 'fk') return true;
   return formFields(def).includes(f) && !READONLY.has(`${def.entity}.${f.name}`);
 }
 

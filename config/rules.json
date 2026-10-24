@@ -4,6 +4,17 @@
  "enabled": true,
  "rules": [
   {
+   "id": "DR-KAMC-01",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner field review 24 Oct 2026: first or redo only for ablation, not device procedures",
+   "target": "EP_PROCEDURES.first_or_redo",
+   "effect": "show_when",
+   "when": {
+    "component": ["AVNRT", "AVRT_WPW", "AT_SVT", "AF", "FLUTTER", "PVC", "VT_VF", "AVJ_ABLATION"]
+   }
+  },
+  {
    "id": "DR-AF-01",
    "version": 1,
    "status": "SOURCE_EXPLICIT",
@@ -1454,15 +1465,16 @@
    "id": "DR-M3-E1",
    "version": 1,
    "status": "OWNER_APPROVED",
-   "source": "M-3 proposal (owner approved 22 Oct) E1",
+   "source": "M-3 proposal (owner approved 22 Oct) E1; field review 24 Oct: CSP target is hidden, so the left bundle area comes from the strategy (LBBAP / LOT-CRT)",
    "target": "CRT_CSP_PROCEDURES.v1_unipolar_paced_qrs_morphology",
    "effect": "show_when",
    "when": {
     "all": [
      {
-      "field": "CRT_CSP_PROCEDURES.csp_target",
+      "field": "CRT_CSP_PROCEDURES.cpp_strategy",
       "in": [
-       "LEFT_BUNDLE_BRANCH_AREA"
+       "LBBAP",
+       "LOT_CRT"
       ]
      },
      {

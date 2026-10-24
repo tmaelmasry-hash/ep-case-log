@@ -1687,9 +1687,14 @@ select {
   background: var(--fill);
   font-size: 0.92rem;
 }
-.pill-set button.on {
+.pill-set button.on,
+.choice-seg button.on {
   background: var(--accent);
   color: #fff;
+}
+/* Owner field review (24 Oct): a chosen Yes / No / Unknown (and every short choice) is blue, like the pills. */
+.choice-seg button.on {
+  box-shadow: none;
 }
 .frow {
   padding: 11px 16px;

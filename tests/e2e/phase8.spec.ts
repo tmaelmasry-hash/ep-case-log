@@ -19,7 +19,7 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
   await page.getByTestId('section-patient').click();
   const ps = page.getByTestId('section-sheet');
   await ps.getByLabel('Date of birth').fill('1950-01-01');
-  await ps.getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Female' }).click();
+  await ps.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' }).click();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.getByTestId('section-risk').click();

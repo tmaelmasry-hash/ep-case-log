@@ -75,6 +75,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `ba680f2` (L2 local-first) | `89f24cb1-2452-458d-8650-e917c46a6f75` | same Sheet, no Sheet change; browsers keep a device copy (IndexedDB `kamc-registry-<user id>`) |
 | `5f4c653` (L3 offline open + offline new case) | `f008ad2e-d051-4559-9584-271022ac6a8a` | same Sheet, no Sheet change; the last signed-in user is remembered per browser (localStorage `kamc-registry-me`) |
 | `caab064` (field review phase 1: 164 fields hidden) | `18778f9e-4164-4ef9-9aef-71b3e8dbbcaf` | same Sheet, no Sheet change (hidden fields keep their columns) |
+| `6f5e664` (field review phase 2: tick list, auto-fill, Done / Not done) | `2589911c-368c-44cc-9ec8-860968649243` | same Sheet, no Sheet change; the server now fills some values after each save |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

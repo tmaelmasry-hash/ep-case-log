@@ -71,8 +71,9 @@ Acute AF endpoint: kept (with PV status at case end). Imaging modality: kept, re
   Pacemaker, ICD, CRT, CSP, Generator change / upgrade, Lead extraction / revision, ILR, EPS, LAA); each opens its
   section, several stack; primary procedure type set from the ticks (R3-1 extended).
 - Auto-fill: baseline snapshot and study links; Hajj timing from the episode / procedure date and the Hajj season
-  (owner: the season runs from a Dhu al-Qa'dah date to a Muharram date — exact days to look up and confirm with
-  him; "during Hajj" inside it, Umrah-related when the patient is Umrah) — hidden as a field; Primary EP diagnosis and subtype from the procedure; eGFR calculated from creatinine,
+  (owner 24 Oct: season **1 Dhu al-Qa'dah → 15 Muharram**, adjustable later; inside it **Before Hajj** until
+  7 Dhu al-Hijjah, **During Hajj** 8–13 Dhu al-Hijjah, **After Hajj** to the season end; outside it "Outside
+  pilgrimage season"; Umrah-related when the patient is Umrah) — hidden as a field; Primary EP diagnosis and subtype from the procedure; eGFR calculated from creatinine,
   age and sex; implant date precision; CSP target from the strategy.
 - Episode start date and procedure date: one date.
 - Labs, echo, Holter: "which procedure" chooser only when the case has more than one procedure.

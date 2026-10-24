@@ -4,6 +4,26 @@ Read this first, then `docs/MERGE_PLAN.md` (all owner decisions; R2-* round 2, R
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 Work in steps, preview before building anything visible, multiple-choice questions, stop after each step.
 
+## START HERE — field review (owner, 24 Oct: "هنبدأ بالحقول")
+The next chat starts with **reviewing every form field, one at a time**, then the open questions below.
+- **Review page (artifact, private to the owner):** https://claude.ai/artifact/Vxm8gc69gr5J3fuQgphLYr — "KAMC Field
+  Review". 527 form fields in 39 sections, in the case-page order (procedure first, then patient & history, studies &
+  follow-up). For each field: label, section, key (`ENTITY.field`), type, requirement (R / RC / C / O), ★ core, choices,
+  "when it applies" text, local amendment. The owner marks **Keep / Remove / Later** + a note; saved in the page's
+  database, collection `decisions`, doc id = `ENTITY.field`, body `{decision: 'keep'|'remove'|'later'|null, note, at}`.
+- **Claude's view per field** goes in collection `advice`, doc id = `ENTITY.field`, body
+  `{verdict: 'keep'|'remove'|'discuss', why: '<one or two plain sentences>'}` — write it with the `ArtifactData` tool
+  (`batch`, up to 50 per call); the page shows it live under the field. The owner wants an opinion per field
+  ("قول لي أشيله ولا أسيبه"), going section by section with him in the chat.
+- Read his choices with `ArtifactData` `list` on `decisions` (limit 1000). Field list source: the page's `fields.json`
+  (made by `node <scratch>/export-fields.ts` from `server/appconfig.ts` + `formFields`; regenerate if the dictionary changes).
+- **How to act on "Remove" (decide with the owner before building):** the dictionary is never edited. Hiding a field
+  must be a config layer (e.g. a `hidden_fields` list in `config/case_layout.json` used by `formFields`, readiness and
+  the Sheet layout keeps the column). Removing a **core (★)** field or an R field conflicts with the dictionary's
+  completeness rules → flag it to the owner as a real conflict (CLAUDE.md: ask). Existing values stay in the Sheet.
+- Suggested opening prompt for the new chat: «اقرأ docs/HANDOFF_NEXT_CHAT.md وابدأ مراجعة الحقول قسم قسم في صفحة
+  KAMC Field Review: اكتب رأيك في كل حقل في advice، وأنا هختار Keep / Remove / Later.»
+
 ## Where things are
 - Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, **all pushed**.
 - Restore points (Worker versions + tags): `docs/DEPLOY.md` → Restore points.

@@ -71,6 +71,8 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `checkpoint-2026-10-23-live` | `136e845d-6ec4-4d0e-8aa1-b3b356b23850` | EP Case Log — Registry (daily backups in "EP Case Log Backups") |
 | `checkpoint-2026-10-23-round2` | `307c74d6-bfcc-4fce-afe1-01b8bfb49e5e` | same Sheet, after `sheets setup` (48 columns, Structural, CohortTags) |
 | (commit after `e154eb7`, round 3 device form + CHA line) | `a246be0b-69aa-4b64-9398-8df4bd90ed9e` | same Sheet, no Sheet change |
+| `d081bd4` (L1 speed) | `79b163ee-7f64-47ec-94ef-6d312ab802b2` | same Sheet, no Sheet change |
+| `ba680f2` (L2 local-first) | `89f24cb1-2452-458d-8650-e917c46a6f75` | same Sheet, no Sheet change; browsers keep a device copy (IndexedDB `kamc-registry-<user id>`) |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

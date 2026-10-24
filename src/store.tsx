@@ -24,7 +24,7 @@ interface Ctx {
   groups: GroupRow[];
   cases: CaseSummary[];
   /** Reloads the case list and the groups (their case counts). */
-  refreshCases: () => Promise<void>;
+  refreshCases: () => Promise<boolean>;
   /** Replaces one case's line in the list (after a save). */
   upsertCase: (c: CaseSummary) => void;
   toasts: Toast[];
@@ -67,17 +67,29 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     [dismissToast],
   );
 
+  const hasList = useRef(false);
   const refreshCases = useCallback(async () => {
     try {
       const [r, g] = await Promise.all([api<{ cases: CaseSummary[] }>('GET', '/api/cases'), api<{ groups: GroupRow[] }>('GET', '/api/groups')]);
-      setCases(r.cases);
+      // Cases made offline and not sent yet stay in the list (L3).
+      setCases((prev) => {
+        const next = [...r.cases, ...prev.filter((c) => sync.isLocalOnly(c.case_id) && !r.cases.some((x) => x.case_id === c.case_id))];
+        void kvSet('list', { cases: next, groups: g.groups, at: Date.now() });
+        return next;
+      });
       setGroups(g.groups);
       setLoadError(null);
-      void kvSet('list', { cases: r.cases, groups: g.groups, at: Date.now() });
+      hasList.current = true;
+      return true;
     } catch (e) {
-      setLoadError((e as ApiError).message);
+      // Offline with this device's copy: no error, the copy is shown (L3).
+      const err = e as ApiError;
+      offlineFail.current = err.status === 0;
+      if (!(err.status === 0 && hasList.current)) setLoadError(err.message);
+      return false;
     }
   }, []);
+  const offlineFail = useRef(false);
 
   // Local-first (R3-4, L2): this user's device copy of the list shows at once; the server's replaces it.
   useEffect(() => {
@@ -87,14 +99,16 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       await sync.start(userId);
       const local = await kvGet<{ cases: CaseSummary[]; groups: GroupRow[] }>('list');
       if (local && !shown) {
+        hasList.current = true;
         setCases(local.cases);
         setGroups(local.groups);
+        if (offlineFail.current) setLoadError(null);
         setLoaded(true);
       }
     })();
     (async () => {
-      await refreshCases();
-      shown = true;
+      // Only the server's answer replaces the device copy; a failed refresh leaves it shown.
+      if (await refreshCases()) shown = true;
       setLoaded(true);
     })();
   }, [refreshCases, userId]);
@@ -107,8 +121,20 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     });
   }, []);
 
-  // A save answered while its case is not open still updates the list line.
-  useEffect(() => sync.onCase('*', (e) => e.kind === 'saved' && upsertCase(e.detail.summary)), [upsertCase]);
+  // A save answered while its case is not open still updates the list line; a discarded offline case leaves it.
+  useEffect(
+    () =>
+      sync.onCase('*', (e) => {
+        if (e.kind === 'saved') upsertCase(e.detail.summary);
+        if (e.kind === 'discarded')
+          setCases((list) => {
+            const next = list.filter((c) => c.case_id !== e.case_id);
+            void kvGet<{ groups: GroupRow[] }>('list').then((l) => kvSet('list', { cases: next, groups: l?.groups ?? [], at: Date.now() }));
+            return next;
+          });
+      }),
+    [upsertCase],
+  );
 
   const value = useMemo<Ctx>(
     () => ({ loaded, loadError, groups, cases, refreshCases, upsertCase, toasts, toast, dismissToast }),

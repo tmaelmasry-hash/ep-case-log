@@ -99,6 +99,8 @@ export function useCaseEditor(caseId: string): CaseEditor {
         setLoading(false);
       }
     });
+    // A case made offline is not on the server yet: this device's copy is the case until it is sent.
+    if (sync.isLocalOnly(caseId)) return () => void (live = false);
     void api<CaseDetail>('GET', `/api/cases/${caseId}`)
       .then((d) => {
         if (!live) return;
@@ -139,10 +141,10 @@ export function useCaseEditor(caseId: string): CaseEditor {
           });
           const failed = e.results.filter((x) => !x.ok);
           if (failed.some((x) => x.kind !== 'change')) toast({ message: failed[0].message ?? 'Some changes were not saved.', kind: 'error' });
-        } else {
+        } else if (e.kind === 'refused') {
           toast({ message: `${e.message} The change is kept on this device (Sync).`, kind: 'error' });
-          if (e.status === 404 || e.status === 409) void reload();
-        }
+          if ((e.status === 404 || e.status === 409) && !sync.isLocalOnly(caseId)) void reload();
+        } else setNotFound(true);
       }),
     [caseId, reload, upsertCase, toast],
   );

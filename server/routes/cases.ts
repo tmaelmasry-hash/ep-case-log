@@ -12,6 +12,8 @@ import { newId } from '../util.ts';
 import { StaleCaseError } from '../store/types.ts';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const CLIENT_CASE_ID = /^case_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const CLIENT_PATIENT_ID = /^patient_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function caseRoutes(app: Router) {
   const { ctx } = app;
@@ -72,6 +74,14 @@ export function caseRoutes(app: Router) {
     // cases by number; other groups only as "also registered in another group"); new_case: true then adds one more.
     const all = (await store.listCases()).filter((c) => c.meta.mrn === mrn.value).sort((x, y) => x.meta.created_at.localeCompare(y.meta.created_at));
     const live = all.filter((c) => !c.meta.is_deleted);
+    // Local-first L3: a case made offline brings its own id; sending it again answers with the case already made.
+    const clientId = typeof b.case_id === 'string' ? b.case_id : null;
+    if (clientId !== null && !CLIENT_CASE_ID.test(clientId)) throw badRequest('Invalid case id.');
+    const made = clientId ? all.find((c) => c.meta.case_id === clientId) : undefined;
+    if (made) {
+      if (made.meta.is_deleted || !groups.includes(made.meta.group_id)) throw new HttpError(409, 'CASE_ID_TAKEN', 'This case id is already used.');
+      return { case_id: made.meta.case_id, group_seq: made.meta.group_seq, patient_id: made.meta.patient_id, warning: null, case_of_mrn: null, copied_from: null, copied: 0 };
+    }
     if (live.length && b.new_case !== true) {
       const here = live.filter((c) => c.meta.group_id === b.group_id).map((c) => summarize(dict, c));
       const elsewhere = live.some((c) => c.meta.group_id !== b.group_id);
@@ -86,14 +96,15 @@ export function caseRoutes(app: Router) {
     }
     // All cases of one MRN share one patient id (EP Workspace P3-1); history is copied from the latest case the user can see.
     const source = live.filter((c) => groups.includes(c.meta.group_id)).at(-1) ?? null;
-    const caseId = newId('case');
+    const caseId = clientId ?? newId('case');
     const seq = await store.allocateSeq(b.group_id);
     const now = ctx.now().toISOString();
     const rec = newCaseRecord(
       dict,
       {
         caseId,
-        patientId: all.at(-1)?.meta.patient_id ?? newId('patient'),
+        // One patient id per MRN: an earlier case's wins over the one an offline device chose.
+        patientId: all.at(-1)?.meta.patient_id ?? (typeof b.patient_id === 'string' && CLIENT_PATIENT_ID.test(b.patient_id) ? b.patient_id : newId('patient')),
         mrn: mrn.value,
         groupId: b.group_id,
         groupSeq: seq,
@@ -109,7 +120,7 @@ export function caseRoutes(app: Router) {
     const note = source ? `Copied from ${groupList.find((g) => g.group_id === source.meta.group_id)?.name ?? 'group'} No. ${source.meta.group_seq}` : null;
     const copied = source && note ? copyForward(dict, rec, source, note, { userId: u.userId, now }) : 0;
     await store.putCase(rec, null, [{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq, ...(copied ? { copied_from: source!.meta.case_id, copied_fields: copied } : {}) } }]);
-    return { case_id: caseId, group_seq: seq, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied };
+    return { case_id: caseId, group_seq: seq, patient_id: rec.meta.patient_id, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied };
   });
 
   app.get('/api/cases/:id', async (req) => {

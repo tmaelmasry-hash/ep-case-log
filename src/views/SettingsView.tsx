@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOnline } from '../lib/sync';
 import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
@@ -146,20 +147,29 @@ function AiSection() {
 
 export function SettingsView() {
   const { can } = useAuth();
+  const online = useOnline();
   return (
     <section className="view" aria-label="Settings">
       <h1 className="large-title">Settings</h1>
       <AccountSection />
-      {can('groups.manage') && <AdminSection />}
-      {can('users.manage') && <UsersSection />}
-      <ExportSection />
-      {can('settings.manage') && <AiSection />}
+      {/* L3: Admin screens, export and AI read the Google Sheet: greyed without connection. */}
+      {!online && (
+        <p className="note" data-testid="settings-offline">
+          No connection: Users, Groups, Recycle bin, Activity log, Excel export and AI need the connection.
+        </p>
+      )}
+      <div className={online ? undefined : 'needs-net'} aria-disabled={!online || undefined}>
+        {can('groups.manage') && <AdminSection />}
+        {can('users.manage') && <UsersSection />}
+        <ExportSection />
+        {can('settings.manage') && <AiSection />}
+      </div>
       <h2 className="section-label">About</h2>
       <div className="card pad about">
         <p>
           <b>KAMC EP Registry</b> — electrophysiology registry. Clinical fields and codes come only from the registry dictionary.
         </p>
-        <p className="muted small">Cases are kept on the registry server. Not a medical record and not a decision-support tool.</p>
+        <p className="muted small">Cases are kept in the registry's Google Sheet; this device keeps a copy of the cases opened here and the changes not sent yet. Not a medical record and not a decision-support tool.</p>
       </div>
     </section>
   );

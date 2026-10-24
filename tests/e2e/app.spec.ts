@@ -230,9 +230,16 @@ test('without the server the app says so clearly and recovers when it is back', 
   await page.evaluate(() => navigator.serviceWorker.ready);
   await context.setOffline(true);
   await page.reload();
+  // L3: signed in on this device before → it opens from the device copy.
+  await expect(page.getByTestId('offline-bar')).toBeVisible();
+  // Never signed in on this device (nothing remembered) → it says the server cannot be reached.
+  await page.evaluate(() => localStorage.removeItem('kamc-registry-me'));
+  await page.reload();
   await expect(page.getByRole('heading', { name: 'Cannot reach the registry server' })).toBeVisible();
+  // Back online it recovers by itself (or with Try again).
   await context.setOffline(false);
-  await page.getByRole('button', { name: 'Try again' }).click();
+  const again = page.getByRole('button', { name: 'Try again' });
+  await again.click({ timeout: 2000 }).catch(() => undefined);
   await expect(page.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
 });
 

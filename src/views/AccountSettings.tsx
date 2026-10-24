@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { sync, useOnline } from '../lib/sync';
 import { useAuth } from '../auth';
 import { api, ApiError } from '../lib/api';
 import { fmtDateTime } from '../lib/util';
@@ -33,6 +34,8 @@ const roleLabel = (r: string) => (r === 'ADMIN' ? 'Admin' : 'Member');
 
 export function AccountSection() {
   const { me, signOut, changePassword } = useAuth();
+  const online = useOnline();
+  const waiting = useSyncExternalStore(sync.subscribe, sync.getState).waiting;
   const { toast } = useStore();
   const [pwSheet, setPwSheet] = useState(false);
   const [confirmOut, setConfirmOut] = useState(false);
@@ -49,12 +52,14 @@ export function AccountSection() {
             </div>
           </div>
         </div>
-        <button className="row add-row" onClick={() => setPwSheet(true)}>
+        <button className="row add-row" onClick={() => setPwSheet(true)} disabled={!online}>
           <Icon name="edit" size={20} /> Change password
         </button>
-        <button className="row add-row danger-text" onClick={() => setConfirmOut(true)}>
+        {/* L3: signing out without connection while changes wait would leave them unsent. */}
+        <button className="row add-row danger-text" onClick={() => setConfirmOut(true)} disabled={!online && waiting > 0} data-testid="sign-out">
           <Icon name="back" size={20} /> Sign out
         </button>
+        {!online && waiting > 0 && <p className="note">Sign out is possible once the {waiting} waiting change{waiting === 1 ? ' is' : 's are'} sent.</p>}
       </div>
       {pwSheet && (
         <Sheet title="Change Password" onClose={() => setPwSheet(false)}>

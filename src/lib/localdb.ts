@@ -53,6 +53,7 @@ export const kvSet = (key: string, value: unknown) => run('kv', 'readwrite', (s)
 export const caseGet = <T>(id: string) => run<T>('cases', 'readonly', (s) => s.get(id) as IDBRequest<T>);
 export const casePut = (id: string, value: unknown) => run('cases', 'readwrite', (s) => void s.put(value, id));
 export const caseDelete = (id: string) => run('cases', 'readwrite', (s) => void s.delete(id));
+export const caseAll = <T>() => run<T[]>('cases', 'readonly', (s) => s.getAll() as IDBRequest<T[]>);
 export const caseCount = () => run<number>('cases', 'readonly', (s) => s.count());
 export const outboxAll = <T>() => run<T[]>('outbox', 'readonly', (s) => s.getAll() as IDBRequest<T[]>);
 export const outboxPut = (item: unknown) => run('outbox', 'readwrite', (s) => void s.put(item));

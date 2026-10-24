@@ -3,9 +3,10 @@
 // retries (backoff, on "online", every 30 s); a refusal by the server (case completed, removed, out of your groups)
 // marks them "needs attention" with Retry / Discard. Edits are safe to resend: the server ignores a repeated add or
 // remove and a change sets the same value again.
+import { useSyncExternalStore } from 'react';
 import type { CaseDetail, EditBatch, EditResult } from '../../shared/caseTypes.ts';
-import { api, ApiError } from './api';
-import { casePut, hasLocal, kvGet, kvSet, openLocalFor, outboxAll, outboxDelete, outboxPut } from './localdb';
+import { api, ApiError, hasCsrf } from './api';
+import { caseDelete, casePut, hasLocal, kvGet, kvSet, openLocalFor, outboxAll, outboxDelete, outboxPut } from './localdb';
 
 export type Op =
   | { kind: 'create'; entity: string; id: string; parent_id?: string | null; values?: Record<string, unknown> }
@@ -13,6 +14,14 @@ export type Op =
   | { kind: 'remove'; entity: string; id: string }
   | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null }
   | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null };
+
+/** A case made without connection (L3): created on the server first, before its edits. */
+export interface NewCaseRequest {
+  mrn: string;
+  group_id: string;
+  episode_start_date: string;
+  patient_id: string;
+}
 
 export interface OutboxItem {
   seq: number;
@@ -22,10 +31,11 @@ export interface OutboxItem {
   ops: Op[];
   at: number;
   attention?: string;
+  create?: NewCaseRequest;
 }
 
 /** What the server answered for a batch of one case (the case editor maps results to fields). */
-export type CaseEvent = { kind: 'saved'; ops: Op[]; results: EditResult[]; detail: CaseDetail } | { kind: 'refused'; message: string; status: number };
+export type CaseEvent = { kind: 'saved'; ops: Op[]; results: EditResult[]; detail: CaseDetail } | { kind: 'refused'; message: string; status: number } | { kind: 'discarded'; case_id: string };
 
 export interface SyncState {
   waiting: number;
@@ -96,7 +106,16 @@ class SyncEngine {
     this.seq = Math.max(Date.now(), ...this.items.map((i) => i.seq + 1));
     this.lastSynced = (await kvGet<number>('lastSynced')) ?? null;
     this.emit();
-    window.addEventListener('online', () => this.kick(0));
+    window.addEventListener('online', () => {
+      this.offline = false;
+      this.emit();
+      this.kick(0);
+    });
+    window.addEventListener('offline', () => {
+      this.offline = true;
+      this.emit();
+    });
+    this.offline = !navigator.onLine;
     window.setInterval(() => this.kick(0), 30_000);
     this.kick(0);
   }
@@ -125,6 +144,18 @@ class SyncEngine {
   pending(caseId: string): Op[] {
     return this.items.filter((i) => i.case_id === caseId && !i.attention).flatMap((i) => i.ops);
   }
+  /** A case made offline that is not in the Google Sheet yet. */
+  isLocalOnly(caseId: string): boolean {
+    return this.items.some((i) => i.case_id === caseId && i.create);
+  }
+  /** Keeps a new case made offline; it is created on the server before its edits are sent. */
+  enqueueCreate(caseId: string, label: string, create: NewCaseRequest) {
+    const item: OutboxItem = { seq: this.seq++, case_id: caseId, label, ops: [], at: Date.now(), create };
+    this.items.push(item);
+    void outboxPut(item);
+    this.emit();
+    this.kick(0);
+  }
   list(): OutboxItem[] {
     return [...this.items];
   }
@@ -146,17 +177,29 @@ class SyncEngine {
     return p;
   }
 
+  /** Tries again every held item of that case (in order). */
   retryItem(seq: number) {
     const it = this.items.find((i) => i.seq === seq);
     if (!it) return;
-    delete it.attention;
-    void outboxPut(it);
+    for (const x of this.items) {
+      if (x.case_id !== it.case_id || !x.attention) continue;
+      delete x.attention;
+      void outboxPut(x);
+    }
     this.emit();
     this.kick(0);
   }
+  /** Drops held changes; dropping a case made offline drops the whole case from this device. */
   discard(seq: number) {
-    this.items = this.items.filter((i) => i.seq !== seq);
-    void outboxDelete([seq]);
+    const it = this.items.find((i) => i.seq === seq);
+    if (!it) return;
+    const gone = it.create ? this.items.filter((i) => i.case_id === it.case_id) : [it];
+    this.items = this.items.filter((i) => !gone.includes(i));
+    void outboxDelete(gone.map((i) => i.seq));
+    if (it.create) {
+      void caseDelete(it.case_id);
+      this.toCase(it.case_id, { kind: 'discarded', case_id: it.case_id });
+    }
     this.emit();
   }
 
@@ -188,12 +231,24 @@ class SyncEngine {
       const first = this.items.find((i) => !i.attention);
       if (!first) return;
       const caseId = first.case_id;
-      const batchItems = this.items.filter((i) => i.case_id === caseId && !i.attention);
+      // A case still waiting to be created is created first (its edits follow it in the outbox).
+      const create = this.items.find((i) => i.case_id === caseId && i.create);
+      const batchItems = this.items.filter((i) => i.case_id === caseId && !i.attention && !i.create);
       const ops = batchItems.flatMap((i) => i.ops);
       const chunks = chunkOps(ops);
       // Send the first chunk; items are removed only when every op of them was answered.
-      const sent = chunks[0];
+      const sent = chunks[0] ?? [];
       try {
+        // Opened offline: the CSRF token comes with the first sign-in check that reaches the server.
+        if (!hasCsrf()) await api('GET', '/api/auth/me');
+        if (create) {
+          if (create.attention) {
+            this.hold(caseId, create.attention);
+            continue;
+          }
+          await this.createCase(create);
+          continue;
+        }
         const r = await api<{ results: EditResult[]; case: CaseDetail }>('PATCH', `/api/cases/${encodeURIComponent(caseId)}`, toBatch(sent));
         this.retry = 0;
         this.offline = false;
@@ -214,14 +269,42 @@ class SyncEngine {
           return;
         }
         // Refused (case completed, removed, out of scope, or stale twice): keep for Retry / Discard.
-        for (const it of batchItems) {
-          it.attention = err.message;
-          void outboxPut(it);
-        }
+        this.hold(caseId, err.message);
         this.toCase(caseId, { kind: 'refused', message: err.message, status: err.status });
       }
       this.emit();
     }
+  }
+
+  /** Every waiting item of this case waits for Retry / Discard. */
+  private hold(caseId: string, message: string) {
+    for (const it of this.items) {
+      if (it.case_id !== caseId || it.attention) continue;
+      it.attention = message;
+      void outboxPut(it);
+    }
+  }
+
+  /** Creates a case made offline, under the id this device gave it; then its edits can be sent. */
+  private async createCase(item: OutboxItem) {
+    const c = item.create!;
+    const r = await api<{ case_id: string; group_seq: number; patient_id: string }>('POST', '/api/cases', { case_id: item.case_id, mrn: c.mrn, group_id: c.group_id, episode_start_date: c.episode_start_date, patient_id: c.patient_id, new_case: true });
+    // An earlier case of this MRN already had a patient id: the edits made here follow it.
+    if (r.patient_id && r.patient_id !== c.patient_id) {
+      for (const it of this.items) {
+        if (it.case_id !== item.case_id) continue;
+        it.ops = it.ops.map((op) => ('id' in op && op.id === c.patient_id ? { ...op, id: r.patient_id } : op));
+        void outboxPut(it);
+      }
+    }
+    this.items = this.items.filter((i) => i.seq !== item.seq);
+    void outboxDelete([item.seq]);
+    this.lastSynced = Date.now();
+    void kvSet('lastSynced', this.lastSynced);
+    const detail = await api<CaseDetail>('GET', `/api/cases/${encodeURIComponent(item.case_id)}`);
+    void casePut(item.case_id, detail);
+    this.toCase(item.case_id, { kind: 'saved', ops: [], results: [], detail });
+    this.emit();
   }
 
   /** Removes the first n ops of this case's waiting items (whole items, or the front of a split item). */
@@ -250,3 +333,8 @@ class SyncEngine {
 }
 
 export const sync = new SyncEngine();
+
+/** False while this device has no connection to the server (L3: online-only actions are greyed). */
+export function useOnline(): boolean {
+  return !useSyncExternalStore(sync.subscribe, sync.getState).offline;
+}

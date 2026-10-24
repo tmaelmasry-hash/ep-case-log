@@ -20,6 +20,11 @@ export function setCsrf(token: string) {
   csrf = token;
 }
 
+/** False when the app was opened offline: the token comes with the first /api/auth/me that reaches the server. */
+export function hasCsrf() {
+  return !!csrf;
+}
+
 /** Called when the server says the session has ended (expired, password changed elsewhere, account disabled). */
 export function onSessionEnded(fn: () => void) {
   onSignedOut = fn;

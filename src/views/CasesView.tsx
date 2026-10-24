@@ -16,6 +16,8 @@ import { PeriodSheet } from '../components/PeriodSheet';
 import { SideDrawer } from '../components/SideDrawer';
 import { downloadXlsx } from '../lib/exportFile';
 import { GroupNameDialog } from './AdminSheets';
+import { makeOfflineCase, seqText } from '../lib/offlineCase';
+import { sync, useOnline } from '../lib/sync';
 import { BulkAddSheet } from './BulkAdd';
 import { FollowupBell } from './FollowupBell';
 
@@ -64,7 +66,7 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
           )}
         </span>
         <span className="sub">
-          {showGroup ? `${showGroup} · ` : ''}No. {c.group_seq} · <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
+          {showGroup ? `${showGroup} · ` : ''}{seqText(c.group_seq)} · {sync.isLocalOnly(c.case_id) && <span className="chip c-neutral" data-testid="device-only">On this device only</span>} <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
           {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
           {c.core?.total ? ` · core ${c.core.done}/${c.core.total}` : ''}
         </span>
@@ -75,7 +77,9 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
 }
 
 function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => void; onCreated: (id: string) => void; defaultGroup: string }) {
-  const { groups, toast, refreshCases } = useStore();
+  const { groups, cases, toast, refreshCases, upsertCase } = useStore();
+  const { me } = useAuth();
+  const online = useOnline();
   const [mrn, setMrn] = useState('');
   const [group, setGroup] = useState(defaultGroup);
   const [date, setDate] = useState(todayISO());
@@ -84,10 +88,30 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
   const [existing, setExisting] = useState<{ message: string; here: { case_id: string; group_seq: number; episode_start_date: string | null; collection_status: string; procedures: ProcedureSummary[] }[] } | null>(null);
   const check = mrn ? checkMrn(mrn, mrnRules) : null;
 
+  // L3: without connection the case is made on this device; the MRN is checked against the cases kept here.
+  const offline = async (newCase: boolean) => {
+    const live = cases.filter((c) => c.mrn === check!.value);
+    const here = live.filter((c) => c.group_id === group);
+    if (live.length && !newCase) {
+      const elsewhere = live.length > here.length;
+      setExisting({
+        message: here.length ? `This MRN already has ${here.length} case${here.length > 1 ? 's' : ''} in this group on this device.${elsewhere ? ' It is also registered in another group.' : ''}` : 'This MRN is already registered in another group.',
+        here: here.map((c) => ({ case_id: c.case_id, group_seq: c.group_seq, episode_start_date: c.episode_start_date, collection_status: c.collection_status, procedures: c.procedures })),
+      });
+      setBusy(false);
+      return;
+    }
+    const d = await makeOfflineCase({ mrn: check!.value!, groupId: group, groupName: groups.find((g) => g.group_id === group)?.name ?? '', date, me: { id: me!.id, name: me!.name } });
+    upsertCase(d.summary);
+    toast({ message: 'No connection: the case is saved on this device. Its number comes when it reaches the Google Sheet.', kind: 'info' });
+    onCreated(d.meta.case_id);
+  };
+
   const submit = async (newCase = false) => {
     if (!check?.ok) return setErr({ field: 'mrn', message: check?.error ?? 'Enter the MRN.' });
     setBusy(true);
     setErr(null);
+    if (!online) return offline(newCase);
     try {
       const r = await api<{ case_id: string; group_seq: number; warning: string | null; case_of_mrn: number | null; copied: number; copied_from: string | null }>('POST', '/api/cases', {
         mrn,
@@ -103,6 +127,7 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
       onCreated(r.case_id);
     } catch (e) {
       const a = e as ApiError;
+      if (a.status === 0) return offline(newCase);
       // MRN prompt (EP Workspace): the MRN already has cases; show them, then the user decides.
       if (a.code === 'MRN_HAS_CASES') setExisting({ message: a.message, here: (a.details as { here: NonNullable<typeof existing>['here'] }).here });
       else setErr({ field: a.field, message: a.message });
@@ -173,7 +198,7 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
                 <a key={c.case_id} className="grow-row" href={`#/cases/${c.case_id}`} onClick={onClose}>
                   <span className="grow">
                     <span className="line1">
-                      No. {c.group_seq} · {c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}
+                      {seqText(c.group_seq)} · {c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}
                     </span>
                     <span className="sub">
                       {c.procedures.map((p) => procedureChip(p).text).join(' · ') || 'No procedures'} · {c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}
@@ -192,6 +217,11 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
       ) : (
         <>
           <p className="muted small">A case is one episode of care. Add each procedure of the episode inside the case.</p>
+          {!online && (
+            <p className="warn-text small" data-testid="offline-new-case">
+              No connection: the case is saved on this device and gets its number (No.) when it reaches the Google Sheet. The MRN is checked against the cases on this device only; history from an earlier case of this MRN is copied when it reaches the Sheet.
+            </p>
+          )}
           <button className="btn primary block" onClick={() => submit()} disabled={busy}>
             {busy ? 'Creating…' : 'Create case'}
           </button>

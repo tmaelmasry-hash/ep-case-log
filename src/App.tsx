@@ -10,6 +10,7 @@ import { CaseView } from './views/CaseView';
 import { PatientsView } from './views/PatientsView';
 import { StatsView } from './views/StatsView';
 import { SettingsView } from './views/SettingsView';
+import { useOnline } from './lib/sync';
 
 const TABS = [
   { key: 'cases', label: 'Procedures', icon: 'cases' },
@@ -24,6 +25,7 @@ export function App() {
   const [route, nav] = useHashRoute();
   const wide = useMediaQuery('(min-width: 960px)');
   const [period, setPeriod] = useState(false);
+  const online = useOnline();
   const tab = route[0];
 
   if (!loaded) {
@@ -87,7 +89,14 @@ export function App() {
           </div>
         )}
       </nav>
-      <main className="main">{main}</main>
+      <main className="main">
+        {!online && (
+          <div className="offline-bar" role="status" data-testid="offline-bar">
+            ● Offline — working from this device. Changes are sent when the connection is back.
+          </div>
+        )}
+        {main}
+      </main>
       {period && <PeriodSheet onClose={() => setPeriod(false)} />}
       <Toasts />
     </div>

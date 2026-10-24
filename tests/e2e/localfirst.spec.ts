@@ -3,6 +3,49 @@
 import { expect, test } from '@playwright/test';
 import { createCase, mrn, open, saved } from './flow';
 
+test('L3: the app opens without internet; a new case gets "No. pending", is filled offline, and gets its number when back', async ({ page, context }, info) => {
+  const m = mrn(info, 9943000);
+  await open(page);
+  // The app files are kept by the service worker after the first visit.
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+  await page.reload();
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByTestId('offline-bar')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+
+  await page.getByTestId('new-case').click();
+  const sheet = page.getByTestId('new-case-sheet');
+  await expect(sheet.getByTestId('offline-new-case')).toBeVisible();
+  await sheet.locator('#new-mrn').fill(m);
+  await sheet.locator('#new-date').fill('2026-03-12');
+  await sheet.getByRole('button', { name: 'Create case' }).click();
+  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText('No. pending');
+  await expect(page.getByTestId('device-only').first()).toBeVisible();
+  await expect(page.getByTestId('complete-bar').getByRole('button', { name: 'Complete', exact: true })).toBeDisabled();
+  await page.screenshot({ path: test.info().outputPath('offline-new-case.png') });
+
+  // Filled offline.
+  await page.getByTestId('section-patient').click();
+  const ps = page.getByTestId('section-sheet');
+  await ps.getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Male', exact: true }).click();
+  await ps.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText(/Offline · \d+ waiting/);
+
+  // Back online: created on the server, numbered, the edit sent.
+  await context.setOffline(false);
+  await expect(page.getByTestId('case-head')).toContainText(/No\. \d+/, { timeout: 30_000 });
+  await expect(page.getByTestId('device-only')).toHaveCount(0);
+  await saved(page);
+  await page.reload();
+  await expect(page.getByTestId('case-head')).toContainText(/No\. \d+/);
+  await page.getByTestId('section-patient').click();
+  await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex at birth' }).getByRole('radio', { name: 'Male', exact: true })).toHaveAttribute('aria-checked', 'true');
+});
+
 test('an edit made without connection waits on the device, survives a reload, and syncs when back', async ({ page }, info) => {
   const m = mrn(info, 9942000);
   await open(page);

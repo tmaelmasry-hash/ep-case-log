@@ -20,6 +20,8 @@ import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
 import { componentToTick, offeredComponents, showsDevice, showsLeads } from '../lib/procedureTypes';
+import { seqText } from '../lib/offlineCase';
+import { sync, useOnline } from '../lib/sync';
 
 // ── readiness shared by every sheet of the open case ──
 interface CaseCtx {
@@ -1020,6 +1022,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const { toast, refreshCases } = useStore();
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const cohorts = useCohorts();
+  const online = useOnline();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [na, setNa] = useState<{ entity: string; field: string; pid: string | null } | null>(null);
   const [reopening, setReopening] = useState(false);
@@ -1069,6 +1072,9 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const procs = ed.rows('EP_PROCEDURES');
   const comps = ed.rows('PROCEDURE_COMPONENTS');
   const completed = ed.readOnly;
+  // L3: Complete, Delete, AI, PDF, cohorts need the connection and a case that is already in the Google Sheet.
+  const localOnly = sync.isLocalOnly(d.meta.case_id);
+  const serverCase = online && !localOnly;
   const aiWaiting = aiPending(d);
   const addProcedure = () => {
     const pid = ed.addRow('EP_PROCEDURES');
@@ -1150,7 +1156,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           <div className="hdate">{fmtDate(head?.start) || 'No episode date'}</div>
           <div className="muted small">
             Episode {fmtShortDate(head?.start)}
-            {head?.end ? ` → ${fmtDate(head.end)}` : ''} · {d.meta.group_name} · No. {d.meta.group_seq}
+            {head?.end ? ` → ${fmtDate(head.end)}` : ''} · {d.meta.group_name} · {seqText(d.meta.group_seq)}
           </div>
           <div className="hmrn">
             <b>MRN: {d.meta.mrn}</b> <span className="muted">{ageSex(head?.age ?? null, head?.sex ?? null)}</span>
@@ -1159,6 +1165,11 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <span className={`status ${completed ? 's-done' : 's-prog'}`} data-testid="case-status">
               {completed ? 'Completed' : 'In progress'}
             </span>
+            {localOnly && (
+              <span className="chip c-neutral" data-testid="device-only" style={{ marginLeft: 6 }}>
+                On this device only
+              </span>
+            )}
           </div>
           <div className="progress-row" data-testid="core-progress">
             <span>
@@ -1178,7 +1189,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
               {d.meta.completed_at ? ` on ${fmtDate(d.meta.completed_at.slice(0, 10))}` : ''}. Read only.
             </span>
             {can('case.reopen') && (
-              <button className="btn small" onClick={() => setReopening(true)}>
+              <button className="btn small" onClick={() => setReopening(true)} disabled={!online} title={online ? undefined : 'Needs the connection'}>
                 Reopen…
               </button>
             )}
@@ -1285,7 +1296,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         <h2 className="sechead">Case</h2>
         <div className="group">
           {can('ai.extract') && !completed && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row">
+            <button className="grow-row" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row" disabled={!serverCase}>
               <span className="row-ic">
                 <Icon name="extract" size={22} />
               </span>
@@ -1295,7 +1306,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             </button>
           )}
           {(cohorts.length > 0 || can('cohorts.manage')) && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row">
+            <button className="grow-row" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row" disabled={!serverCase}>
               <span className="row-ic">
                 <Icon name="patients" size={22} />
               </span>
@@ -1315,7 +1326,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <Icon name="chevron" size={16} className="muted" />
           </button>
           {can('report.pdf') && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row">
+            <button className="grow-row" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row" disabled={!serverCase}>
               <span className="row-ic">
                 <Icon name="doc" size={22} />
               </span>
@@ -1326,19 +1337,27 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         </div>
 
         {can('case.delete') && !completed && (
-          <button className="btn danger-text block delete-case" onClick={() => setConfirmDelete(true)}>
+          <button className="btn danger-text block delete-case" onClick={() => setConfirmDelete(true)} disabled={!serverCase}>
             <Icon name="trash" size={18} /> Delete case
           </button>
         )}
 
         {!completed && (
           <div className="bottomact" data-testid="complete-bar">
-            <span className="grow">{readiness.blockers.length ? `${readiness.blockers.length} missing` : 'Ready'}</span>
+            <span className="grow">
+              {readiness.blockers.length ? `${readiness.blockers.length} missing` : 'Ready'}
+              {!serverCase && (
+                <span className="muted small" data-testid="needs-connection">
+                  {' '}
+                  · Complete, Delete, AI and PDF need the connection
+                </span>
+              )}
+            </span>
             <button className="btn" onClick={() => setSheet({ kind: 'ready' })}>
               Ready to complete?
             </button>
             {can('case.complete') && (
-              <button className="btn primary" disabled={!readiness.canComplete || busy || ed.pending > 0} onClick={complete}>
+              <button className="btn primary" disabled={!readiness.canComplete || busy || ed.pending > 0 || !serverCase} onClick={complete}>
                 Complete
               </button>
             )}

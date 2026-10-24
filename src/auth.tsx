@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, ApiError, onSessionEnded } from './lib/api';
+import { api, ApiError, hasCsrf, onSessionEnded } from './lib/api';
 
 export interface Me {
   id: string;
@@ -27,6 +27,25 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
+// The last signed-in user on this device (name, role, groups; no password, no token), so the app can open offline.
+const ME_KEY = 'kamc-registry-me';
+function remember(me: Me | null) {
+  try {
+    if (me) localStorage.setItem(ME_KEY, JSON.stringify(me));
+    else localStorage.removeItem(ME_KEY);
+  } catch {
+    /* storage blocked: offline opening is not available */
+  }
+}
+function remembered(): Me | null {
+  try {
+    const v = localStorage.getItem(ME_KEY);
+    return v ? (JSON.parse(v) as Me) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useAuth(): AuthCtx {
   const c = useContext(Ctx);
   if (!c) throw new Error('useAuth outside provider');
@@ -39,17 +58,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadMe = useCallback(async () => {
     try {
       const r = await api<{ user: Me; features?: Me['features'] }>('GET', '/api/auth/me');
-      setState({ status: 'signedIn', me: { ...r.user, features: r.features } });
+      const me = { ...r.user, features: r.features };
+      remember(me);
+      setState({ status: 'signedIn', me });
     } catch (e) {
       const err = e as ApiError;
-      if (err.status === 401) setState({ status: 'signedOut' });
+      if (err.status === 401) {
+        remember(null);
+        setState({ status: 'signedOut' });
+        return;
+      }
+      // Local-first L3: no connection, but this device was signed in before: open from the device copy.
+      const last = err.status === 0 ? remembered() : null;
+      if (last) setState((s) => (s.status === 'signedIn' ? s : { status: 'signedIn', me: last }));
       else setState({ status: 'offline', message: err.message });
     }
   }, []);
 
   useEffect(() => {
     loadMe();
-    onSessionEnded(() => setState({ status: 'signedOut', notice: 'Your session ended. Please sign in again.' }));
+    onSessionEnded(() => {
+      remember(null);
+      setState({ status: 'signedOut', notice: 'Your session ended. Please sign in again.' });
+    });
+    // Opened offline: check the sign-in again when the connection is back (this also fetches the CSRF token).
+    const back = () => !hasCsrf() && loadMe();
+    window.addEventListener('online', back);
+    return () => window.removeEventListener('online', back);
   }, [loadMe]);
 
   const signIn = useCallback(
@@ -64,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api('POST', '/api/auth/logout');
     } finally {
+      // The case copy stays on the device (owner R3-4); opening offline needs a new sign-in first.
+      remember(null);
       setState({ status: 'signedOut' });
     }
   }, []);

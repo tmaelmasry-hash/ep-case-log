@@ -870,6 +870,12 @@ select {
   align-items: flex-end;
   justify-content: center;
   animation: fade 0.15s ease-out;
+  overscroll-behavior: contain;
+}
+/* While a sheet is open the page behind it stays still (owner, 24 Oct: things moved in the background). */
+html:has(.overlay),
+body:has(.overlay) {
+  overflow: hidden;
 }
 .overlay.center {
   align-items: center;
@@ -933,6 +939,7 @@ select {
 }
 .sheet-body {
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
 }
 .dialog {

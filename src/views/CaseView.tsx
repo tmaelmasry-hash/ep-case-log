@@ -75,6 +75,46 @@ function filledCount(entity: string, row: DecodedRow | undefined): number {
   return dict.entities[entity].fields.filter((f) => !f.auto && f.type !== 'json_object' && hasValue(row[f.name])).length;
 }
 
+/** Values a person entered in a row and in the rows that point to it (procedure sections, nested rows, events). */
+function enteredCount(ed: CaseEditor, entity: string, id: string): number {
+  let n = filledCount(entity, ed.rows(entity).find((r) => r._id === id));
+  for (const e of Object.keys(dict.entities)) {
+    for (const r of ed.rows(e)) if (r._id !== id && Object.values(r).includes(id)) n += 1 + filledCount(e, r);
+  }
+  return n;
+}
+
+/** Cancel on a row that was just added takes it away again, so no empty procedure or row stays behind (owner,
+ *  24 Oct). Nothing entered yet: it goes at once; something entered: ask first. Done keeps it. */
+function useNewRow(ed: CaseEditor, entity: string, id: string, what: string, onClose: () => void) {
+  const [base] = useState(() => enteredCount(ed, entity, id));
+  const [ask, setAsk] = useState(false);
+  const discard = () => {
+    setAsk(false);
+    ed.removeRow(entity, id);
+    onClose();
+  };
+  const cancel = () => {
+    if (!ed.isNew(id) || ed.readOnly || !ed.rows(entity).some((r) => r._id === id)) onClose();
+    else if (enteredCount(ed, entity, id) > base) setAsk(true);
+    else discard();
+  };
+  const done = () => {
+    ed.keepRow(id);
+    onClose();
+  };
+  const dialog = ask && (
+    <Confirm
+      title={`Discard this new ${what}?`}
+      message="What you entered in it will be removed. To keep it, press Done."
+      confirmLabel="Discard"
+      onCancel={() => setAsk(false)}
+      onConfirm={discard}
+    />
+  );
+  return { cancel, done, dialog };
+}
+
 function useFk(ed: CaseEditor) {
   return (f: FormField): FkOption[] => {
     if (f.target === 'USERS') return (ed.detail?.users ?? []).map((u) => ({ value: u.id, label: u.name }));
@@ -243,9 +283,11 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   const row = all[i] ?? null;
   const [confirm, setConfirm] = useState(false);
   const [child, setChild] = useState<{ entity: string; id: string } | null>(null);
+  const fresh = useNewRow(ed, entity, id, def.label.toLowerCase(), onClose);
   if (child) return <RowSheet ed={ed} entity={child.entity} id={child.id} onClose={() => setChild(null)} />;
   return (
-    <Sheet title={row ? rowTitle(entity, row, i) : def.label} onClose={onClose} onDone={onClose} testId="row-sheet">
+    <Sheet title={row ? rowTitle(entity, row, i) : def.label} onClose={fresh.cancel} onDone={fresh.done} testId="row-sheet">
+      {fresh.dialog}
       {!row ? (
         <p className="muted">This row was removed.</p>
       ) : (
@@ -495,6 +537,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const types = comps.map((c) => String(c.component_type));
   const ptype = p?.primary_procedure_type;
   const [picked, setPicked] = usePickedItems(id);
+  const fresh = useNewRow(ed, 'EP_PROCEDURES', id, 'procedure', onClose);
 
   if (open) return <RowSheet ed={ed} entity={open.entity} id={open.id} onClose={() => setOpen(null)} />;
   if (!p)
@@ -543,7 +586,8 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const complications = ed.rows('COMPLICATIONS').filter((c) => c.procedure_id === id);
 
   return (
-    <Sheet title={procedureTitle(p, i)} onClose={onClose} onDone={onClose} testId="procedure-sheet">
+    <Sheet title={procedureTitle(p, i)} onClose={fresh.cancel} onDone={fresh.done} testId="procedure-sheet">
+      {fresh.dialog}
       <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={["procedure_start_datetime"]} />
 
       <h3 className="sechead">What was done</h3>
@@ -1008,13 +1052,15 @@ function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onC
   const row = ed.rows('FOLLOW_UPS').find((r) => r._id === id) ?? null;
   const [confirm, setConfirm] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const fresh = useNewRow(ed, 'FOLLOW_UPS', id, 'follow-up', onClose);
   if (open) return <RowSheet ed={ed} entity="OUTCOME_EVENTS" id={open} onClose={() => setOpen(null)} />;
   const same = row ? ed.rows('FOLLOW_UPS').filter((r) => r.procedure_id === row.procedure_id) : [];
   const primary = FU.primary_fields ?? [];
   const more = formFields(FU).map((f) => f.name).filter((n) => !primary.includes(n));
   const events = row ? ed.rows('OUTCOME_EVENTS').filter((e) => e[QUICK.fk] === id) : [];
   return (
-    <Sheet title={row ? followUpTitle(row, same.indexOf(row)) : 'Follow-up'} onClose={onClose} onDone={onClose} testId="followup-sheet">
+    <Sheet title={row ? followUpTitle(row, same.indexOf(row)) : 'Follow-up'} onClose={fresh.cancel} onDone={fresh.done} testId="followup-sheet">
+      {fresh.dialog}
       {!row ? (
         <p className="muted">This follow-up was removed.</p>
       ) : (

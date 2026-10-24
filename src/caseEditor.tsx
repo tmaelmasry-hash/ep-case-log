@@ -2,7 +2,7 @@
 // Local-first (owner R3-4, L2): the case opens from this device's copy at once and is refreshed from the server in
 // the background; edits go to the device outbox (src/lib/sync.ts) and are sent in order in the background, so a
 // save never waits for the Google Sheet. Field-level: the last save of a field wins (EP Workspace P3-4).
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { CaseDetail, DecodedRow } from '../shared/caseTypes.ts';
 import { idPrefix, slotId } from '../shared/caseTypes.ts';
 import { deriveChanges } from '../shared/derive.ts';
@@ -32,6 +32,10 @@ export interface CaseEditor {
   setField: (entity: string, id: string, field: string, value: unknown, opts?: { key?: string; create?: { parent_id?: string | null } }) => void;
   addRow: (entity: string, parentId?: string | null, values?: Record<string, unknown>) => string;
   removeRow: (entity: string, id: string) => void;
+  /** True for a row made by addRow in this visit and not yet closed with Done (Cancel then discards it). */
+  isNew: (id: string) => boolean;
+  /** The row was kept (Done): Cancel no longer discards it. */
+  keepRow: (id: string) => void;
   slot: (entity: string, scopeId: string) => string;
   additional: (op: 'add' | 'set' | 'remove', id: string, text?: string, factDate?: string | null) => void;
   /** Sends what waits on this device; resolves when sent (or when sending stopped: offline / refused). */
@@ -58,6 +62,8 @@ export function useCaseEditor(caseId: string): CaseEditor {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Rows added in this visit that are still open for the first time (see isNew).
+  const added = useRef(new Set<string>());
   // Re-render whenever the outbox changes; the edits of this case come from it.
   useSyncExternalStore(sync.subscribe, sync.getState);
   const queue = sync.pending(caseId);
@@ -251,12 +257,21 @@ export function useCaseEditor(caseId: string): CaseEditor {
       const def = dict.entities[entity];
       const id = def.cardinality === 'single' ? slotId(idPrefix(def.pk), entity, parentId ?? detail!.meta.case_id) : newId(entity);
       push([{ kind: 'create', entity, id, parent_id: def.scope === 'procedure' || def.nest_under ? parentId : null, values }], 50);
+      added.current.add(id);
       return id;
     },
     [push, detail],
   );
 
-  const removeRow: CaseEditor['removeRow'] = useCallback((entity, id) => push([{ kind: 'remove', entity, id }], 50), [push]);
+  const removeRow: CaseEditor['removeRow'] = useCallback(
+    (entity, id) => {
+      added.current.delete(id);
+      push([{ kind: 'remove', entity, id }], 50);
+    },
+    [push],
+  );
+  const isNew = useCallback((id: string) => added.current.has(id), []);
+  const keepRow = useCallback((id: string) => void added.current.delete(id), []);
 
   const additional: CaseEditor['additional'] = useCallback(
     (op, id, text, factDate) => push([{ kind: 'additional', op, id, text, fact_date: factDate }], op === 'set' ? 600 : 50),
@@ -267,5 +282,5 @@ export function useCaseEditor(caseId: string): CaseEditor {
   const flush = useCallback(() => sync.flush(), []);
 
   const readOnly = detail?.meta.collection_status === 'COMPLETED';
-  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, slot, additional, flush, reload };
+  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, isNew, keepRow, slot, additional, flush, reload };
 }

@@ -30,7 +30,7 @@ async function createCase(page: Page, m: string, group?: string) {
   return page.url().split('#/cases/')[1];
 }
 
-const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
 
 test('core progress, "Not available", complete, read only, reopen with a reason, history', async ({ page }, info) => {
   await open(page);

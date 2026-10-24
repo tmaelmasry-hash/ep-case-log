@@ -47,7 +47,7 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
   await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AF', exact: true }).click();
-  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');
   await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
@@ -161,7 +161,7 @@ test('part 4: same MRN and date warns of a duplicate; search by No. and procedur
   await page.getByRole('button', { name: 'Add Procedure' }).click();
   const ps = page.getByTestId('procedure-sheet');
   await ps.getByRole('group', { name: 'Procedure components' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
-  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');
   const sheet = await create();

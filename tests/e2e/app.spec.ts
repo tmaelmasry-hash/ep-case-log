@@ -28,7 +28,7 @@ async function createCase(page: Page, m: string, date = '2026-03-12', group?: st
   await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
 }
 
-const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
 
 test('create a case, add two procedures with components and module fields; it persists', async ({ page }, info) => {
   const m = mrn(info);

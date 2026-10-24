@@ -29,4 +29,4 @@ export async function createCase(page: Page, m: string, opts: { date?: string; g
   return page.url().split('#/cases/')[1];
 }
 
-export const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+export const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');

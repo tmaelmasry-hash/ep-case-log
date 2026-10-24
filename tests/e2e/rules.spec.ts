@@ -22,7 +22,7 @@ test('fluoroscopy time follows "fluoroscopy used"; turning it off asks before re
   await used.getByRole('radio', { name: 'Yes', exact: true }).click();
   await ps.getByLabel('Fluoroscopy time').fill('9');
   await ps.getByLabel('Fluoroscopy time').blur();
-  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
 
   // Keep: nothing changes.
   await used.getByRole('radio', { name: 'No', exact: true }).click();
@@ -34,7 +34,7 @@ test('fluoroscopy time follows "fluoroscopy used"; turning it off asks before re
   // Remove: the time goes, and the field hides.
   await used.getByRole('radio', { name: 'No', exact: true }).click();
   await page.getByRole('button', { name: 'Remove 1 answer' }).click();
-  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Saved');
+  await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await expect(used.getByRole('radio', { name: 'No', exact: true })).toHaveAttribute('aria-checked', 'true');
   await expect(ps.getByLabel('Fluoroscopy time')).toHaveCount(0);
 });

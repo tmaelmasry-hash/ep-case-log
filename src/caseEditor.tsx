@@ -1,20 +1,16 @@
-// One open case: the server's copy plus the edits made on this device that are not saved yet.
-// Edits are sent in order, one batch at a time; values typed while a save is on its way are laid over the answer,
-// so the screen never shows an older value. Field-level: the last save of a field wins (EP Workspace P3-4).
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CaseDetail, DecodedRow, EditBatch, EditResult } from '../shared/caseTypes.ts';
+// One open case: the saved copy plus the edits made on this device that the server has not answered yet.
+// Local-first (owner R3-4, L2): the case opens from this device's copy at once and is refreshed from the server in
+// the background; edits go to the device outbox (src/lib/sync.ts) and are sent in order in the background, so a
+// save never waits for the Google Sheet. Field-level: the last save of a field wins (EP Workspace P3-4).
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import type { CaseDetail, DecodedRow } from '../shared/caseTypes.ts';
 import { idPrefix, slotId } from '../shared/caseTypes.ts';
 import { naKey, type NotAvailable } from '../shared/readiness.ts';
 import { dict } from './lib/dict';
 import { api, ApiError } from './lib/api';
+import { caseDelete, caseGet, casePut } from './lib/localdb';
+import { sync, type Op } from './lib/sync';
 import { useStore } from './store';
-
-type Op =
-  | { kind: 'create'; entity: string; id: string; parent_id?: string | null; values?: Record<string, unknown> }
-  | { kind: 'change'; entity: string; id: string; field: string; value: unknown; key?: string }
-  | { kind: 'remove'; entity: string; id: string }
-  | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null }
-  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null };
 
 export interface CaseEditor {
   detail: CaseDetail | null;
@@ -37,6 +33,7 @@ export interface CaseEditor {
   removeRow: (entity: string, id: string) => void;
   slot: (entity: string, scopeId: string) => string;
   additional: (op: 'add' | 'set' | 'remove', id: string, text?: string, factDate?: string | null) => void;
+  /** Sends what waits on this device; resolves when sent (or when sending stopped: offline / refused). */
   flush: () => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -45,136 +42,128 @@ function errKey(entity: string, id: string, field: string) {
   return `${entity}|${id}|${field}`;
 }
 
+function opKey(op: Op): string {
+  return op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : `${op.kind}|${op.entity}`;
+}
+
 export function newId(entity: string): string {
   return `${idPrefix(dict.entities[entity].pk)}_${crypto.randomUUID()}`;
 }
 
 export function useCaseEditor(caseId: string): CaseEditor {
-  const { setSaveStatus, toast, upsertCase } = useStore();
+  const { toast, upsertCase } = useStore();
   const [detail, setDetail] = useState<CaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [queue, setQueue] = useState<Op[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const queueRef = useRef<Op[]>([]);
-  queueRef.current = queue;
-  const inFlight = useRef<Op[] | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-  const retry = useRef(0);
+  // Re-render whenever the outbox changes; the edits of this case come from it.
+  useSyncExternalStore(sync.subscribe, sync.getState);
+  const queue = sync.pending(caseId);
+
+  const keep = useCallback(
+    (d: CaseDetail) => {
+      setDetail(d);
+      void casePut(caseId, d);
+    },
+    [caseId],
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
       const d = await api<CaseDetail>('GET', `/api/cases/${caseId}`);
-      setDetail(d);
+      keep(d);
       setNotFound(false);
       setError(null);
     } catch (e) {
       const err = e as ApiError;
-      if (err.status === 404) setNotFound(true);
-      else setError(err.message);
+      if (err.status === 404) {
+        setNotFound(true);
+        void caseDelete(caseId);
+      } else setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [caseId]);
+  }, [caseId, keep]);
 
+  // This device's copy first (instant), then the server's.
   useEffect(() => {
+    let live = true;
     setDetail(null);
-    setQueue([]);
     setErrors({});
-    reload();
-  }, [reload]);
-
-  const flush = useCallback(async () => {
-    window.clearTimeout(timer.current);
-    if (inFlight.current || !queueRef.current.length) return;
-    const ops = queueRef.current;
-    inFlight.current = ops;
-    setSaveStatus('saving');
-    const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [] };
-    const index: { kind: EditResult['kind']; op: Op }[] = [];
-    for (const op of ops) {
-      if (op.kind === 'create') batch.creates!.push({ entity: op.entity, id: op.id, parent_id: op.parent_id, values: op.values });
-      else if (op.kind === 'change') batch.changes!.push({ entity: op.entity, id: op.id, field: op.field, value: op.value, key: op.key });
-      else if (op.kind === 'remove') batch.removes!.push({ entity: op.entity, id: op.id });
-      else if (op.kind === 'na') batch.not_available!.push({ entity: op.entity, field: op.field, procedure_id: op.procedure_id, reason: op.reason });
-      else batch.additional!.push({ op: op.op, id: op.id, text: op.text, fact_date: op.fact_date });
-      index.push({ kind: op.kind, op });
-    }
-    try {
-      const r = await api<{ results: EditResult[]; case: CaseDetail }>('PATCH', `/api/cases/${caseId}`, batch);
-      retry.current = 0;
-      setDetail(r.case);
-      setQueue((q) => q.slice(ops.length));
-      const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0 };
-      const byKind = new Map(r.results.map((x) => [`${x.kind}:${x.i}`, x]));
-      setErrors((prev) => {
-        const next = { ...prev };
-        for (const { kind, op } of index) {
-          const res = byKind.get(`${kind}:${counters[kind]++}`);
-          const key =
-            op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : `${op.kind}|${'entity' in op ? op.entity : ''}`;
-          if (res?.ok) delete next[key];
-          else if (res) next[key] = res.message ?? 'Not saved.';
-        }
-        return next;
-      });
-      const failed = r.results.filter((x) => !x.ok);
-      setSaveStatus(failed.length ? 'error' : 'saved');
-      if (failed.length && failed.some((x) => x.kind !== 'change')) toast({ message: failed[0].message ?? 'Some changes were not saved.', kind: 'error' });
-      upsertCase(r.case.summary);
-    } catch (e) {
-      const err = e as ApiError;
-      if (err.status === 404 || err.status === 409) {
-        setQueue([]);
-        setSaveStatus('error');
-        toast({ message: err.message, kind: 'error' });
-        reload();
-      } else {
-        setSaveStatus(err.status === 0 ? 'offline' : 'error');
-        retry.current = Math.min(retry.current + 1, 5);
-        timer.current = window.setTimeout(() => flush(), [2000, 4000, 8000, 15000, 30000][retry.current - 1]);
+    setLoading(true);
+    void caseGet<CaseDetail>(caseId).then((local) => {
+      if (live && local) {
+        setDetail((d) => d ?? local);
+        setLoading(false);
       }
-    } finally {
-      inFlight.current = null;
-      if (queueRef.current.length > ops.length && retry.current === 0) timer.current = window.setTimeout(() => flush(), 50);
-    }
-  }, [caseId, reload, upsertCase, setSaveStatus, toast]);
+    });
+    void api<CaseDetail>('GET', `/api/cases/${caseId}`)
+      .then((d) => {
+        if (!live) return;
+        keep(d);
+        setNotFound(false);
+        setError(null);
+      })
+      .catch((e: ApiError) => {
+        if (!live) return;
+        if (e.status === 404) {
+          setNotFound(true);
+          void caseDelete(caseId);
+        } else setError(e.message);
+      })
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [caseId, keep]);
 
-  const push = useCallback(
-    (ops: Op[], delay = 250) => {
-      setQueue((q) => {
-        const next = [...q, ...ops];
-        queueRef.current = next;
-        return next;
-      });
-      setSaveStatus('saving');
-      window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => flush(), delay);
-    },
-    [flush, setSaveStatus],
+  // The server's answers to this case's edits: fresh copy, per-field messages, refusals.
+  useEffect(
+    () =>
+      sync.onCase(caseId, (e) => {
+        if (e.kind === 'saved') {
+          setDetail(e.detail);
+          upsertCase(e.detail.summary);
+          const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0 };
+          const byKind = new Map(e.results.map((x) => [`${x.kind}:${x.i}`, x]));
+          setErrors((prev) => {
+            const next = { ...prev };
+            for (const op of e.ops) {
+              const res = byKind.get(`${op.kind}:${counters[op.kind]++}`);
+              if (res?.ok) delete next[opKey(op)];
+              else if (res) next[opKey(op)] = res.message ?? 'Not saved.';
+            }
+            return next;
+          });
+          const failed = e.results.filter((x) => !x.ok);
+          if (failed.some((x) => x.kind !== 'change')) toast({ message: failed[0].message ?? 'Some changes were not saved.', kind: 'error' });
+        } else {
+          toast({ message: `${e.message} The change is kept on this device (Sync).`, kind: 'error' });
+          if (e.status === 404 || e.status === 409) void reload();
+        }
+      }),
+    [caseId, reload, upsertCase, toast],
   );
 
-  // Send waiting edits before the page goes away; warn if some cannot be sent.
+  const label = detail ? `No. ${detail.meta.group_seq} · ${detail.meta.mrn}` : caseId;
+  const push = useCallback((ops: Op[], delay = 250) => sync.enqueue(caseId, label, ops, delay), [caseId, label]);
+
+  // Edits are on the device already; warn only when this browser cannot keep them.
   useEffect(() => {
     const onLeave = (e: BeforeUnloadEvent) => {
-      if (queueRef.current.length || inFlight.current) {
-        flush();
-        e.preventDefault();
-      }
+      const s = sync.getState();
+      if (!s.persistent && s.waiting) e.preventDefault();
     };
     window.addEventListener('beforeunload', onLeave);
-    return () => {
-      window.removeEventListener('beforeunload', onLeave);
-      if (queueRef.current.length) flush();
-    };
-  }, [flush]);
+    return () => window.removeEventListener('beforeunload', onLeave);
+  }, []);
 
   const overlay = useMemo(() => {
     const rows: Record<string, DecodedRow[]> = {};
     if (detail) for (const [e, rs] of Object.entries(detail.rows)) rows[e] = rs.map((r) => ({ ...r }));
-    // The queue still holds the batch on its way until the answer arrives, so it covers both.
+    // Waiting edits (also those on their way) are laid over the saved copy until the server answers.
     for (const op of queue) {
       if (op.kind === 'create') {
         const list = (rows[op.entity] ??= []);
@@ -208,7 +197,8 @@ export function useCaseEditor(caseId: string): CaseEditor {
       else delete na[k];
     }
     return { rows, na };
-  }, [detail, queue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail, JSON.stringify(queue)]);
 
   const view = overlay.rows;
   const rows = useCallback((entity: string) => view[entity] ?? [], [view]);
@@ -220,11 +210,11 @@ export function useCaseEditor(caseId: string): CaseEditor {
 
   const replace = useCallback(
     (d: CaseDetail) => {
-      setDetail(d);
+      keep(d);
       setErrors({});
       upsertCase(d.summary);
     },
-    [upsertCase],
+    [keep, upsertCase],
   );
 
   const slot = useCallback((entity: string, scopeId: string) => slotId(idPrefix(dict.entities[entity].pk), entity, scopeId), []);
@@ -257,6 +247,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
   );
 
   const fieldError = useCallback((entity: string, id: string, field: string) => errors[errKey(entity, id, field)], [errors]);
+  const flush = useCallback(() => sync.flush(), []);
 
   const readOnly = detail?.meta.collection_status === 'COMPLETED';
   return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, slot, additional, flush, reload };

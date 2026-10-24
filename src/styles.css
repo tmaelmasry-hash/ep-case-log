@@ -1114,9 +1114,20 @@ select {
   }
 }
 .save-ind {
+  font: inherit;
   font-size: 0.78rem;
   color: var(--muted);
   white-space: nowrap;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.save-ind[hidden] {
+  display: none;
+}
+.save-ind.sync {
+  color: var(--accent);
 }
 .save-ind.ok::before {
   content: '✓ ';

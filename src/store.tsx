@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CaseSummary } from '../shared/caseTypes.ts';
 import { api, ApiError } from './lib/api';
-
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'offline';
+import { kvGet, kvSet } from './lib/localdb';
+import { sync } from './lib/sync';
 
 export interface Toast {
   id: number;
@@ -27,8 +27,6 @@ interface Ctx {
   refreshCases: () => Promise<void>;
   /** Replaces one case's line in the list (after a save). */
   upsertCase: (c: CaseSummary) => void;
-  saveStatus: SaveStatus;
-  setSaveStatus: (s: SaveStatus) => void;
   toasts: Toast[];
   toast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
@@ -51,12 +49,11 @@ function removeOldLocalDatabase() {
   }
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function StoreProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [cases, setCases] = useState<CaseSummary[]>([]);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
 
@@ -76,24 +73,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCases(r.cases);
       setGroups(g.groups);
       setLoadError(null);
+      void kvSet('list', { cases: r.cases, groups: g.groups, at: Date.now() });
     } catch (e) {
       setLoadError((e as ApiError).message);
     }
   }, []);
 
+  // Local-first (R3-4, L2): this user's device copy of the list shows at once; the server's replaces it.
   useEffect(() => {
     removeOldLocalDatabase();
+    let shown = false;
+    (async () => {
+      await sync.start(userId);
+      const local = await kvGet<{ cases: CaseSummary[]; groups: GroupRow[] }>('list');
+      if (local && !shown) {
+        setCases(local.cases);
+        setGroups(local.groups);
+        setLoaded(true);
+      }
+    })();
     (async () => {
       await refreshCases();
+      shown = true;
       setLoaded(true);
     })();
-  }, [refreshCases]);
+  }, [refreshCases, userId]);
 
-  const upsertCase = useCallback((c: CaseSummary) => setCases((list) => (list.some((x) => x.case_id === c.case_id) ? list.map((x) => (x.case_id === c.case_id ? c : x)) : [...list, c])), []);
+  const upsertCase = useCallback((c: CaseSummary) => {
+    setCases((list) => {
+      const next = list.some((x) => x.case_id === c.case_id) ? list.map((x) => (x.case_id === c.case_id ? c : x)) : [...list, c];
+      void kvGet<{ groups: GroupRow[] }>('list').then((l) => kvSet('list', { cases: next, groups: l?.groups ?? [], at: Date.now() }));
+      return next;
+    });
+  }, []);
+
+  // A save answered while its case is not open still updates the list line.
+  useEffect(() => sync.onCase('*', (e) => e.kind === 'saved' && upsertCase(e.detail.summary)), [upsertCase]);
 
   const value = useMemo<Ctx>(
-    () => ({ loaded, loadError, groups, cases, refreshCases, upsertCase, saveStatus, setSaveStatus, toasts, toast, dismissToast }),
-    [loaded, loadError, groups, cases, refreshCases, upsertCase, saveStatus, toasts, toast, dismissToast],
+    () => ({ loaded, loadError, groups, cases, refreshCases, upsertCase, toasts, toast, dismissToast }),
+    [loaded, loadError, groups, cases, refreshCases, upsertCase, toasts, toast, dismissToast],
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

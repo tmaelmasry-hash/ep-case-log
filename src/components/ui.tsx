@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '../store';
+import { sync } from '../lib/sync';
 import { Icon } from './Icon';
+import { SyncSheet } from './SyncSheet';
 
 export function Sheet({
   title,
@@ -194,19 +197,27 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
   );
 }
 
+/** Local-first (R3-4): what this device still has to send. Tapping it opens the Sync sheet. */
 export function SaveIndicator() {
-  const { saveStatus } = useStore();
-  const map: Record<string, [string, string]> = {
-    saving: ['Saving…', ''],
-    saved: ['Saved', 'ok'],
-    error: ['Not saved', 'err'],
-    offline: ['No connection · will retry', 'warn'],
-  };
-  const [text, cls] = map[saveStatus] ?? ['', ''];
+  const s = useSyncExternalStore(sync.subscribe, sync.getState);
+  const [open, setOpen] = useState(false);
+  const [text, cls] = s.attention
+    ? [`${s.attention} needs attention`, 'err']
+    : s.waiting && s.offline
+      ? [`Offline · ${s.waiting} waiting`, 'warn']
+      : s.waiting
+        ? [`Syncing ${s.waiting}…`, 'sync']
+        : s.lastSynced
+          ? ['Synced', 'ok']
+          : ['', ''];
   return (
-    <span className={`save-ind ${cls}`} data-testid="save-indicator" aria-live="polite">
-      {text}
-    </span>
+    <>
+      <button type="button" className={`save-ind ${cls}`} data-testid="save-indicator" aria-live="polite" onClick={() => setOpen(true)} hidden={!text}>
+        {text}
+      </button>
+      {/* The indicator also sits in the sidebar footer: the sheet goes to the page body so it is never clipped. */}
+      {open && createPortal(<SyncSheet onClose={() => setOpen(false)} />, document.body)}
+    </>
   );
 }
 

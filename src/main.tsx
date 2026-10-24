@@ -30,7 +30,7 @@ function Gate() {
   if (state.status === 'signedOut') return <SignIn notice={state.notice} />;
   if (state.me.must_change_password) return <ChangePasswordScreen />;
   return (
-    <StoreProvider>
+    <StoreProvider userId={state.me.id}>
       <App />
     </StoreProvider>
   );

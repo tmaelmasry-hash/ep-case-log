@@ -31,6 +31,10 @@ the **next thing to fix**. Ask him what he found; do not start anything before t
 Colors deployed 24 Oct: commit `4655a38` → Worker `59a60ab8`. Cancel on a new procedure / row discards it, page behind a sheet stays still: `17f02af` → Worker `67011dd4` (27 Oct).
 Tests now: unit/server 235 · e2e 68 · e2e:worker 68.
 
+## Screen review (27–28 Oct)
+Round 1 (New Case + case screen) answered, round 2 (main screen and the rest) open: `docs/SCREEN_REVIEW.md`. Nothing
+built yet; preview each change first.
+
 ## Open items (ask the owner, one at a time; none started)
 - Labs cannot be tied to one procedure: the dictionary gives LAB_RESULTS only an episode link (owner had asked).
 - The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.

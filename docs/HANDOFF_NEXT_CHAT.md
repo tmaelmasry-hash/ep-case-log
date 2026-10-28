@@ -73,9 +73,7 @@ Others = Tilt only (no other study in the dictionary).
 - `data/admin-password.txt` (git-ignored) holds an old one-time password — ask whether to delete it.
 
 ## Where things are
-- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`.
-  **Not pushed:** github.com was unreachable from this PC since 28 Oct; main is ahead of origin by the step 1–4 commits
-  (`26f6647` … `aad8aea` and this handoff). Run `git push origin main` first; if it fails, tell the owner.
+- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, all pushed (28 Oct). github.com is sometimes unreachable from this PC: if a push fails, retry later and tell the owner.
 - Restore points (commit → Worker version): `docs/DEPLOY.md` → Restore points. Rollback:
   `node scripts/wrangler.ts rollback <version>`.
 - Old app (read only): `E:\EP_REGISTRY_REBUILD\ep-workspace` (EP Workspace, `ep-workspace.pages.dev`).

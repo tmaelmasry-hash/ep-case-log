@@ -89,7 +89,7 @@ Not recorded stay as their own lines.
   the first person who saves in it becomes its collector.
 - Bottom tab: builder's choice → **"Cases"** (matches the "Registry Cases" title).
 
-## Step 2 (built locally 28 Oct, preview shown, waiting for the owner's yes)
+## Step 2 (live 28 Oct, Worker bfad336f)
 Case card: MRN first and big · age/sex · Hajj/Umrah mark · date small on the right · "N missing" instead of core x/y.
 List: quick periods (This month / Last 3 months / Hajj season), status (All / In progress / Completed), order (Newest /
 Oldest / Most missing); a colored dot per group on the tabs and cards; "+ group" moved to Settings (Groups); a Member

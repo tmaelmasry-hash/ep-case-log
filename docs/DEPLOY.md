@@ -80,6 +80,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `4655a38` (colors: Makkah Health Cluster palette) | `59a60ab8-5b61-4c4d-89e2-5305f4a09ed1` | same Sheet, no Sheet change; CSS colors only |
 | `17f02af` (Cancel discards a new procedure / row; page behind a sheet stays still) | `67011dd4-bf41-4d39-a221-f87a27c2ebed` | same Sheet, no Sheet change |
 | `26f6647` (screen review step 1: Pilgrims count, 90-day follow-ups, search, title, month counts) | `fbaf4dc7-a98d-4ce6-9590-a60e82537b5b` | same Sheet, no Sheet change |
+| `a57688c` (screen review step 2: case card, quick filters, floating +, group colors; only the Admin adds cases) | `bfad336f-6a6e-4d14-8e04-0590e0994f6a` | same Sheet, no Sheet change |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

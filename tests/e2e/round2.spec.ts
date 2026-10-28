@@ -44,10 +44,11 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await sheet.locator('#new-mrn').fill(m);
   await sheet.locator('#new-date').fill('2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');
@@ -90,7 +91,7 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await sheet.locator('#new-mrn').fill(m);
   await sheet.locator('#new-date').fill('2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   const caseUrl = page.url();
 
   // New tag cohort from the menu.
@@ -159,11 +160,12 @@ test('part 4: same MRN and date warns of a duplicate; search by MRN and procedur
     return sheet;
   };
   await create();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   const no = (await page.getByTestId('case-head').textContent())!.match(/No\. (\d+)/)![1];
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AVNRT', exact: true }).click();
   await expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/cases');

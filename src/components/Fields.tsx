@@ -6,11 +6,7 @@ import { codeLabel, editable, formFields, hasValue, offeredCodes, type EntityDef
 import { dict } from '../lib/dict';
 import type { AiMark, DecodedRow } from '../../shared/caseTypes.ts';
 
-const PILL_MAX = 10; // procedure type has 9 choices with LAA closure (M-3)
-
-function shortLabels(f: FormField, codes: string[], max: number) {
-  return codes.every((c) => codeLabel(f, c).length <= max);
-}
+const PILL_MAX = 5; // owner, 28 Oct: 5 choices or fewer are buttons; more open a list on the question's line
 
 type Kind = 'segmented' | 'pills' | 'select' | 'multi' | 'date' | 'datetime' | 'number' | 'text' | 'longtext' | 'fk' | 'none';
 
@@ -21,7 +17,7 @@ export function controlKind(f: FormField, row: DecodedRow | null): Kind {
     case 'boolean_unknown': {
       const codes = offeredCodes(f, row);
       if (codes.length <= 3 && codes.reduce((n, c) => n + codeLabel(f, c).length, 0) <= 26) return 'segmented';
-      if (codes.length <= PILL_MAX && shortLabels(f, codes, 26)) return 'pills';
+      if (codes.length <= PILL_MAX) return 'pills';
       return 'select';
     }
     case 'boolean':

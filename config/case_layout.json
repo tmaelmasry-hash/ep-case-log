@@ -316,18 +316,12 @@
    "rows": [
     {
      "id": "patient",
-     "label": "Patient",
+     "label": "Patient & episode",
+     "title": "Patient Demographics",
      "icon": "user",
      "entities": [
       "PATIENT_IDENTIFIERS",
-      "PATIENTS"
-     ]
-    },
-    {
-     "id": "episode",
-     "label": "Episode & pilgrimage",
-     "icon": "clip",
-     "entities": [
+      "PATIENTS",
       "EP_EPISODES"
      ]
     },
@@ -341,7 +335,7 @@
     },
     {
      "id": "risk",
-     "label": "Baseline risk profile",
+     "label": "Medical History",
      "icon": "alert",
      "entities": [
       "CLINICAL_PROFILE_SNAPSHOTS"
@@ -350,17 +344,9 @@
    ]
   },
   {
-   "id": "studies",
-   "label": "Studies & follow-up",
+   "id": "investigations",
+   "label": "Investigations & Medications",
    "rows": [
-    {
-     "id": "ecg",
-     "label": "ECG",
-     "icon": "ecg",
-     "entities": [
-      "ECG_STUDIES"
-     ]
-    },
     {
      "id": "labs",
      "label": "Labs",
@@ -370,23 +356,19 @@
      ]
     },
     {
-     "id": "meds",
-     "label": "Medications",
-     "icon": "pill",
+     "id": "ecg",
+     "label": "ECG",
+     "icon": "ecg",
      "entities": [
-      "MEDICATION_RECORDS"
+      "ECG_STUDIES"
      ]
     },
     {
-     "id": "imaging",
-     "label": "Echo, Holter & imaging",
-     "icon": "echo",
+     "id": "holter",
+     "label": "Holter",
+     "icon": "ecg",
      "entities": [
-      "ECHO_STUDIES",
-      "RHYTHM_MONITORING",
-      "ADVANCED_IMAGING",
-      "CORONARY_ANGIOGRAPHY",
-      "TILT_TESTS"
+      "RHYTHM_MONITORING"
      ]
     },
     {
@@ -399,8 +381,79 @@
      ]
     },
     {
+     "id": "echo",
+     "label": "Echocardiography",
+     "icon": "echo",
+     "entities": [
+      "ECHO_STUDIES"
+     ]
+    },
+    {
+     "id": "tee",
+     "label": "TEE",
+     "icon": "echo",
+     "entities": [
+      "ADVANCED_IMAGING"
+     ],
+     "values": {
+      "modality_code": "TEE"
+     }
+    },
+    {
+     "id": "ct",
+     "label": "Cardiac CT",
+     "icon": "echo",
+     "entities": [
+      "ADVANCED_IMAGING"
+     ],
+     "values": {
+      "modality_code": "CARDIAC_CT"
+     }
+    },
+    {
+     "id": "cmr",
+     "label": "CMR",
+     "icon": "echo",
+     "entities": [
+      "ADVANCED_IMAGING"
+     ],
+     "values": {
+      "modality_code": "CMR"
+     }
+    },
+    {
+     "id": "cag",
+     "label": "CAG ± PCI",
+     "icon": "heart",
+     "entities": [
+      "CORONARY_ANGIOGRAPHY"
+     ]
+    },
+    {
+     "id": "meds",
+     "label": "Medications",
+     "icon": "pill",
+     "entities": [
+      "MEDICATION_RECORDS"
+     ]
+    },
+    {
+     "id": "others",
+     "label": "Others",
+     "icon": "clip",
+     "entities": [
+      "TILT_TESTS"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "follow",
+   "label": "Follow-up",
+   "rows": [
+    {
      "id": "followup",
-     "label": "Timeline & follow-up",
+     "label": "Follow-up visits & events",
      "icon": "cal",
      "entities": [
       "FOLLOW_UPS",

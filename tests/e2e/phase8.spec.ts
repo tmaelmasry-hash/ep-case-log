@@ -11,7 +11,8 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
   await expect(page.getByTestId('cha-line')).toHaveCount(0); // no AF care yet
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await page.getByTestId('procedure-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('cha-chip')).toHaveCount(0);
@@ -55,8 +56,9 @@ test('a CIED implant opens device sections only: Device implant ticked, device +
   await open(page);
   await createCase(page, m);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
   await saved(page);
   await expect(ps.getByTestId('procedure-type')).toContainText('CIED implant');
   await expect(ps.getByTestId('module-DEVICE_IMPLANTS')).toBeVisible();

@@ -95,3 +95,21 @@ List: quick periods (This month / Last 3 months / Hajj season), status (All / In
 Oldest / Most missing); a colored dot per group on the tabs and cards; "+ group" moved to Settings (Groups); a Member
 with one group sees no tabs; + is a floating button on phones that opens New case / Bulk add MRNs (Admin only).
 "Hajj season <year>" also added to the menu's Period list (1 Dhu al-Qa'dah → 15 Muharram).
+
+## Step 3 preview (approved 28 Oct): https://claude.ai/artifact/Ld4BVxmXShvzcdqvg9G7uU
+Owner changes on the preview: "Others" last, after Medications, with no Tilt label outside; AI Assistant as a small
+icon in the tools row (AI · Cohorts · History · Report); "Baseline risk profile" renamed **Medical History**; Cohorts
+keep their name. Builder defaults accepted: no helper line, wide Create case, MRN prompt with the last case + Open this
+case / New case for this patient, "What's missing?" instead of "Ready to complete?".
+
+## Step 3 (built 28 Oct, deployed on the owner's yes)
+Built as the preview, with these builder notes:
+- Follow-up is one row, "Follow-up visits & events" (the existing follow-up screen holds both); the preview showed two rows.
+- Device interrogation is always listed (owner's order of Investigations); before, it showed only with a device.
+- TEE, Cardiac CT and CMR are one dictionary entity (ADVANCED_IMAGING, modality_code); the layout row's new `values`
+  key shows each as its own section. The AI Assistant and the case report see the entity once.
+- The "Unusual MRN prefix" warning is no longer shown in New Case (round 1: drop or change it); Bulk add keeps it.
+- A procedure added and then cancelled asks before it is discarded once its type was chosen.
+- 5 choices or fewer are buttons; more open a list on the question's line (e.g. AF energy source is now a list).
+Owner edits on the preview (28 Oct, later): heading "Investigations & Medications"; the Patient & episode sheet is titled
+"Patient Demographics"; Referring service off the form (it already was, field review); Male before Female (already so).

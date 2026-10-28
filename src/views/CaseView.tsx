@@ -1,9 +1,9 @@
 // Case page (approved EP Log-style preview): header card, then grouped rows; each row opens its form in a sheet.
 // Case = one EP_EPISODE; PROCEDURES lists the episode's EP_PROCEDURES, each with its components and modules.
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { codeLabel, displayValue, formFields, hasValue, type FormField } from '../../shared/dictionary.ts';
 import { ageOn, type CaseDetail, type DecodedRow, type HistoryItem } from '../../shared/caseTypes.ts';
-import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness, type Tally } from '../../shared/readiness.ts';
+import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness } from '../../shared/readiness.ts';
 import { dict, fieldOf, label } from '../lib/dict';
 import { ageSex, fmtDate, fmtShortDate } from '../lib/util';
 import { useCaseEditor, type CaseEditor } from '../caseEditor';
@@ -22,6 +22,10 @@ import { caseEnv, consequences, fieldRules, type Consequence } from '../../share
 import { useCohorts } from '../lib/cohorts';
 import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../lib/procedureTypes';
 import { seqText } from '../lib/offlineCase';
+import { procedureChip } from './CasesView';
+import { groupColor } from '../lib/filters';
+import { hijriLabel } from '../lib/hijri';
+import { rowInSection, type LayoutRow } from '../../shared/dictionary.ts';
 import { sync, useOnline } from '../lib/sync';
 
 // ── readiness shared by every sheet of the open case ──
@@ -318,14 +322,6 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   );
 }
 
-/** Device interrogation (owner, field review): shown when the risk profile says the patient has a device, when a
- *  procedure of this case is device work, or when device rows exist. */
-function deviceRowApplies(ed: CaseEditor): boolean {
-  if (ed.rows('DEVICES').length || ed.rows('DEVICE_LEADS').length) return true;
-  if (ed.rows('CLINICAL_PROFILE_SNAPSHOTS').some((r) => r.existing_cied === 'YES')) return true;
-  return showsDevice(ed.rows('PROCEDURE_COMPONENTS').map((c) => String(c.component_type)));
-}
-
 /** Height and weight live with the patient's basics (owner, field review); BMI is calculated, never stored. */
 const BASICS = ['height_cm', 'weight_kg'];
 
@@ -416,7 +412,7 @@ function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: st
 }
 
 /** A layout row (e.g. "Patient", "ECG", "Devices"): one-per-case sections as forms, repeatable ones as lists. */
-function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEditor; title: string; entities: string[]; focus?: string; cha?: ChaResult | null; onClose: () => void }) {
+function SectionSheet({ ed, title, entities, values, focus, cha, onClose }: { ed: CaseEditor; title: string; entities: string[]; values?: Record<string, string>; focus?: string; cha?: ChaResult | null; onClose: () => void }) {
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
   const caseId = ed.detail!.meta.case_id;
   useFocusField(focus);
@@ -439,7 +435,7 @@ function SectionSheet({ ed, title, entities, focus, cha, onClose }: { ed: CaseEd
           );
         }
         const rows = ed.rows(entity);
-        const done = DONE_FIRST[entity];
+        const done = DONE_FIRST[entity]?.filter((o) => Object.entries(values ?? {}).every(([k, v]) => o.values?.[k] === v));
         if (done) return <DoneFirst key={entity} ed={ed} entity={entity} options={done} onOpen={(rid) => setOpen({ entity, id: rid })} />;
         return (
           <div key={entity}>
@@ -523,6 +519,72 @@ function DeviceSection({ ed, leads, offer, onOpen }: { ed: CaseEditor; leads: bo
   );
 }
 
+/** Adds the components (and preset answer) of a "What was done" item to a procedure. */
+function addItem(ed: CaseEditor, pid: string, item: ProcedureItem, types: string[], presetRow: DecodedRow | null) {
+  for (const code of item.components)
+    if (!types.includes(code)) {
+      ed.addRow('PROCEDURE_COMPONENTS', pid, { component_type: code });
+      types.push(code);
+    }
+  if (item.preset && !hasValue(presetRow?.[item.preset.field])) {
+    ed.setField(item.preset.entity, presetRow?._id ?? ed.slot(item.preset.entity, pid), item.preset.field, item.preset.value, { create: { parent_id: pid } });
+  }
+}
+
+/** Step 1 of a new procedure (owner, 28 Oct): its date and what was done; Next opens only those sections. */
+function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (pid: string) => void; onClose: () => void }) {
+  const procs = ed.rows('EP_PROCEDURES');
+  const last = procs.map((p) => String(p.procedure_start_datetime ?? '').slice(0, 10)).filter(Boolean).sort().pop();
+  const [date, setDate] = useState(last ?? String(ed.rows('EP_EPISODES')[0]?.episode_start_date ?? '').slice(0, 10));
+  const [chosen, setChosen] = useState<string[]>([]);
+  const hijri = hijriLabel(date);
+  const next = () => {
+    const pid = ed.addRow('EP_PROCEDURES', null, date ? { procedure_start_datetime: date } : undefined);
+    const types: string[] = [];
+    const items = PROCEDURE_ITEMS.filter((x) => chosen.includes(x.id));
+    for (const item of items) addItem(ed, pid, item, types, null);
+    try {
+      localStorage.setItem(`kamc-proc-items-${pid}`, JSON.stringify(items.map((x) => x.id)));
+    } catch {
+      /* storage blocked: the ticks follow from the components */
+    }
+    onNext(pid);
+  };
+  return (
+    <Sheet title="Add procedure" onClose={onClose} testId="addproc-sheet">
+      <div className="group">
+        <div className="frow inline">
+          <label htmlFor="addproc-date" className="lab-wrap">
+            <span className="lab">Procedure date</span>
+          </label>
+          <input id="addproc-date" className="ios-value" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          {hijri && <div className="frow-err muted small">{hijri}</div>}
+        </div>
+      </div>
+      <h3 className="sechead">What was done? (one or more)</h3>
+      <div className="group">
+        <div className="frow stack">
+          {(['Ablation', 'Devices', 'Other'] as const).map((g) => (
+            <div key={g}>
+              <div className="item-group">{g}</div>
+              <div className="pill-set" role="group" aria-label={g}>
+                {PROCEDURE_ITEMS.filter((x) => x.group === g).map((x) => (
+                  <button key={x.id} type="button" aria-pressed={chosen.includes(x.id)} className={chosen.includes(x.id) ? 'on' : ''} onClick={() => setChosen((c) => (c.includes(x.id) ? c.filter((y) => y !== x.id) : [...c, x.id]))}>
+                    {x.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <button className="btn primary block wide-btn" disabled={!chosen.length} onClick={next} data-testid="addproc-next">
+        {chosen.length ? `Next (${chosen.length} chosen)` : 'Choose what was done'}
+      </button>
+    </Sheet>
+  );
+}
+
 /** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications. */
 function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string; focus?: string; onClose: () => void }) {
   const c = useCase();
@@ -566,12 +628,8 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   // Owner field review phase 2: tick what was done; each item adds its components (and opens their sections).
   const toggleItem = (item: ProcedureItem) => {
     if (!ticked.includes(item)) {
-      for (const code of item.components) if (!types.includes(code)) ed.addRow('PROCEDURE_COMPONENTS', id, { component_type: code });
+      addItem(ed, id, item, [...types], item.preset ? moduleRow(item.preset.entity) : null);
       setPicked([...picked.filter((x) => x !== item.id), item.id]);
-      if (item.preset && !hasValue(moduleRow(item.preset.entity)?.[item.preset.field])) {
-        const slot = moduleRow(item.preset.entity)?._id ?? ed.slot(item.preset.entity, id);
-        ed.setField(item.preset.entity, slot, item.preset.field, item.preset.value, { create: { parent_id: id } });
-      }
       return;
     }
     setPicked(picked.filter((x) => x !== item.id));
@@ -852,7 +910,7 @@ function ReadySheet({ ed, onGo, onComplete, busy, onClose }: { ed: CaseEditor; o
   const ordered = [...groups.entries()].sort(([a], [b]) => (a.startsWith('p:') === b.startsWith('p:') ? 0 : a.startsWith('p:') ? -1 : 1));
   const missing = r.blockers.length;
   return (
-    <Sheet title="Ready to Complete?" closeLabel="Close" onClose={onClose} onDone={onClose} testId="ready-sheet">
+    <Sheet title="What's missing?" closeLabel="Close" onClose={onClose} onDone={onClose} testId="ready-sheet">
       <div className="summary">
         <div>
           <b>{r.done}</b>of {r.total} core fields
@@ -967,11 +1025,6 @@ function HistorySheet({ caseId, onClose }: { caseId: string; onClose: () => void
       <p className="note">Every change to this case: who, when, and the value before → after. Shown only inside the case.</p>
     </Sheet>
   );
-}
-
-function CoreTally({ t }: { t?: Tally }) {
-  if (!t || !t.total) return null;
-  return <b className={t.done === t.total ? 'core-ok' : 'core-miss'}>core {t.done}/{t.total}</b>;
 }
 
 // ── light follow-up (phase 7, EP Workspace O7) ──
@@ -1201,7 +1254,8 @@ type OpenSheet =
   | { kind: 'report' }
   | { kind: 'followup' }
   | { kind: 'procedure'; id: string; focus?: string }
-  | { kind: 'section'; title: string; entities: string[]; focus?: string }
+  | { kind: 'section'; title: string; entities: string[]; values?: Record<string, string>; focus?: string }
+  | { kind: 'addproc' }
   | { kind: 'additional' }
   | { kind: 'ready' }
   | { kind: 'history' }
@@ -1212,7 +1266,7 @@ type OpenSheet =
 export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => void; wide: boolean }) {
   const ed = useCaseEditor(id);
   const { can } = useAuth();
-  const { toast, refreshCases } = useStore();
+  const { toast, refreshCases, groups } = useStore();
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const cohorts = useCohorts();
   const online = useOnline();
@@ -1269,28 +1323,42 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const localOnly = sync.isLocalOnly(d.meta.case_id);
   const serverCase = online && !localOnly;
   const aiWaiting = aiPending(d);
-  const addProcedure = () => {
-    const pid = ed.addRow('EP_PROCEDURES');
-    setSheet({ kind: 'procedure', id: pid });
-  };
-  const countOf = (entities: string[]) => {
+  const addProcedure = () => setSheet({ kind: 'addproc' });
+  const countOf = (r: LayoutRow) => {
     let n = 0;
-    for (const e of entities) {
+    for (const e of r.entities) {
       const def = dict.entities[e];
-      if (def.cardinality === 'multi') n += ed.rows(e).length;
+      if (def.cardinality === 'multi') n += ed.rows(e).filter((x) => rowInSection(r, x)).length;
       else n += filledCount(e, ed.rows(e)[0]);
     }
     return n;
   };
+  const missing = readiness.blockers.length;
+  const pilgrim = ed.rows('EP_EPISODES')[0]?.pilgrim_status;
+  const hajj = pilgrim === 'HAJJ' ? 'Hajj' : pilgrim === 'UMRAH' ? 'Umrah' : null;
+  // The procedure's real name (owner, 28 Oct): "AF + Flutter Ablation", "Diagnostic EPS", "Device implant".
+  const procName = (p: DecodedRow) => {
+    const codes = comps.filter((c) => c.procedure_id === p._id).map((c) => String(c.component_type));
+    const type = (p.primary_procedure_type as string) ?? null;
+    const ch = procedureChip({ id: p._id, start: null, status: null, type, components: codes });
+    const text = type !== 'ABLATION' && codes.length ? codes.map((c) => label('PROCEDURE_COMPONENTS', 'component_type', c)).join(' + ') : ch.text;
+    return { ...ch, text };
+  };
+  // Save draft (owner, 28 Oct): sends what is waiting and goes back to the list; the case stays In progress.
+  const saveDraft = async () => {
+    await ed.flush();
+    toast({ message: 'Draft saved. The case stays In progress.', kind: 'success' });
+    refreshCases();
+    nav('cases');
+  };
   const statusLabel = (code: unknown) => (code ? `Procedure: ${label('EP_PROCEDURES', 'procedure_status', String(code))}` : null);
-  const pct = readiness.total ? Math.round((readiness.done / readiness.total) * 100) : 0;
 
   const go = (i: Issue) => {
     const focus = `${i.entity}.${i.field}`;
     if (i.procedure_id) setSheet({ kind: 'procedure', id: i.procedure_id, focus });
     else {
       const row = dict.layout.groups.flatMap((g) => g.rows).find((r) => r.id === i.section);
-      if (row) setSheet({ kind: 'section', title: row.label, entities: row.entities, focus });
+      if (row) setSheet({ kind: 'section', title: row.title ?? row.label, entities: row.entities, values: row.values, focus });
     }
   };
 
@@ -1336,42 +1404,83 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         <div className="navbar">
           {!wide ? (
             <a href="#/cases" className="back link">
-              <Icon name="back" size={22} /> Procedures
+              <Icon name="back" size={22} /> Cases
             </a>
           ) : (
             <span />
           )}
-          <span className="title">Case</span>
+          <span className="title">MRN {d.meta.mrn}</span>
           <span className="right">{!completed && <SaveIndicator />}</span>
         </div>
 
         <div className="hcard" data-testid="case-head">
-          <div className="hdate">{fmtDate(head?.start) || 'No episode date'}</div>
-          <div className="muted small">
-            Episode {fmtShortDate(head?.start)}
-            {head?.end ? ` → ${fmtDate(head.end)}` : ''} · {d.meta.group_name} · {seqText(d.meta.group_seq)}
+          <div className="hc-top">
+            <b className="hc-mrn">{d.meta.mrn}</b>
+            {ageSex(head?.age ?? null, head?.sex ?? null) && <span className="muted">{ageSex(head?.age ?? null, head?.sex ?? null)}</span>}
+            {hajj && (
+              <span className="chip c-cat hajj-mark" style={{ '--chip': 'var(--cat-pilgrim)' } as CSSProperties}>
+                {hajj}
+              </span>
+            )}
           </div>
-          <div className="hmrn">
-            <b>MRN: {d.meta.mrn}</b> <span className="muted">{ageSex(head?.age ?? null, head?.sex ?? null)}</span>
-          </div>
-          <div className="small" style={{ marginTop: 8 }}>
+          {procs.length > 0 && (
+            <div className="chips hc-chips">
+              {procs.map((p) => {
+                const ch = procName(p);
+                return (
+                  <span key={p._id} className={`chip ${ch.cls}`} style={ch.color ? ({ '--chip': `var(--${ch.color})` } as CSSProperties) : undefined}>
+                    {ch.text}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <div className="hc-meta small">
+            <span className="muted">
+              <span className="gdot" style={{ background: `var(--${groupColor(groups, d.meta.group_id)})` }} aria-hidden />
+              {d.meta.group_name} · {seqText(d.meta.group_seq)}
+              {head?.start ? ` · ${fmtDate(head.start)}` : ''}
+              {head?.end ? ` → ${fmtDate(head.end)}` : ''}
+            </span>
             <span className={`status ${completed ? 's-done' : 's-prog'}`} data-testid="case-status">
               {completed ? 'Completed' : 'In progress'}
             </span>
+            {!completed && (
+              <span className={missing ? 'missing' : 'ok-text'} data-testid="core-progress" title={`Core fields: ${readiness.done} of ${readiness.total} done`}>
+                {missing ? `${missing} missing` : '✓ Nothing missing'}
+              </span>
+            )}
             {localOnly && (
-              <span className="chip c-neutral" data-testid="device-only" style={{ marginLeft: 6 }}>
+              <span className="chip c-neutral" data-testid="device-only">
                 On this device only
               </span>
             )}
           </div>
-          <div className="progress-row" data-testid="core-progress">
-            <span>
-              Core fields {readiness.done} of {readiness.total}
-            </span>
-            <span className="progress" role="progressbar" aria-label="Core fields" aria-valuemin={0} aria-valuemax={readiness.total} aria-valuenow={readiness.done}>
-              <span style={{ width: `${pct}%` }} />
-            </span>
-          </div>
+        </div>
+
+        <div className="tools-row" data-testid="case-tools">
+          {can('ai.extract') && !completed && (
+            <button className="tool" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row" disabled={!serverCase} aria-label="AI Assistant: fill from a clinical note" title="AI Assistant: fill from a clinical note">
+              <Icon name="extract" size={22} />
+              <span>AI</span>
+            </button>
+          )}
+          {(cohorts.length > 0 || can('cohorts.manage')) && (
+            <button className="tool" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row" disabled={!serverCase}>
+              <Icon name="patients" size={22} />
+              <span>Cohorts{(d.summary.cohorts ?? []).length ? ` (${(d.summary.cohorts ?? []).length})` : ''}</span>
+            </button>
+          )}
+          <button className="tool" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row" title={`${d.history_count} change${d.history_count === 1 ? '' : 's'}`}>
+            <Icon name="cal" size={22} />
+            <span>History</span>
+          </button>
+          {can('report.pdf') && (
+            <button className="tool" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row" disabled={!serverCase} aria-label="Case report (PDF)">
+              <Icon name="doc" size={22} />
+              <span>Report</span>
+            </button>
+          )}
         </div>
 
         {completed && (
@@ -1418,57 +1527,80 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         )}
 
         <h2 className="sechead">Procedures</h2>
-        <div className="group" data-testid="procedures">
-          {procs.map((p, i) => {
-            const types = comps.filter((c) => c.procedure_id === p._id).map((c) => codeLabel(fieldOf('PROCEDURE_COMPONENTS', 'component_type'), c.component_type));
-            const sub = [p.procedure_start_datetime ? fmtShortDate(String(p.procedure_start_datetime)) : null, types.join(' + ') || null, statusLabel(p.procedure_status)].filter(Boolean).join(' · ');
-            return (
-              <button key={p._id} className="grow-row" onClick={() => setSheet({ kind: 'procedure', id: p._id })} data-testid="procedure-row">
-                <span className="row-ic">
-                  <Icon name="wave" size={22} />
-                </span>
-                <span className="grow">
-                  <span className="line1">{procedureTitle(p, i)}</span>
-                  <span className="sub">
-                    {sub || 'No details yet'} · <CoreTally t={readiness.byProcedure[p._id]} />
+        {!procs.length && !completed ? (
+          <button className="add-first" onClick={addProcedure} data-testid="add-procedure">
+            <Icon name="plus" size={30} />
+            Add procedure
+          </button>
+        ) : (
+          <div className="group" data-testid="procedures">
+            {procs.map((p, i) => {
+              const t = readiness.byProcedure[p._id];
+              const left = t ? t.total - t.done : 0;
+              const date = p.procedure_start_datetime ? String(p.procedure_start_datetime).slice(0, 10) : null;
+              const status = statusLabel(p.procedure_status);
+              return (
+                <button key={p._id} className="grow-row" onClick={() => setSheet({ kind: 'procedure', id: p._id })} data-testid="procedure-row" aria-label={procedureTitle(p, i)}>
+                  <span className="grow">
+                    <span className="line1 proc-top">
+                      <b>{procName(p).text}</b>
+                      <span className="proc-date">{date ? fmtDate(date) : 'No date'}</span>
+                    </span>
+                    <span className="sub">
+                      {status ? `${status} · ` : ''}
+                      {left > 0 ? <span className="missing">{left} missing</span> : t?.total ? <span className="ok-text">✓ Complete</span> : 'No details yet'}
+                    </span>
                   </span>
+                  <Icon name="chevron" size={16} className="muted" />
+                </button>
+              );
+            })}
+            {!completed && (
+              <button className="grow-row add" onClick={addProcedure} data-testid="add-procedure">
+                <span className="row-ic">
+                  <Icon name="plus" size={20} />
                 </span>
-                <Icon name="chevron" size={16} className="muted" />
+                Add procedure
               </button>
-            );
-          })}
-          {!completed && (
-            <button className="grow-row add" onClick={addProcedure}>
-              <span className="row-ic">
-                <Icon name="plus" size={20} />
-              </span>
-              Add Procedure
-            </button>
-          )}
-          {completed && !procs.length && <div className="grow-row muted">No procedures</div>}
-        </div>
+            )}
+            {completed && !procs.length && <div className="grow-row muted">No procedures</div>}
+          </div>
+        )}
 
         {dict.layout.groups.map((g) => (
           <div key={g.id}>
             <h2 className="sechead">{g.label}</h2>
             <div className="group">
               {g.rows.map((r) => {
-                if (r.id === 'devices' && !deviceRowApplies(ed)) return null;
                 const later = r.entities.map((e) => dict.entities[e].later).find(Boolean);
                 const t = readiness.bySection[r.id];
+                const n = countOf(r);
+                const state = later ? (
+                  <span className="muted small">Comes in {later}</span>
+                ) : t?.total && t.done < t.total ? (
+                  <span className="missing small">{t.total - t.done} missing</span>
+                ) : t?.total ? (
+                  <span className="ok-text" aria-label="complete">
+                    ✓
+                  </span>
+                ) : n ? (
+                  <span className="muted small">{n}</span>
+                ) : (
+                  <span className="add-text small">{completed ? '—' : 'Add'}</span>
+                );
                 return (
                   <button
                     key={r.id}
                     className="grow-row"
                     disabled={!!later}
-                    onClick={() => setSheet(r.id === 'followup' ? { kind: 'followup' } : { kind: 'section', title: r.label, entities: r.entities })}
+                    onClick={() => setSheet(r.id === 'followup' ? { kind: 'followup' } : { kind: 'section', title: r.title ?? r.label, entities: r.entities, values: r.values })}
                     data-testid={`section-${r.id}`}
                   >
                     <span className="row-ic">
                       <Icon name={r.icon} size={22} />
                     </span>
                     <span className="grow">{r.label}</span>
-                    <span className="muted small">{later ? `Comes in ${later}` : t?.total ? `core ${t.done}/${t.total}` : countOf(r.entities) || '—'}</span>
+                    {state}
                     {!later && <Icon name="chevron" size={16} className="muted" />}
                   </button>
                 );
@@ -1477,58 +1609,21 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           </div>
         ))}
 
-        <h2 className="sechead">Additional clinical information</h2>
+        <h2 className="sechead">Notes</h2>
         <div className="group">
           <button className="grow-row add" onClick={() => setSheet({ kind: 'additional' })} disabled={completed && !d.additional.length}>
             <span className="row-ic">
               <Icon name={d.additional.length ? 'edit' : 'plus'} size={20} />
             </span>
-            {d.additional.length ? `${d.additional.length} item${d.additional.length === 1 ? '' : 's'}` : completed ? 'None' : 'Add Information'}
+            {d.additional.length ? `${d.additional.length} note${d.additional.length === 1 ? '' : 's'}` : completed ? 'None' : 'Add note'}
           </button>
         </div>
 
-        <h2 className="sechead">Case</h2>
-        <div className="group">
-          {can('ai.extract') && !completed && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row" disabled={!serverCase}>
-              <span className="row-ic">
-                <Icon name="extract" size={22} />
-              </span>
-              <span className="grow">AI Assistant</span>
-              <span className="muted small">Fill from a clinical note</span>
-              <Icon name="chevron" size={16} className="muted" />
-            </button>
-          )}
-          {(cohorts.length > 0 || can('cohorts.manage')) && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row" disabled={!serverCase}>
-              <span className="row-ic">
-                <Icon name="patients" size={22} />
-              </span>
-              <span className="grow">Cohorts</span>
-              <span className="muted small">{(d.summary.cohorts ?? []).length || ''}</span>
-              <Icon name="chevron" size={16} className="muted" />
-            </button>
-          )}
-          <button className="grow-row" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row">
-            <span className="row-ic">
-              <Icon name="cal" size={22} />
-            </span>
-            <span className="grow">History</span>
-            <span className="muted small">
-              {d.history_count} change{d.history_count === 1 ? '' : 's'}
-            </span>
-            <Icon name="chevron" size={16} className="muted" />
-          </button>
-          {can('report.pdf') && (
-            <button className="grow-row" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row" disabled={!serverCase}>
-              <span className="row-ic">
-                <Icon name="doc" size={22} />
-              </span>
-              <span className="grow">Case report (PDF)</span>
-              <Icon name="chevron" size={16} className="muted" />
-            </button>
-          )}
-        </div>
+        {!completed && !serverCase && (
+          <p className="muted small center" data-testid="needs-connection">
+            Complete, Delete, AI and PDF need the connection.
+          </p>
+        )}
 
         {can('case.delete') && !completed && (
           <button className="btn danger-text block delete-case" onClick={() => setConfirmDelete(true)} disabled={!serverCase}>
@@ -1536,19 +1631,13 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           </button>
         )}
 
-        {!completed && (
+        {!completed && procs.length > 0 && (
           <div className="bottomact" data-testid="complete-bar">
-            <span className="grow">
-              {readiness.blockers.length ? `${readiness.blockers.length} missing` : 'Ready'}
-              {!serverCase && (
-                <span className="muted small" data-testid="needs-connection">
-                  {' '}
-                  · Complete, Delete, AI and PDF need the connection
-                </span>
-              )}
-            </span>
-            <button className="btn" onClick={() => setSheet({ kind: 'ready' })}>
-              Ready to complete?
+            <button className="btn draft-btn" onClick={saveDraft} disabled={busy} data-testid="save-draft">
+              Save draft
+            </button>
+            <button className="btn grow" onClick={() => setSheet({ kind: 'ready' })} data-testid="whats-missing">
+              {missing ? `What's missing? (${missing})` : "What's missing?"}
             </button>
             {can('case.complete') && (
               <button className="btn primary" disabled={!readiness.canComplete || busy || ed.pending > 0 || !serverCase} onClick={complete}>
@@ -1559,7 +1648,8 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         )}
 
         {sheet?.kind === 'procedure' && <ProcedureSheet ed={ed} id={sheet.id} focus={sheet.focus} onClose={() => setSheet(null)} />}
-        {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} focus={sheet.focus} cha={cha} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} values={sheet.values} focus={sheet.focus} cha={cha} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'addproc' && <AddProcedureSheet ed={ed} onClose={() => setSheet(null)} onNext={(pid) => setSheet({ kind: 'procedure', id: pid })} />}
         {sheet?.kind === 'additional' && <AdditionalSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'report' && <ReportSheet ed={ed} readiness={readiness} onClose={() => setSheet(null)} />}

@@ -23,10 +23,10 @@ test('L3: the app opens without internet; a new case gets "No. pending", is fill
   await sheet.locator('#new-mrn').fill(m);
   await sheet.locator('#new-date').fill('2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await expect(page.getByTestId('case-head')).toContainText('No. pending');
   await expect(page.getByTestId('device-only').first()).toBeVisible();
-  await expect(page.getByTestId('complete-bar').getByRole('button', { name: 'Complete', exact: true })).toBeDisabled();
+  await expect(page.getByTestId('complete-bar')).toHaveCount(0);
   await page.screenshot({ path: test.info().outputPath('offline-new-case.png') });
 
   // Filled offline.
@@ -64,7 +64,7 @@ test('an edit made without connection waits on the device, survives a reload, an
 
   // Reload: the edit is still on the device and still shown.
   await page.reload();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await expect(ind).toHaveText(/waiting|Syncing/);
   await page.getByTestId('section-patient').click();
   await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');

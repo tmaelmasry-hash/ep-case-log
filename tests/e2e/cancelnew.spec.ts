@@ -10,16 +10,30 @@ test('Cancel on a new procedure takes it away; with ticks it asks first; Done ke
   const rows = page.getByTestId('procedure-row');
   const ps = page.getByTestId('procedure-sheet');
 
-  // Nothing entered: Cancel removes it at once.
+  // Step 3 (owner, 28 Oct): a new procedure starts with "What was done?". Cancel there adds nothing.
+  const pick = page.getByTestId('addproc-sheet');
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await expect(page.getByTestId('addproc-next')).toBeDisabled();
+  await pick.getByRole('button', { name: 'Cancel' }).click();
+  await expect(pick).toHaveCount(0);
+  await expect(rows).toHaveCount(0);
+
+  // The type chosen, then Cancel in the procedure: it asks, and Discard takes it away.
+  await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await pick.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   await expect(ps).toBeVisible();
+  await saved(page);
   await ps.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('alertdialog', { name: 'Discard this new procedure?' }).getByRole('button', { name: 'Discard' }).click();
   await expect(ps).toHaveCount(0);
   await expect(rows).toHaveCount(0);
 
   // Something ticked: Cancel asks; "Cancel" in the question keeps the sheet open; Done keeps the procedure.
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'VT', exact: true }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'VT', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'PVC', exact: true }).click();
   await ps.getByRole('button', { name: 'Cancel' }).click();
   const ask = page.getByRole('alertdialog', { name: 'Discard this new procedure?' });
   await expect(ask).toBeVisible();
@@ -35,7 +49,9 @@ test('Cancel on a new procedure takes it away; with ticks it asks first; Done ke
 
   // Ticked, then Discard: gone.
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'PVC', exact: true }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'PVC', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
+  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await ps.getByRole('button', { name: 'Cancel' }).click();
   await ask.getByRole('button', { name: 'Discard' }).click();
   await expect(ps).toHaveCount(0);
@@ -44,7 +60,7 @@ test('Cancel on a new procedure takes it away; with ticks it asks first; Done ke
 
   // The saved copy agrees after a reload.
   await page.reload();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await expect(rows).toHaveCount(1);
 });
 
@@ -52,6 +68,8 @@ test('the page behind an open sheet does not scroll', async ({ page }, info) => 
   await open(page);
   await createCase(page, mrn(info, 9961000));
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   await expect(page.getByTestId('procedure-sheet')).toBeVisible();
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe('hidden');
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();

@@ -15,10 +15,11 @@ test('mapping system follows "mapping used"; turning it off asks before removing
   await sheet.locator('#new-mrn').fill(m);
   await sheet.locator('#new-date').fill('2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   const used = ps.getByRole('radiogroup', { name: 'Electroanatomic mapping used' });
   const system = ps.getByRole('radiogroup', { name: 'Mapping system' });
   await expect(system).toHaveCount(0);

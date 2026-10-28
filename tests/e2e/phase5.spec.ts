@@ -19,11 +19,11 @@ test('an MRN with a case is answered with it; a new case copies the history, mar
   await sheet.getByRole('radio', { name: 'Group 1' }).click();
   await sheet.getByRole('button', { name: 'Create case' }).click();
   const prompt = sheet.getByTestId('mrn-prompt');
-  await expect(prompt).toContainText('This MRN already has 1 case in this group.');
-  await expect(prompt.getByRole('link')).toContainText('No. ');
-  await prompt.getByRole('button', { name: 'Add a new case for this MRN' }).click();
+  await expect(prompt).toContainText('This patient already has 1 case');
+  await expect(prompt.getByRole('link').first()).toContainText('No. ');
+  await prompt.getByRole('button', { name: 'New case for this patient' }).click();
 
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   await expect(page.getByTestId('copied-banner')).toContainText('1 history value was copied from Group 1 No.');
   await page.getByTestId('section-patient').click();
   const sex = page.getByTestId('section-sheet').locator('[data-field="PATIENTS.sex_at_birth"]');

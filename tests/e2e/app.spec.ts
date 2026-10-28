@@ -26,7 +26,7 @@ async function createCase(page: Page, m: string, date = '2026-03-12', group?: st
   if (group) await sheet.getByRole('radio', { name: group }).click();
   await sheet.locator('#new-date').fill(date);
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
 }
 
 const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({ visible: true }).first()).toHaveText('Synced');
@@ -49,27 +49,30 @@ test('create a case, add two procedures with components and module fields; it pe
 
   // Procedure 1: EPS
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Other' }).getByRole('button', { name: 'EP study' }).click();
+  await page.getByTestId('addproc-next').click();
   let ps = page.getByTestId('procedure-sheet');
   await ps.getByLabel('Procedure date').fill('2026-03-12');
   // Field review phase 2: tick what was done; the procedure type follows.
-  await ps.getByRole('group', { name: 'Other' }).getByRole('button', { name: 'EP study' }).click();
   await expect(ps.getByTestId('procedure-type')).toContainText('EPS');
   await expect(ps.getByTestId('module-DIAGNOSTIC_EPS')).toBeVisible();
-  await ps.getByTestId('module-DIAGNOSTIC_EPS').getByRole('radiogroup', { name: 'EPS indication' }).getByRole('radio', { name: 'Syncope' }).click();
+  await ps.getByTestId('module-DIAGNOSTIC_EPS').getByLabel('EPS indication').selectOption({ label: 'Syncope' });
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
 
   // Procedure 2: ablation with AF + Flutter in the same session
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   ps = page.getByTestId('procedure-sheet');
   await ps.getByLabel('Procedure date').fill('2026-03-13');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'Flutter', exact: true }).click();
   await expect(ps.getByTestId('procedure-type')).toContainText('Ablation');
   const af = ps.getByTestId('module-AF_ABLATIONS');
   await expect(af).toBeVisible();
   await expect(ps.getByTestId('module-FLUTTER_ABLATIONS')).toBeVisible();
-  await af.getByRole('radiogroup', { name: 'Energy source' }).getByRole('radio', { name: 'PFA' }).click();
+  // 6 choices: a list on the question's line (owner, 28 Oct).
+  await af.getByLabel('Energy source').selectOption({ label: 'PFA (pulsed field)' });
   await af.getByRole('radiogroup', { name: 'PV status at case end' }).getByRole('radio', { name: 'All target PVs isolated' }).click();
   // M-1: the reconnected vein count shows only at a redo with reconnection present.
   await expect(af.getByLabel('Reconnected PV count')).toHaveCount(0);
@@ -87,14 +90,14 @@ test('create a case, add two procedures with components and module fields; it pe
 
   const rows = page.getByTestId('procedure-row');
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText('Procedure 1 · EPS');
+  await expect(rows.nth(0)).toContainText('Diagnostic EPS');
   await expect(rows.nth(1)).toContainText('AF + Flutter');
 
   await page.reload();
   await expect(page.getByTestId('procedure-row')).toHaveCount(2);
   await page.getByTestId('procedure-row').nth(1).click();
   ps = page.getByTestId('procedure-sheet');
-  await expect(ps.getByTestId('module-AF_ABLATIONS').getByRole('radio', { name: 'PFA' })).toHaveAttribute('aria-checked', 'true');
+  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Energy source').locator('option:checked')).toHaveText('PFA (pulsed field)');
   await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Reconnected PV count')).toHaveValue('2');
   await ps.getByRole('button', { name: 'Done' }).click();
 
@@ -127,9 +130,10 @@ test('patient & history: age from date of birth, diagnosis subtype follows the d
   const d = page.getByTestId('section-sheet');
   await expect(d.getByText('Choose the primary ep diagnosis first.')).toBeVisible();
   await d.getByLabel('Primary EP diagnosis').selectOption({ label: 'AF' });
-  const subtype = d.getByLabel('Diagnosis subtype');
-  await expect(subtype.locator('option')).toHaveText(['Select', 'Paroxysmal AF', 'Persistent AF', 'Long-standing persistent AF']);
-  await subtype.selectOption({ label: 'Paroxysmal AF' });
+  // 5 choices or fewer are buttons on the question (owner, 28 Oct).
+  const subtype = d.getByRole('radiogroup', { name: 'Diagnosis subtype' });
+  await expect(subtype.getByRole('radio')).toHaveText(['Paroxysmal AF', 'Persistent AF', 'Long-standing persistent AF']);
+  await subtype.getByRole('radio', { name: 'Paroxysmal AF' }).click();
   await saved(page);
   await d.getByLabel('Primary EP diagnosis').selectOption({ label: 'AVNRT' });
   await saved(page);
@@ -161,7 +165,7 @@ test('repeatable rows: add an ECG, fill it, remove it with confirmation', async 
   await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(0);
   await saved(page);
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByTestId('section-ecg')).toContainText('—');
+  await expect(page.getByTestId('section-ecg')).toContainText('Add');
 });
 
 test('remove a procedure asks first; additional information; delete the case', async ({ page }, info) => {
@@ -169,8 +173,9 @@ test('remove a procedure asks first; additional information; delete the case', a
   await open(page);
   await createCase(page, m);
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await saved(page);
   await ps.getByRole('button', { name: 'Remove this procedure' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
@@ -179,14 +184,14 @@ test('remove a procedure asks first; additional information; delete the case', a
   await page.getByRole('alertdialog').getByRole('button', { name: 'Remove procedure' }).click();
   await expect(page.getByTestId('procedure-row')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Add Information' }).click();
+  await page.getByRole('button', { name: 'Add note' }).click();
   const a = page.getByTestId('additional-sheet');
   await a.getByLabel('New information').fill('Synthetic note: referred from another hospital');
   await a.getByRole('button', { name: 'Add information' }).click();
   await saved(page);
   await expect(a).toContainText('Synthetic note');
   await a.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByRole('button', { name: '1 item' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '1 note' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete case' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete case' }).click();
@@ -216,7 +221,8 @@ test('patients and my work follow the cases', async ({ page }, info) => {
   await open(page);
   await createCase(page, m, '2026-02-03');
   await page.getByRole('button', { name: 'Add Procedure' }).click();
-  await page.getByTestId('procedure-sheet').getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
+  await page.getByTestId('addproc-next').click();
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
   await page.goto('/#/patients');
@@ -258,8 +264,9 @@ test('layout fits the screen on every page', async ({ page }, info) => {
   await page.goto('/#/cases');
   await page.getByTestId('case-row').first().click();
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'Pacemaker' }).click();
   await expect(ps.getByTestId('module-DEVICE_IMPLANTS')).toBeVisible();
   const sheetOverflow = await ps.evaluate((el) => el.scrollWidth - el.clientWidth);
   expect(sheetOverflow).toBeLessThanOrEqual(0);

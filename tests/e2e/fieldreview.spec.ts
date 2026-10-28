@@ -7,8 +7,8 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   const m = mrn(info, 9950000);
   await open(page);
   await createCase(page, m);
-  // No device yet: no Device interrogation row.
-  await expect(page.getByTestId('section-devices')).toHaveCount(0);
+  // Device interrogation is listed in the owner's order of Investigations (28 Oct), device or not.
+  await expect(page.getByTestId('section-devices')).toBeVisible();
 
   await page.getByTestId('section-patient').click();
   const ps = page.getByTestId('section-sheet');
@@ -20,7 +20,7 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await expect(ps.getByTestId('bmi')).toHaveText('28.4');
   await ps.getByRole('button', { name: 'Done' }).click();
 
-  await page.getByTestId('section-imaging').click();
+  await page.getByTestId('section-cmr').click();
   const is = page.getByTestId('section-sheet');
   const cmr = is.getByRole('radiogroup', { name: 'CMR' });
   await expect(cmr.getByRole('radio', { name: 'Not done' })).toHaveAttribute('aria-checked', 'true');
@@ -36,7 +36,9 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await saved(page);
   await expect(cmr.getByRole('radio', { name: 'Not done' })).toHaveAttribute('aria-checked', 'true');
 
-  // Holter: 7 days is stored as 168 hours and shown again as 7 days.
+  // Holter (its own section since 28 Oct): 7 days is stored as 168 hours and shown again as 7 days.
+  await is.getByRole('button', { name: 'Done' }).click();
+  await page.getByTestId('section-holter').click();
   await is.getByRole('button', { name: 'Add holter / rhythm monitoring' }).click();
   const hs = page.getByTestId('row-sheet');
   await hs.getByLabel('Duration unit').selectOption('days');

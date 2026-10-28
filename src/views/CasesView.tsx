@@ -13,6 +13,7 @@ import { Empty, SaveIndicator, Sheet, useMediaQuery } from '../components/ui';
 import { CategoryTree } from '../components/CategoryTree';
 import { applyFilters, clearFilters, componentColor, groupColor, itemColor, itemLabel, setFilters, toggleFilter, useFilters, useTagged, type Filters } from '../lib/filters';
 import { periodPresets } from '../components/CategoryTree';
+import { hijriLabel } from '../lib/hijri';
 import { PeriodSheet } from '../components/PeriodSheet';
 import { SideDrawer } from '../components/SideDrawer';
 import { downloadXlsx } from '../lib/exportFile';
@@ -152,8 +153,13 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
     }
   };
 
+  // Live check while typing (owner, 28 Oct): earlier cases of this MRN among the cases this user can see.
+  const earlier = check?.ok ? cases.filter((c) => c.mrn === check.value).sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '')) : [];
+  const hijri = hijriLabel(date);
+  const prompt = existing ? [...existing.here].sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '')) : [];
+
   return (
-    <Sheet title="New Case" onClose={onClose} onDone={() => submit(!!existing)} doneLabel="Create" doneDisabled={busy} testId="new-case-sheet">
+    <Sheet title="New Case" onClose={onClose} testId="new-case-sheet">
       <div className="group">
         <div className="frow inline">
           <label className="lab-wrap" htmlFor="new-mrn">
@@ -172,13 +178,21 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
             }}
             autoFocus
           />
+          {check?.ok && !existing && (
+            <div className={`frow-err small ${earlier.length ? 'warn-text' : 'ok-text'}`} data-testid="mrn-live">
+              {earlier.length
+                ? `This MRN has ${earlier.length} case${earlier.length === 1 ? '' : 's'}: last ${earlier[0].episode_start_date ? fmtDate(earlier[0].episode_start_date) : 'with no date'}`
+                : '✓ New patient: no earlier case with this MRN'}
+            </div>
+          )}
         </div>
         {groups.length > 1 && (
           <div className="frow stack">
             <span className="lab">Group</span>
-            <div className="mini-seg" role="radiogroup" aria-label="Group">
+            <div className="pill-set group-pills" role="radiogroup" aria-label="Group">
               {groups.map((g) => (
                 <button key={g.group_id} type="button" role="radio" aria-checked={group === g.group_id} className={group === g.group_id ? 'on' : ''} onClick={() => setGroup(g.group_id)}>
+                  <span className="gdot" style={{ background: `var(--${groupColor(groups, g.group_id)})` }} aria-hidden />
                   {g.name}
                 </button>
               ))}
@@ -187,13 +201,13 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
         )}
         <div className="frow inline">
           <label className="lab-wrap" htmlFor="new-date">
-            <span className="lab">Episode start date <span className="req">*</span></span>
+            <span className="lab">Procedure date <span className="req">*</span></span>
           </label>
           <input id="new-date" className="ios-value" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />
+          {hijri && <div className="frow-err muted small hijri-line">{hijri}</div>}
         </div>
       </div>
       {check && !check.ok && mrn.length >= 7 && <p className="field-error">{check.error}</p>}
-      {check?.ok && check.warning && <p className="warn-text small">{check.warning}</p>}
       {err && (
         <p className="field-error" role="alert">
           {err.message}
@@ -202,23 +216,38 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
       {existing ? (
         <div className="mrn-prompt" role="alert" data-testid="mrn-prompt">
           <p>
-            <b>{existing.message}</b>
+            <b>{prompt.length ? `This patient already has ${prompt.length} case${prompt.length === 1 ? '' : 's'}` : existing.message}</b>
           </p>
           {existing.here.some((c) => c.episode_start_date === date) && (
             <p className="warn-text" data-testid="duplicate-warning">
               Possible duplicate: No. {existing.here.filter((c) => c.episode_start_date === date).map((c) => c.group_seq).join(', ')} has the same MRN and the same episode date. Open it instead of adding a new case, unless this really is a second episode that day.
             </p>
           )}
-          {existing.here.length > 0 && (
+          {prompt.length > 0 && (
             <div className="group">
-              {existing.here.map((c) => (
-                <a key={c.case_id} className="grow-row" href={`#/cases/${c.case_id}`} onClick={onClose}>
+              {prompt.map((c) => (
+                <a key={c.case_id} className="grow-row prompt-case" href={`#/cases/${c.case_id}`} onClick={onClose}>
                   <span className="grow">
-                    <span className="line1">
-                      {seqText(c.group_seq)} · {c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}
+                    <span className="line1 proc-top">
+                      <b>{c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}</b>
+                      <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
+                    </span>
+                    <span className="chips">
+                      {c.procedures.length ? (
+                        c.procedures.map((p) => {
+                          const ch = procedureChip(p);
+                          return (
+                            <span key={p.id} className={`chip ${ch.cls}`} style={ch.color ? ({ '--chip': `var(--${ch.color})` } as CSSProperties) : undefined}>
+                              {ch.text}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="chip c-neutral">No procedures</span>
+                      )}
                     </span>
                     <span className="sub">
-                      {c.procedures.map((p) => procedureChip(p).text).join(' · ') || 'No procedures'} · {c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}
+                      {groups.find((g) => g.group_id === group)?.name} · {seqText(c.group_seq)}
                     </span>
                   </span>
                   <Icon name="chevron" size={16} className="muted" />
@@ -226,20 +255,24 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
               ))}
             </div>
           )}
-          <p className="muted small">Open the case above to add a procedure to the same episode, or add a new case (a new episode). Patient history is copied from the latest case and marked "Copied" to check.</p>
-          <button className="btn primary block" onClick={() => submit(true)} disabled={busy}>
-            {busy ? 'Creating…' : 'Add a new case for this MRN'}
+          {prompt.length > 0 && (
+            <a className="btn block wide-btn open-case" href={`#/cases/${prompt[0].case_id}`} onClick={onClose} data-testid="open-earlier">
+              Open this case
+            </a>
+          )}
+          <p className="muted small">A new case copies the patient's history and marks it "Copied" until you check it. Procedures are never copied.</p>
+          <button className="btn primary block wide-btn" onClick={() => submit(true)} disabled={busy}>
+            {busy ? 'Creating…' : 'New case for this patient'}
           </button>
         </div>
       ) : (
         <>
-          <p className="muted small">A case is one episode of care. Add each procedure of the episode inside the case.</p>
           {!online && (
             <p className="warn-text small" data-testid="offline-new-case">
               No connection: the case is saved on this device and gets its number (No.) when it reaches the Google Sheet. The MRN is checked against the cases on this device only; history from an earlier case of this MRN is copied when it reaches the Sheet.
             </p>
           )}
-          <button className="btn primary block" onClick={() => submit()} disabled={busy}>
+          <button className="btn primary block wide-btn" onClick={() => submit()} disabled={busy}>
             {busy ? 'Creating…' : 'Create case'}
           </button>
         </>

@@ -27,7 +27,7 @@ async function createCase(page: Page, m: string, group?: string) {
   if (group) await sheet.getByRole('radio', { name: group }).click();
   await sheet.locator('#new-date').fill('2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   return page.url().split('#/cases/')[1];
 }
 
@@ -36,26 +36,27 @@ const saved = (page: Page) => expect(page.getByTestId('save-indicator').filter({
 test('core progress, "Not available", complete, read only, reopen with a reason, history', async ({ page }, info) => {
   await open(page);
   const id = await createCase(page, mrn(info));
-  await expect(page.getByTestId('core-progress')).toContainText(/Core fields \d+ of \d+/);
-  await expect(page.getByTestId('section-patient')).toContainText('core 2/4');
+  await expect(page.getByTestId('core-progress')).toContainText(/\d+ missing/);
+  await expect(page.getByTestId('section-patient')).toContainText('3 missing');
 
   // A procedure with AF: its core count includes the AF ablation items.
   await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await expect(ps.getByTestId('module-AF_ABLATIONS')).toBeVisible();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByTestId('procedure-row')).toContainText('core 2/14'); // date and type are filled by the app (field review phase 2)
+  await expect(page.getByTestId('procedure-row')).toContainText('12 missing'); // date and type are filled by the app (field review phase 2)
 
   // Everything else filled (synthetic), except LA/LAA thrombus status and date of birth.
   await fillCore(page, id, ['AF_ABLATIONS.la_laa_thrombus_status', 'PATIENT_IDENTIFIERS.date_of_birth']);
   await page.reload();
-  await expect(page.getByTestId('complete-bar')).toContainText('2 missing');
+  await expect(page.getByTestId('complete-bar')).toContainText("What's missing? (2)");
   await expect(page.getByTestId('complete-bar').getByRole('button', { name: 'Complete', exact: true })).toBeDisabled();
 
   // Ready to complete? lists both; Go opens the procedure at the field.
-  await page.getByRole('button', { name: 'Ready to complete?' }).click();
+  await page.getByRole('button', { name: /What's missing/ }).click();
   const ready = page.getByTestId('ready-sheet');
   await expect(ready.getByTestId('blocker')).toHaveCount(2);
   await expect(ready).toContainText('LA/LAA thrombus status is empty');
@@ -81,7 +82,7 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   await saved(page);
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
 
-  await page.getByRole('button', { name: 'Ready to complete?' }).click();
+  await page.getByRole('button', { name: /What's missing/ }).click();
   await expect(ready).toContainText('Date of birth not available (Old paper file only)');
   await ready.getByTestId('mark-completed').click();
   await expect(page.getByTestId('case-status')).toHaveText('Completed');

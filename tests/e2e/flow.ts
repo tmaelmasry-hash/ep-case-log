@@ -26,7 +26,7 @@ export async function createCase(page: Page, m: string, opts: { date?: string; g
   if (opts.group) await sheet.getByRole('radio', { name: opts.group }).click();
   await sheet.locator('#new-date').fill(opts.date ?? '2026-03-12');
   await sheet.getByRole('button', { name: 'Create case' }).click();
-  await expect(page.getByTestId('case-head')).toContainText(`MRN: ${m}`);
+  await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   return page.url().split('#/cases/')[1];
 }
 

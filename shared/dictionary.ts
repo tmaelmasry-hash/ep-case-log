@@ -66,7 +66,14 @@ export interface LayoutRow {
   label: string;
   icon: string;
   entities: string[];
+  /** Title of the section's sheet when it differs from the row (owner, 28 Oct: "Patient Demographics"). */
+  title?: string;
+  /** Only the rows with these values (owner, 28 Oct: TEE, Cardiac CT and CMR are one entity, shown as three sections). */
+  values?: Record<string, string>;
 }
+
+/** Whether a row belongs to a layout section that shows only some values of its entity. */
+export const rowInSection = (r: LayoutRow, row: Record<string, unknown>) => Object.entries(r.values ?? {}).every(([k, v]) => row[k] === v);
 
 export interface CaseLayout {
   entities: Record<string, LayoutEntity>;

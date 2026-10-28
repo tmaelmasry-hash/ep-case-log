@@ -28,7 +28,13 @@ function build(dict: Dictionary) {
   let c = cache.get(dict);
   if (c) return c;
   const sections: AiSection[] = [];
-  for (const g of dict.layout.groups) for (const r of g.rows) sections.push({ id: r.id, label: r.label, entities: r.entities.filter((e) => dict.entities[e].scope !== 'procedure') });
+  const seen = new Set<string>();
+  for (const g of dict.layout.groups)
+    for (const r of g.rows) {
+      const entities = r.entities.filter((e) => dict.entities[e].scope !== 'procedure' && !seen.has(e));
+      entities.forEach((e) => seen.add(e));
+      if (entities.length) sections.push({ id: r.id, label: r.values ? 'Imaging (TEE, cardiac CT, CMR)' : r.label, entities });
+    }
   const procEntities = Object.values(dict.entities)
     .filter((e) => (e.entity === 'EP_PROCEDURES' || e.scope === 'procedure') && !['PROCEDURE_COMPONENTS', 'FOLLOW_UPS', 'OUTCOME_EVENTS'].includes(e.entity))
     .map((e) => e.entity);

@@ -1867,6 +1867,18 @@ body:has(.overlay) {
 .frow.inline .ios-select {
   max-width: 100%;
 }
+/* A list stays on the question's line (owner, 28 Oct: "Select" was on a line of its own). */
+.frow.inline:has(> .ios-select) {
+  flex-wrap: nowrap;
+}
+.frow.inline:has(> .ios-select) .lab-wrap {
+  flex: 1 1 auto;
+}
+.frow.inline > .ios-select {
+  flex: 0 1 auto;
+  max-width: 55%;
+  text-overflow: ellipsis;
+}
 .frow .with-unit .ios-value {
   width: 12em;
 }
@@ -2763,4 +2775,148 @@ table.dt .bar {
   background: var(--card);
   color: var(--muted);
   border-bottom: 1px solid var(--sep, rgba(0, 0, 0, 0.08));
+}
+/* Case screen, screen review step 3 (owner, 28 Oct). Header card: MRN big, age/sex, Hajj, procedures, what is missing. */
+.hc-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.hc-mrn {
+  font-size: 1.6rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.hc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.hc-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
+}
+.missing {
+  color: var(--warn);
+  font-weight: 600;
+}
+.ok-text {
+  color: var(--ok);
+  font-weight: 700;
+}
+.add-text {
+  color: var(--accent);
+}
+/* AI · Cohorts · History · Report: one row of small icons under the header card. */
+.tools-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.tools-row .tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+.tools-row .tool svg {
+  color: var(--accent);
+}
+.tools-row .tool:disabled {
+  opacity: 0.45;
+}
+/* Procedure rows: real name, its date on the right. */
+.proc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.proc-date {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+/* A case with no procedure yet: one big Add procedure. */
+.add-first {
+  width: 100%;
+  min-height: 110px;
+  border: 2px dashed var(--accent);
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.bottomact .btn.grow {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text);
+  white-space: nowrap;
+  padding-inline: 8px;
+}
+.bottomact .draft-btn {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.bottomact .btn {
+  white-space: nowrap;
+  padding-inline: 9px;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+.bottomact .btn.grow {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bottomact {
+  gap: 8px;
+}
+.btn.wide-btn {
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 18px;
+}
+.center {
+  text-align: center;
+}
+/* New Case: group buttons with their color; the Hijri date under the procedure date. */
+.group-pills button {
+  display: inline-flex;
+  align-items: center;
+}
+.hijri-line {
+  width: 100%;
+  text-align: end;
+}
+.btn.open-case {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-decoration: none;
+}
+.group-pills button.on .gdot {
+  box-shadow: 0 0 0 2px #fff;
 }

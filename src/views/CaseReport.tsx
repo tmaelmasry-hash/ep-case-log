@@ -1,7 +1,7 @@
 // Case report (owner D6): the saved values of one case with their dictionary labels, in the case page order.
 // Saved values only — no generated wording. Printed by the browser (Print → Save as PDF).
 import { createPortal } from 'react-dom';
-import { displayValue, formFields, hasValue } from '../../shared/dictionary.ts';
+import { displayValue, formFields, hasValue, rowInSection } from '../../shared/dictionary.ts';
 import type { CaseDetail, DecodedRow } from '../../shared/caseTypes.ts';
 import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import type { Readiness } from '../../shared/readiness.ts';
@@ -69,13 +69,14 @@ export function CaseReport({ d, rows, readiness }: { d: CaseDetail; rows: (entit
 
       {caseGroups.map((g) =>
         g.rows.map((r) => {
-          const parts = r.entities.filter((e) => dict.entities[e].scope !== 'procedure' && rows(e).length);
+          const mine = (e: string) => rows(e).filter((x) => rowInSection(r, x));
+          const parts = r.entities.filter((e) => dict.entities[e].scope !== 'procedure' && mine(e).length);
           if (!parts.length) return null;
           return (
             <section key={r.id}>
               <h2>{r.label}</h2>
               {parts.map((e) => (
-                <Rows key={e} entity={e} rows={rows(e)} rowsOf={all} />
+                <Rows key={e} entity={e} rows={mine(e)} rowsOf={all} />
               ))}
             </section>
           );

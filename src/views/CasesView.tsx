@@ -11,11 +11,11 @@ import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { Empty, SaveIndicator, Sheet, useMediaQuery } from '../components/ui';
 import { CategoryTree } from '../components/CategoryTree';
-import { applyFilters, clearFilters, componentColor, itemColor, itemLabel, setFilters, toggleFilter, useFilters, useTagged } from '../lib/filters';
+import { applyFilters, clearFilters, componentColor, groupColor, itemColor, itemLabel, setFilters, toggleFilter, useFilters, useTagged, type Filters } from '../lib/filters';
+import { periodPresets } from '../components/CategoryTree';
 import { PeriodSheet } from '../components/PeriodSheet';
 import { SideDrawer } from '../components/SideDrawer';
 import { downloadXlsx } from '../lib/exportFile';
-import { GroupNameDialog } from './AdminSheets';
 import { makeOfflineCase, seqText } from '../lib/offlineCase';
 import { sync, useOnline } from '../lib/sync';
 import { BulkAddSheet } from './BulkAdd';
@@ -38,17 +38,27 @@ export function matchesSearch(c: CaseSummary, term: string, tags: Set<string>): 
   return term.split(/\s+/).every((w) => words.includes(w));
 }
 
-export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?: boolean; showGroup?: string }) {
+/** Core fields still empty (and not marked Not available). */
+export const missingOf = (c: CaseSummary) => (c.core?.total ? c.core.total - c.core.done : 0);
+
+/** Hajj or Umrah, from the recorded pilgrim status. */
+export function pilgrimMark(c: CaseSummary): string | null {
+  const codes = c.codes ?? [];
+  return codes.includes('EP_EPISODES.pilgrim_status=HAJJ') ? 'Hajj' : codes.includes('EP_EPISODES.pilgrim_status=UMRAH') ? 'Umrah' : null;
+}
+
+export function CaseRow({ c, selected, showGroup, groupDot }: { c: CaseSummary; selected?: boolean; showGroup?: string; groupDot?: string }) {
+  const as = ageSex(c.age, c.sex);
+  const hajj = pilgrimMark(c);
+  const missing = c.collection_status === 'COMPLETED' ? 0 : missingOf(c);
   return (
     <a href={`#/cases/${c.case_id}`} className={`grow-row case-row${selected ? ' sel' : ''}`} data-testid="case-row" aria-current={selected ? 'true' : undefined}>
       <span className="grow">
-        <span className="line1">
-          <b>{c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}</b>
-          <span className="muted">
-            {' '}
-            · {c.mrn}
-            {ageSex(c.age, c.sex) ? ` · ${ageSex(c.age, c.sex)}` : ''}
-          </span>
+        <span className="line1 card-top">
+          <b className="card-mrn">{c.mrn}</b>
+          {as && <span className="muted card-as">{as}</span>}
+          {hajj && <span className="chip c-cat hajj-mark" style={{ '--chip': 'var(--cat-pilgrim)' } as CSSProperties}>{hajj}</span>}
+          <span className="card-date muted">{c.episode_start_date ? fmtDate(c.episode_start_date) : 'No date'}</span>
         </span>
         <span className="chips">
           {c.procedures.length ? (
@@ -65,9 +75,17 @@ export function CaseRow({ c, selected, showGroup }: { c: CaseSummary; selected?:
           )}
         </span>
         <span className="sub">
+          {groupDot && <span className="gdot" style={{ background: `var(--${groupDot})` }} aria-hidden />}
           {showGroup ? `${showGroup} · ` : ''}{seqText(c.group_seq)} · {sync.isLocalOnly(c.case_id) && <span className="chip c-neutral" data-testid="device-only">On this device only</span>} <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
           {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
-          {c.core?.total ? ` · core ${c.core.done}/${c.core.total}` : ''}
+          {missing > 0 && (
+            <>
+              {' · '}
+              <span className="missing" title={`Core fields: ${c.core.done} of ${c.core.total} done`}>
+                {missing} missing
+              </span>
+            </>
+          )}
         </span>
       </span>
       <Icon name="chevron" size={16} className="muted" />
@@ -238,21 +256,27 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const tagged = useTagged(cases);
   const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
-  const [addGroup, setAddGroup] = useState(false);
   const [bulk, setBulk] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [period, setPeriod] = useState(false);
   const [exporting, setExporting] = useState(false);
   const activeGroup = f.grp === 'ALL' || groups.some((g) => g.group_id === f.grp) ? f.grp : 'ALL';
   const pickGroup = (g: string) => setFilters({ grp: g });
-  const filtering = !!(f.proc.length || f.group.length || f.from || f.to);
+  const status = f.status ?? 'ALL';
+  const sort = f.sort ?? 'NEW';
+  const filtering = !!(f.proc.length || f.group.length || f.from || f.to || status !== 'ALL');
+  const [addMenu, setAddMenu] = useState(false);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
+    const newest = (a: CaseSummary, b: CaseSummary) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '') || b.group_seq - a.group_seq;
+    const order =
+      sort === 'OLD' ? (a: CaseSummary, b: CaseSummary) => -newest(a, b) : sort === 'MISSING' ? (a: CaseSummary, b: CaseSummary) => missingOf(b) - missingOf(a) || newest(a, b) : newest;
     return applyFilters(cases, tagged, { ...f, grp: activeGroup })
+      .filter((c) => status === 'ALL' || c.collection_status === status)
       .filter((c) => !term || matchesSearch(c, term, tagged.get(c.case_id)!))
-      .sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '') || b.group_seq - a.group_seq);
-  }, [cases, tagged, f, activeGroup, q]);
+      .sort(order);
+  }, [cases, tagged, f, activeGroup, q, status, sort]);
 
   const exportFiltered = async () => {
     setExporting(true);
@@ -268,14 +292,17 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const months = useMemo(() => {
     const out: { key: string; items: CaseSummary[] }[] = [];
     for (const c of filtered) {
-      const k = c.episode_start_date ? monthKey(c.episode_start_date) : 'none';
+      const k = sort === 'MISSING' ? 'missing' : c.episode_start_date ? monthKey(c.episode_start_date) : 'none';
       if (!out.length || out[out.length - 1].key !== k) out.push({ key: k, items: [] });
       out[out.length - 1].items.push(c);
     }
     return out;
-  }, [filtered]);
+  }, [filtered, sort]);
 
   const gname = (id: string) => groups.find((g) => g.group_id === id)?.name ?? '';
+  // Quick periods next to the date button (owner, 28 Oct).
+  const quick = useMemo(() => periodPresets().filter(([t]) => t === 'This month' || t === 'Last 3 months' || t.startsWith('Hajj season')), []);
+  const custom = !!(f.from || f.to) && !quick.some(([, a, b]) => f.from === a && f.to === b);
   const countIn = (id: string) => cases.filter((c) => c.group_id === id).length;
 
   return (
@@ -292,37 +319,73 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         {/* On desktop the sidebar footer shows it (owner, 28 Oct: "Synced" once). */}
         {!wide && <SaveIndicator />}
         {me?.features?.followup_bell && <FollowupBell />}
-        {can('case.import') && (
-          <button className="icon-btn accent" aria-label="Bulk add MRNs" title="Bulk add MRNs" onClick={() => setBulk(true)} data-testid="bulk-add" disabled={!groups.length}>
-            <Icon name="list" size={24} />
-          </button>
-        )}
-        {can('case.create') && (
-          <button className="icon-btn accent" aria-label="New case" onClick={() => setShowNew(true)} data-testid="new-case" disabled={!groups.length}>
+        {wide && can('case.create') && (
+          <button className="icon-btn accent" aria-label="Add cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
             <Icon name="plus" size={26} />
           </button>
         )}
       </div>
+      {/* Owner, 28 Oct: on phones + is a big floating button (one hand); it opens New case / Bulk add. Admin only. */}
+      {!wide && can('case.create') && (
+        <button className="fab" aria-label="Add cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
+          <Icon name="plus" size={28} />
+        </button>
+      )}
+      {addMenu && (
+        <Sheet title="Add" onClose={() => setAddMenu(false)} testId="add-sheet">
+          <div className="group">
+            <button
+              type="button"
+              className="grow-row add-choice"
+              data-testid="new-case"
+              onClick={() => {
+                setAddMenu(false);
+                setShowNew(true);
+              }}
+            >
+              <Icon name="plus" size={20} />
+              <span className="grow">
+                <span className="line1">New case</span>
+                <span className="sub">One patient, with the MRN</span>
+              </span>
+            </button>
+            {can('case.import') && (
+              <button
+                type="button"
+                className="grow-row add-choice"
+                data-testid="bulk-add"
+                onClick={() => {
+                  setAddMenu(false);
+                  setBulk(true);
+                }}
+              >
+                <Icon name="list" size={20} />
+                <span className="grow">
+                  <span className="line1">Bulk add MRNs</span>
+                  <span className="sub">A list of MRNs, copied from Excel</span>
+                </span>
+              </button>
+            )}
+          </div>
+        </Sheet>
+      )}
       <h1 className="large-title list-title">Registry Cases</h1>
       <div className="search">
         <Icon name="search" size={18} />
         <input type="search" placeholder="Search MRN or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN or procedure" />
       </div>
-      {(groups.length > 1 || can('groups.manage')) && (
+      {/* One group: no tabs. Adding a group is in Settings (owner, 28 Oct). */}
+      {groups.length > 1 && (
         <div className="seg" role="radiogroup" aria-label="Group">
           <button type="button" role="radio" aria-checked={activeGroup === 'ALL'} className={activeGroup === 'ALL' ? 'on' : ''} onClick={() => pickGroup('ALL')}>
             All
           </button>
           {groups.map((g) => (
             <button key={g.group_id} type="button" role="radio" aria-checked={activeGroup === g.group_id} className={activeGroup === g.group_id ? 'on' : ''} onClick={() => pickGroup(g.group_id)}>
+              <span className="gdot" style={{ background: `var(--${groupColor(groups, g.group_id)})` }} aria-hidden />
               {g.name} <small>{countIn(g.group_id)}</small>
             </button>
           ))}
-          {can('groups.manage') && (
-            <button type="button" className="plus" aria-label="Add group" onClick={() => setAddGroup(true)} data-testid="add-group">
-              +
-            </button>
-          )}
         </div>
       )}
       <div className="filter-bar" data-testid="filter-bar">
@@ -336,9 +399,31 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
             </span>
           )),
         )}
-        <button type="button" className="chip c-neutral filter-chip" onClick={() => setPeriod(true)} data-testid="period">
-          <Icon name="cal" size={12} /> {f.from || f.to ? `${f.from ? fmtDate(f.from) : '…'} – ${f.to ? fmtDate(f.to) : '…'}` : 'Any date'}
+        {quick.map(([text, a, b]) => {
+          const on = f.from === a && f.to === b;
+          return (
+            <button key={text} type="button" className={`chip filter-chip quick${on ? ' on' : ''}`} aria-pressed={on} onClick={() => setFilters(on ? { from: null, to: null } : { from: a, to: b })}>
+              {text}
+            </button>
+          );
+        })}
+        <button type="button" className={`chip filter-chip quick${custom ? ' on' : ''}`} onClick={() => setPeriod(true)} data-testid="period">
+          <Icon name="cal" size={12} /> {custom ? `${f.from ? fmtDate(f.from) : '…'} – ${f.to ? fmtDate(f.to) : '…'}` : 'Any date'}
         </button>
+        <label className="chip c-neutral filter-chip select-chip">
+          <select value={status} onChange={(e) => setFilters({ status: e.target.value as Filters['status'] })} aria-label="Status" data-testid="status-filter">
+            <option value="ALL">All statuses</option>
+            <option value="IN_PROGRESS">In progress</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+        </label>
+        <label className="chip c-neutral filter-chip select-chip">
+          <select value={sort} onChange={(e) => setFilters({ sort: e.target.value as Filters['sort'] })} aria-label="Order" data-testid="sort">
+            <option value="NEW">Newest first</option>
+            <option value="OLD">Oldest first</option>
+            <option value="MISSING">Most missing first</option>
+          </select>
+        </label>
         {filtering && (
           <button type="button" className="link small" onClick={clearFilters}>
             Clear
@@ -352,15 +437,6 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       )}
       {period && <PeriodSheet onClose={() => setPeriod(false)} />}
       {bulk && <BulkAddSheet defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id} onClose={() => setBulk(false)} />}
-      {addGroup && (
-        <GroupNameDialog
-          onClose={() => setAddGroup(false)}
-          onSaved={(id) => {
-            setAddGroup(false);
-            if (id) pickGroup(id);
-          }}
-        />
-      )}
 
       {loadError && (
         <div className="notice-err" role="alert">
@@ -406,14 +482,20 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           {months.map((m) => (
             <div key={m.key}>
               <h2 className="monthhead">
-                {m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}
+                {m.key === 'missing' ? 'Most missing first' : m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}
                 <span className="month-count" aria-label={`${m.items.length} case${m.items.length === 1 ? '' : 's'}`}>
                   {m.items.length}
                 </span>
               </h2>
               <div className="group">
                 {m.items.map((c) => (
-                  <CaseRow key={c.case_id} c={c} selected={c.case_id === selectedId} showGroup={activeGroup === 'ALL' && groups.length > 1 ? gname(c.group_id) : undefined} />
+                  <CaseRow
+                    key={c.case_id}
+                    c={c}
+                    selected={c.case_id === selectedId}
+                    showGroup={activeGroup === 'ALL' && groups.length > 1 ? gname(c.group_id) : undefined}
+                    groupDot={activeGroup === 'ALL' && groups.length > 1 ? groupColor(groups, c.group_id) : undefined}
+                  />
                 ))}
               </div>
             </div>

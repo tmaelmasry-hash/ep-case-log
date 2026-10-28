@@ -19,6 +19,7 @@ export async function open(page: Page, user = 'admin', hash = '#/cases') {
 }
 
 export async function createCase(page: Page, m: string, opts: { date?: string; group?: string } = {}) {
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);

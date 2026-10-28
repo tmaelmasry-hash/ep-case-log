@@ -20,6 +20,7 @@ async function open(page: Page, user = 'admin', hash = '#/cases') {
 }
 
 async function createCase(page: Page, m: string, group?: string) {
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);
@@ -113,18 +114,22 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   await expect(h.getByTestId('history-item').last()).toContainText('Case created in');
   await h.getByRole('button', { name: 'Done' }).click();
 
-  // The list shows the core count.
+  // The list shows what is still missing (owner, 28 Oct), not the core count.
   await open(page, 'admin', '#/cases');
-  await expect(page.getByTestId('case-row').first()).toContainText(/core \d+\/\d+/);
+  await expect(page.getByTestId('case-row').first()).not.toContainText(/core \d+\/\d+/);
 });
 
 test('Admin: add and rename a group, restore from the recycle bin, activity log', async ({ page }, info) => {
   await open(page);
   const name = `Fellows ${info.project.name} ${Date.now() % 10000}`;
-  await page.getByTestId('add-group').click();
+  // Adding a group is in Settings (owner, 28 Oct).
+  await page.goto('/#/settings');
+  await page.getByTestId('admin-groups').click();
+  await page.getByRole('button', { name: 'Add group' }).click();
   await page.getByTestId('group-dialog').getByLabel('Group name').fill(name);
   await page.getByTestId('group-dialog').getByRole('button', { name: 'Add' }).click();
-  await expect(page.getByRole('radio', { name: new RegExp(name) })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('groups-sheet').getByText(name)).toBeVisible();
+  await page.goto('/#/cases');
 
   const m = mrn(info);
   await createCase(page, m, name);
@@ -171,4 +176,6 @@ test('a Member has no Admin screens and cannot add groups', async ({ page }) => 
   await expect(page.getByTestId('admin-bin')).toHaveCount(0);
   await page.goto('/#/cases');
   await expect(page.getByTestId('add-group')).toHaveCount(0);
+  // Only the Admin adds cases (owner, 28 Oct).
+  await expect(page.getByTestId('add-menu')).toHaveCount(0);
 });

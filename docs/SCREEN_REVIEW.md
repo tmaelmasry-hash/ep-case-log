@@ -82,3 +82,16 @@ Not recorded stay as their own lines.
    AI section switch, sign-in look, Bulk add with group and type.
 7. **Dashboard and export:** charts, Hajj season split, table export, Stale days, stats-ready Excel with a period.
 8. **Look:** procedure-type colors, Dark mode, bigger text, Undo messages at the top.
+
+## Owner answers, 28 Oct (after round 2)
+- **Only the Admin adds cases** (single or bulk). Members fill in and edit cases of their groups. Changes plan A11
+  (`server/auth/capabilities.ts`). A case nobody has filled in yet shows in **My work** of every Member of its group;
+  the first person who saves in it becomes its collector.
+- Bottom tab: builder's choice → **"Cases"** (matches the "Registry Cases" title).
+
+## Step 2 (built locally 28 Oct, preview shown, waiting for the owner's yes)
+Case card: MRN first and big · age/sex · Hajj/Umrah mark · date small on the right · "N missing" instead of core x/y.
+List: quick periods (This month / Last 3 months / Hajj season), status (All / In progress / Completed), order (Newest /
+Oldest / Most missing); a colored dot per group on the tabs and cards; "+ group" moved to Settings (Groups); a Member
+with one group sees no tabs; + is a floating button on phones that opens New case / Bulk add MRNs (Admin only).
+"Hajj season <year>" also added to the menu's Period list (1 Dhu al-Qa'dah → 15 Muharram).

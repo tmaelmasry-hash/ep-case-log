@@ -41,6 +41,23 @@ function monthRange(y: number, m: number): [string, string] | null {
   return null;
 }
 
+/** The latest Hajj season (owner: 1 Dhu al-Qa'dah → 15 Muharram), cut at today: [label, from, to]. */
+export function hajjSeasonPreset(): [string, string, string] | null {
+  const today = todayISO();
+  const t = hijriParts(today);
+  const y = t.m >= 11 ? t.y : t.y - 1;
+  const a = monthRange(y, 11);
+  const muharram = monthRange(y + 1, 1);
+  if (!a) return null;
+  let end = muharram ? muharram[0] : a[1];
+  if (muharram) {
+    const d = at(muharram[0]);
+    d.setUTCDate(d.getUTCDate() + 14);
+    end = iso(d);
+  }
+  return [`Hajj season ${y}`, a[0], end > today ? today : end];
+}
+
 /** Hijri shortcuts: this Hijri year so far, the latest Ramadan and the latest Dhu al-Hijjah (Hajj month). */
 export function hijriPresets(): [string, string, string][] {
   const today = todayISO();
@@ -53,5 +70,7 @@ export function hijriPresets(): [string, string, string][] {
   const hajjYear = t.m === 12 ? t.y : t.y - 1;
   const hajj = monthRange(hajjYear, 12);
   if (hajj) out.push([`Dhu al-Hijjah ${hajjYear}`, hajj[0], hajj[1] > today ? today : hajj[1]]);
+  const season = hajjSeasonPreset();
+  if (season) out.push(season);
   return out;
 }

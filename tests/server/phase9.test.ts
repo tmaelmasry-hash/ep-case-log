@@ -47,7 +47,8 @@ describe('dashboard', () => {
     });
     const d = (await admin.call('GET', '/api/dashboard?basis=ALL')).data;
     expect(d.progress).toMatchObject({ total: 2, started: 1, mrn_only: 1, completed: 0 });
-    expect(d.progress.by_collector[0]).toMatchObject({ name: 'Sara', total: 2 });
+    // The MRN-only case was added by the Admin and nobody has filled it in yet.
+    expect(d.progress.by_collector.find((x: { name: string }) => x.name === 'Sara')).toMatchObject({ total: 1 });
     const svt = d.clinical.by_type.find((t: { id: string }) => t.id === 'SVT_ABLATION');
     expect(svt).toMatchObject({ procedures: 2, by_month: { '2026-03': 2 }, no_date: 0 }); // a procedure without a date takes the episode date (field review phase 2)
     expect(d.clinical.acute_success.find((a: { id: string }) => a.id === 'SVT_ABLATION')).toMatchObject({ success: 1, not_recorded: 1, pct: 100 });
@@ -74,8 +75,8 @@ describe('My work', () => {
   it('lists the user\'s own open cases with what is missing; others\' cases are not shown', async () => {
     const sara = await as(h, 'sara');
     const admin = await as(h, 'admin');
-    await newCase(sara, '9990511');
-    await newCase(admin, '9990512');
+    await newCase(sara, '9990511'); // added by the Admin, not filled in yet: work for every Member of the group
+    await newCase(admin, '9990512', h.groups[1].group_id);
     const w = (await sara.call('GET', '/api/mywork')).data;
     expect(w.totals).toMatchObject({ mine: 1, in_progress: 1 });
     expect(w.items[0]).toMatchObject({ mrn: '9990511', stage: 'MRN_ONLY' });

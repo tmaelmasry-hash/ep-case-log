@@ -29,7 +29,7 @@ function iconOf(id: string): string {
   return it?.icon ?? 'info';
 }
 
-function periodPresets(): [string, string, string][] {
+export function periodPresets(): [string, string, string][] {
   const today = todayISO();
   const y = Number(today.slice(0, 4));
   const d = new Date(`${today}T12:00:00`);

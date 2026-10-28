@@ -38,6 +38,7 @@ async function inMenu(page: Page, ...clicks: { id?: string; parent?: string; per
 test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine; Clear', async ({ page }, info) => {
   await open(page);
   const m = mrn(info);
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);
@@ -83,6 +84,7 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await open(page);
   const m = mrn(info);
   const name = `Study ${m}`;
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);
@@ -148,7 +150,8 @@ test('part 4: same MRN and date warns of a duplicate; search by MRN and procedur
   await open(page);
   const m = mrn(info);
   const create = async () => {
-    await page.getByTestId('new-case').click();
+    await page.getByTestId('add-menu').click();
+  await page.getByTestId('new-case').click();
     const sheet = page.getByTestId('new-case-sheet');
     await sheet.locator('#new-mrn').fill(m);
     await sheet.locator('#new-date').fill('2026-03-12');

@@ -4,9 +4,12 @@ import { createCase, mrn, open } from './flow';
 
 test('My work lists my open case with what is missing; Admin sees the dashboard, a Member does not', async ({ page }, info) => {
   const m = mrn(info, 9950000);
-  await open(page, 'sara');
+  // Only the Admin adds cases (owner, 28 Oct); a case nobody has filled in yet is work for the group's Members.
+  await open(page, 'admin');
   await createCase(page, m);
-  await page.goto('/#/stats');
+  await page.context().clearCookies();
+  await page.reload();
+  await open(page, 'sara', '#/stats');
   await expect(page.getByTestId('mywork')).toBeVisible();
   await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('missing: Sex');
   await expect(page.getByRole('radio', { name: 'Dashboard' })).toHaveCount(0);

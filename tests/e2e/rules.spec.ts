@@ -9,6 +9,7 @@ test('mapping system follows "mapping used"; turning it off asks before removing
   await expect(form.or(page.getByRole('navigation', { name: 'Main' }))).toBeVisible();
   if (await form.isVisible()) await signIn(page, 'admin');
   const m = String((info.project.name === 'desktop' ? 9991300 : 9991400) + Math.floor(Math.random() * 90));
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);

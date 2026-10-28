@@ -4,6 +4,6 @@ import { open } from './flow';
 
 test('the follow-up bell is not shown while it is switched off', async ({ page }) => {
   await open(page);
-  await expect(page.getByTestId('new-case')).toBeVisible();
+  await expect(page.getByTestId('add-menu')).toBeVisible();
   await expect(page.getByTestId('followup-bell')).toHaveCount(0);
 });

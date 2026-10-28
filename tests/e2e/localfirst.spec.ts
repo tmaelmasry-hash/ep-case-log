@@ -16,6 +16,7 @@ test('L3: the app opens without internet; a new case gets "No. pending", is fill
   await expect(page.getByTestId('offline-bar')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
 
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await expect(sheet.getByTestId('offline-new-case')).toBeVisible();

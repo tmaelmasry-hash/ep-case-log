@@ -36,7 +36,9 @@ export function dashboardRoutes(app: Router) {
     const u = requireCap(req, 'mywork.view');
     const mine = await groupIdsFor(ctx, u);
     const [cases, groups] = await Promise.all([store.listCases(), store.listGroups()]);
-    const own = cases.filter((c) => !c.meta.is_deleted && mine.includes(c.meta.group_id) && collectorOf(c) === u.userId);
+    // Owner, 28 Oct: only the Admin adds cases, so a case nobody has filled in yet is work for every Member of its group.
+    const untouched = (c: (typeof cases)[number]) => u.role === 'MEMBER' && !c.meta.collector_user_id;
+    const own = cases.filter((c) => !c.meta.is_deleted && mine.includes(c.meta.group_id) && (collectorOf(c) === u.userId || untouched(c)));
     return buildMyWork(dict, site, { mine: own, groups, now: ctx.now() });
   });
 }

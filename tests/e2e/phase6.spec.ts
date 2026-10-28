@@ -6,6 +6,7 @@ test('Admin pastes MRNs, reviews, adds; a Member has no bulk add', async ({ page
   const a = mrn(info, 9920000);
   const b = mrn(info, 9920000);
   await open(page);
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('bulk-add').click();
   const s = page.getByTestId('bulk-sheet');
   await s.getByRole('radio', { name: 'Group 2' }).click();

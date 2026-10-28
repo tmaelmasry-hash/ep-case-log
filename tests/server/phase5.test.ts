@@ -10,7 +10,7 @@ beforeEach(async () => {
 
 describe('MRN prompt', () => {
   it('an MRN with cases is answered with them first; new_case adds one more', async () => {
-    const sara = await as(h, 'sara');
+    const sara = await as(h, 'admin');
     const first = await newCase(sara, '9990201');
     expect(first.case_of_mrn).toBeNull();
     const r = await sara.call('POST', '/api/cases', { group_id: h.groups[0].group_id, mrn: '9990201', episode_start_date: '2026-05-01' });
@@ -23,16 +23,10 @@ describe('MRN prompt', () => {
     expect(second.case_of_mrn).toBe(2);
   });
 
-  it('cases in groups the user cannot see are only mentioned, never shown', async () => {
-    const omar = await as(h, 'omar');
-    await newCase(omar, '9990202', h.groups[1].group_id);
+  it('a Member cannot add a case (owner, 28 Oct: only the Admin adds cases)', async () => {
     const sara = await as(h, 'sara');
     const r = await sara.call('POST', '/api/cases', { group_id: h.groups[0].group_id, mrn: '9990202', episode_start_date: '2026-05-01' });
-    expect(r.status).toBe(409);
-    expect(r.data.error.details).toEqual({ here: [], elsewhere: true });
-    // Adding it copies nothing from a group Sara cannot see.
-    const c = await newCase(sara, '9990202', h.groups[0].group_id, { new_case: true });
-    expect(c.copied).toBe(0);
+    expect(r.status).toBe(403);
   });
 });
 

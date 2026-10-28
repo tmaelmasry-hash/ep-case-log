@@ -186,8 +186,9 @@ describe('guard', () => {
 });
 
 describe('Admin and Member rights', () => {
-  it('capability map matches EP Workspace A11', () => {
-    expect(can('MEMBER', 'case.create')).toBe(true);
+  it('capability map matches EP Workspace A11 (owner, 28 Oct: only the Admin adds cases)', () => {
+    expect(can('MEMBER', 'case.create')).toBe(false);
+    expect(can('ADMIN', 'case.create')).toBe(true);
     expect(can('MEMBER', 'case.delete')).toBe(true);
     expect(can('MEMBER', 'case.import')).toBe(false);
     expect(can('MEMBER', 'case.restore')).toBe(false);

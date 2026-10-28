@@ -58,7 +58,9 @@ beforeEach(async () => {
 });
 
 async function newCase(c: Client, mrn = '1100001', group = groups[0].group_id, date = '2026-03-12') {
-  const r = await c.call('POST', '/api/cases', { group_id: group, mrn, episode_start_date: date });
+  // Owner, 28 Oct: only the Admin adds cases; `c` is the user the case is for.
+  void c;
+  const r = await (await Client.as('admin')).call('POST', '/api/cases', { group_id: group, mrn, episode_start_date: date });
   expect(r.status).toBe(200);
   return r.data.case_id as string;
 }

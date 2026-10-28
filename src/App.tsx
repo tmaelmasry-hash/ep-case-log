@@ -13,7 +13,7 @@ import { SettingsView } from './views/SettingsView';
 import { useOnline } from './lib/sync';
 
 const TABS = [
-  { key: 'cases', label: 'Procedures', icon: 'cases' },
+  { key: 'cases', label: 'Cases', icon: 'cases' },
   { key: 'patients', label: 'Patients', icon: 'patients' },
   { key: 'stats', label: 'Dashboard', icon: 'stats' },
   { key: 'settings', label: 'Settings', icon: 'settings' },

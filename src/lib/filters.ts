@@ -18,10 +18,14 @@ export interface Filters {
   to: string | null;
   /** Registry group of the group switcher ("ALL" or a group id); kept across visits. */
   grp: string;
+  /** Collection status shown in the cases list only (owner, 28 Oct); the Dashboard has its own basis. */
+  status: 'ALL' | 'IN_PROGRESS' | 'COMPLETED';
+  /** List order: newest first (default), oldest first, or most missing first. */
+  sort: 'NEW' | 'OLD' | 'MISSING';
 }
 
 const KEY = 'ep.filters';
-const EMPTY: Filters = { proc: [], group: [], from: null, to: null, grp: 'ALL' };
+const EMPTY: Filters = { proc: [], group: [], from: null, to: null, grp: 'ALL', status: 'ALL', sort: 'NEW' };
 
 function load(): Filters {
   try {
@@ -52,7 +56,7 @@ export function toggleFilter(side: 'proc' | 'group', id: string) {
   setFilters({ [side]: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] });
 }
 
-export const clearFilters = () => setFilters({ proc: [], group: [], from: null, to: null });
+export const clearFilters = () => setFilters({ proc: [], group: [], from: null, to: null, status: 'ALL' });
 
 export function useFilters(): Filters {
   return useSyncExternalStore(
@@ -82,6 +86,13 @@ export function applyFilters(cases: CaseSummary[], tagged: Map<string, Set<strin
       (except === 'group' || !f.group.length || f.group.some((x) => t.has(x)))
     );
   });
+}
+
+/** Color token of a registry group (owner, 28 Oct: a color per group), by its place in the group list. */
+const GROUP_COLORS = ['cat-dev', 'cat-af', 'cat-svt', 'cat-laa', 'cat-flutter', 'cat-ap', 'cat-avn', 'cat-pilgrim'];
+export function groupColor(groups: { group_id: string }[], id: string): string {
+  const i = groups.findIndex((g) => g.group_id === id);
+  return GROUP_COLORS[(i < 0 ? 0 : i) % GROUP_COLORS.length];
 }
 
 /** Display name of a selection, including year children ("Hajj 1447"). */

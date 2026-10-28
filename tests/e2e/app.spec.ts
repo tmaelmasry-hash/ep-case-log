@@ -19,6 +19,7 @@ async function open(page: Page, user = 'admin', hash = '#/cases') {
 }
 
 async function createCase(page: Page, m: string, date = '2026-03-12', group?: string) {
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);
@@ -34,6 +35,7 @@ test('create a case, add two procedures with components and module fields; it pe
   const m = mrn(info);
   await open(page);
   // MRN validation (site rule: exactly 7 digits).
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const ns = page.getByTestId('new-case-sheet');
   await ns.locator('#new-mrn').fill('12345');

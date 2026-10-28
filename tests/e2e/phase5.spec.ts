@@ -12,6 +12,7 @@ test('an MRN with a case is answered with it; a new case copies the history, mar
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
 
   await page.goto('/#/cases');
+  await page.getByTestId('add-menu').click();
   await page.getByTestId('new-case').click();
   const sheet = page.getByTestId('new-case-sheet');
   await sheet.locator('#new-mrn').fill(m);

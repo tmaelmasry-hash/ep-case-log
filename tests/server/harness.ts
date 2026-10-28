@@ -65,8 +65,16 @@ export async function as(h: Harness, username: string) {
   return c;
 }
 
+const admins = new WeakMap<Harness, Client>();
+/** The Admin client of a harness (owner, 28 Oct: only the Admin adds cases; Members fill them in). */
+export async function adminOf(h: Harness) {
+  if (!admins.has(h)) admins.set(h, await as(h, 'admin'));
+  return admins.get(h)!;
+}
+
+/** Adds a case as the Admin; `c` is the user it is for (its group). */
 export async function newCase(c: Client, mrn: string, group = c.h.groups[0].group_id, extra: Record<string, unknown> = {}) {
-  const r = await c.call('POST', '/api/cases', { group_id: group, mrn, episode_start_date: '2026-03-12', ...extra });
+  const r = await (await adminOf(c.h)).call('POST', '/api/cases', { group_id: group, mrn, episode_start_date: '2026-03-12', ...extra });
   if (r.status !== 200) throw new Error(`create case: ${r.status} ${JSON.stringify(r.data)}`);
   return r.data as { case_id: string; group_seq: number; copied: number; copied_from: string | null; case_of_mrn: number | null };
 }

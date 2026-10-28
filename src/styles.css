@@ -2492,6 +2492,113 @@ table.dt .bar {
 .export-link {
   margin-inline-start: 10px;
 }
+/* Main list, screen review step 2 (owner, 28 Oct). Quick periods, status and order. */
+.filter-chip.quick {
+  background: var(--fill);
+  color: var(--text);
+  font-weight: 500;
+}
+.filter-chip.quick.on {
+  background: var(--accent);
+  color: #fff;
+}
+.select-chip {
+  position: relative;
+  padding-inline-end: 22px;
+}
+.select-chip::after {
+  content: '▾';
+  position: absolute;
+  inset-inline-end: 8px;
+  pointer-events: none;
+}
+.filter-chip.select-chip select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
+  line-height: 1.3;
+}
+/* A color per group: a dot on the group tab and on the card. */
+.gdot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 5px;
+  vertical-align: 1px;
+}
+/* Case card: MRN first and big, age · sex, Hajj / Umrah, date small on the right. */
+.card-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.grow-row .line1 b.card-mrn {
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.card-as {
+  font-size: 0.88rem;
+}
+.hajj-mark {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+}
+.card-date {
+  margin-inline-start: auto;
+  font-size: 0.8rem;
+}
+.case-row .missing {
+  color: var(--warn);
+  font-weight: 600;
+}
+/* + as a big floating button on phones (one hand), above the tab bar. */
+.fab {
+  position: fixed;
+  z-index: 21;
+  right: 18px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+}
+.fab:disabled {
+  opacity: 0.5;
+}
+/* Room under the last card so the floating + never covers it. */
+.view:has(.fab) {
+  padding-bottom: 72px;
+}
+.add-choice {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: start;
+  color: var(--text);
+  font: inherit;
+  gap: 12px;
+}
+.add-choice > svg {
+  color: var(--accent);
+}
 /* Menu, revised (owner 23 Oct): main items larger, sub items smaller, colored icon per item, colored count badges. */
 .cat-row.top .cat-name {
   font-size: 1rem;

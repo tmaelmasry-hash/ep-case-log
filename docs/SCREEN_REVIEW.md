@@ -102,7 +102,7 @@ icon in the tools row (AI · Cohorts · History · Report); "Baseline risk profi
 keep their name. Builder defaults accepted: no helper line, wide Create case, MRN prompt with the last case + Open this
 case / New case for this patient, "What's missing?" instead of "Ready to complete?".
 
-## Step 3 (built 28 Oct, deployed on the owner's yes)
+## Step 3 (live 28 Oct, Worker bb82cd72)
 Built as the preview, with these builder notes:
 - Follow-up is one row, "Follow-up visits & events" (the existing follow-up screen holds both); the preview showed two rows.
 - Device interrogation is always listed (owner's order of Investigations); before, it showed only with a device.

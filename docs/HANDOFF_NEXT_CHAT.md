@@ -1,13 +1,32 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 24 Oct 2026
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 28 Oct 2026
 
 Read this first, then `docs/MERGE_PLAN.md` (all owner decisions; R2-* round 2, R3-* round 3) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
 stop after each step, deploy only on his yes.
 
-## START HERE
-The owner is trying the live app (https://ep-case-log.ep-registry-tarek.workers.dev, his own account) and will name
-the **next thing to fix**. Ask him what he found; do not start anything before that.
+## START HERE — screen review, build step 5 of 8
+The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
+**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–4 are built and live. **Next: step 5 (navigation)** — make a
+preview first, show it, build only on his yes, then deploy only on his yes. Step 5 contents (round 2 answers):
+- Bottom tabs: add a **Follow-up** tab (visits and device checks due; the bell list is the base, window 90 days);
+  **drop the Patients tab** (open the patient page from the MRN in search or in the case). Owner asked "what does the
+  + do" — answered: the center-+ suggestion was not picked, nothing to build.
+- **My work** as the first screen on opening, fewest missing first, a "done this week" number.
+- **Cohorts move to the Dashboard** (name stays "Cohorts", owner 28 Oct); built-in Pilgrims counts Hajj + Umrah only
+  (done in step 1).
+- Side menu footer: tapping your name opens your account. Procedure categories: several at once (multi-select);
+  owner asked for a suggested order — proposed Ablation (AF, Flutter, SVT, AP, AV node, VT), Devices, Structural,
+  Diagnostic; confirm in the preview.
+- Empty desktop pane: proposed a big New case button (Admin only) and the user's open cases; confirm in the preview.
+Then steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
+
+How previews were done: a Design canvas artifact per step (phone screens 390 wide, the app's own colors, yellow notes
+in Arabic). Step 3: https://claude.ai/artifact/Ld4BVxmXShvzcdqvg9G7uU · step 4:
+https://claude.ai/artifact/RpV8FfXyD57sArrPvCyuL5. The owner edits labels directly on the canvas: re-read its files
+before changing it and treat his edits as decisions. After building, check the look in the local preview
+(`.claude/launch.json` "registry-synthetic", admin / synthetic-e2e-pass, fake MRNs 999xxxx; seed cases through
+/api with the CSRF token from /api/auth/login) and clear the service worker after each build.
 
 ## Done on 24 Oct (all live, all pushed)
 1. **Field review** (R2-9 / R3-5; full record `docs/FIELD_REVIEW.md`; review page
@@ -29,11 +48,18 @@ the **next thing to fix**. Ask him what he found; do not start anything before t
    the cluster's public website and emblem (no published codes found). Tokens in `src/styles.css`
    (`--accent`, `--highlight`, `--brand`, `--brand-deep`). Preview: https://claude.ai/artifact/YAAESity3hAwXZH687hbFj.
 Colors deployed 24 Oct: commit `4655a38` → Worker `59a60ab8`. Cancel on a new procedure / row discards it, page behind a sheet stays still: `17f02af` → Worker `67011dd4` (27 Oct).
-Tests now: unit/server 235 · e2e 68 · e2e:worker 68.
+Tests now: unit/server 235 · e2e 72 · e2e:worker 72 (all passing at `aad8aea`).
 
-## Screen review (27–28 Oct)
-Round 1 (New Case + case screen) answered, round 2 (main screen and the rest) open: `docs/SCREEN_REVIEW.md`. Nothing
-built yet; preview each change first.
+## Screen review (27–28 Oct) — steps 1–4 live
+| Step | What | Commit → Worker |
+|---|---|---|
+| 1 | Quick fixes: Pilgrims count, follow-ups 90 days, search MRN or procedure, title "Registry Cases", month counts | `26f6647` → `fbaf4dc7` |
+| 2 | Case card (MRN big, age/sex, Hajj, N missing), quick periods, status filter, order, group colors, floating + (New case / Bulk add); **only the Admin adds cases** (untouched cases are My work of the group's Members) | `a57688c` → `bfad336f` |
+| 3 | New Case (live MRN check, Procedure date + Hijri), MRN prompt, Add procedure = type first, case screen (header card, AI/Cohorts/History/Report icons, procedures with own dates), sections Patient & episode (sheet "Patient Demographics"), Medical History, Investigations & Medications (TEE/CT/CMR via layout row `values`), Follow-up, Notes; Save draft; ≤5 choices = buttons | `f451fc5` → `bb82cd72` |
+| 4 | Procedure sheet: fixed DONE row + tabs (General / each type / Complications) that jump and follow the scroll, parts that open and close, Mapping & access part, Not available icon | `dfe5f02` → `9d50f4e9` |
+
+Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
+Others = Tilt only (no other study in the dictionary).
 
 ## Open items (ask the owner, one at a time; none started)
 - Labs cannot be tied to one procedure: the dictionary gives LAB_RESULTS only an episode link (owner had asked).
@@ -47,7 +73,9 @@ built yet; preview each change first.
 - `data/admin-password.txt` (git-ignored) holds an old one-time password — ask whether to delete it.
 
 ## Where things are
-- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, all pushed.
+- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`.
+  **Not pushed:** github.com was unreachable from this PC since 28 Oct; main is ahead of origin by the step 1–4 commits
+  (`26f6647` … `aad8aea` and this handoff). Run `git push origin main` first; if it fails, tell the owner.
 - Restore points (commit → Worker version): `docs/DEPLOY.md` → Restore points. Rollback:
   `node scripts/wrangler.ts rollback <version>`.
 - Old app (read only): `E:\EP_REGISTRY_REBUILD\ep-workspace` (EP Workspace, `ep-workspace.pages.dev`).

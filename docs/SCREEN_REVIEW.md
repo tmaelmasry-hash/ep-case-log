@@ -114,7 +114,7 @@ Built as the preview, with these builder notes:
 Owner edits on the preview (28 Oct, later): heading "Investigations & Medications"; the Patient & episode sheet is titled
 "Patient Demographics"; Referring service off the form (it already was, field review); Male before Female (already so).
 
-## Step 4 (built 28 Oct, deployed on the owner's yes): https://claude.ai/artifact/RpV8FfXyD57sArrPvCyuL5
+## Step 4 (live 28 Oct, Worker 9d50f4e9): https://claude.ai/artifact/RpV8FfXyD57sArrPvCyuL5
 Procedure sheet: title = the procedure's real name; on top, fixed while scrolling: date · N missing, "DONE:" with the
 ticked items and Edit (the ticks stay open for a procedure just added), and tabs General · each type · Complications
 with their missing counts. A tab jumps to its part (all parts stay on one page, so nothing is hidden) and follows the

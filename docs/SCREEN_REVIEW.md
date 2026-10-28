@@ -113,3 +113,13 @@ Built as the preview, with these builder notes:
 - 5 choices or fewer are buttons; more open a list on the question's line (e.g. AF energy source is now a list).
 Owner edits on the preview (28 Oct, later): heading "Investigations & Medications"; the Patient & episode sheet is titled
 "Patient Demographics"; Referring service off the form (it already was, field review); Male before Female (already so).
+
+## Step 4 (built 28 Oct, deployed on the owner's yes): https://claude.ai/artifact/RpV8FfXyD57sArrPvCyuL5
+Procedure sheet: title = the procedure's real name; on top, fixed while scrolling: date · N missing, "DONE:" with the
+ticked items and Edit (the ticks stay open for a procedure just added), and tabs General · each type · Complications
+with their missing counts. A tab jumps to its part (all parts stay on one page, so nothing is hidden) and follows the
+scroll. Parts open and close: Procedure details, Mapping & access (builder's grouping of mapping / ICE / transseptal /
+contrast questions), one per type module, Complications. "Not available" is a small icon beside an empty core
+question; its dialog keeps the four ready reasons and "another reason".
+Not changed: questions that do not apply are shown or hidden by the existing rules (e.g. accessory-pathway questions
+still show under SVT ablation for AVNRT, as before).

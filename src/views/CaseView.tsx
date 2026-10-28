@@ -585,7 +585,28 @@ function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (p
   );
 }
 
-/** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications. */
+/** A part of the procedure sheet that opens and closes, with what is still missing in it. */
+function Part({ id, title, missing, children, testId }: { id: string; title: string; missing: number; children: React.ReactNode; testId?: string }) {
+  const [closed, setClosed] = useState(false);
+  return (
+    <section className="proc-part" id={id} data-testid={testId}>
+      <button type="button" className="part-head" aria-expanded={!closed} onClick={() => setClosed((x) => !x)}>
+        <Icon name={closed ? 'chevron' : 'down'} size={16} className="muted" />
+        <span className="grow">{title}</span>
+        {missing ? <span className="missing small">{missing} missing</span> : <span className="ok-text">✓</span>}
+      </button>
+      {!closed && <div className="part-body">{children}</div>}
+    </section>
+  );
+}
+
+/** EP_PROCEDURES questions shown in their own part, "Mapping & access" (owner approved the step 4 preview). */
+const MAPPING = ['electroanatomic_mapping_used', 'mapping_system', 'intracardiac_echo_used', 'transseptal_access', 'contrast_used', 'contrast_volume_ml'];
+const COMPLICATION_ENTITIES = ['EXT_PROCEDURE_REVIEW', 'COMPLICATIONS'];
+
+/** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications.
+ *  Owner, 28 Oct (step 4): tabs General · each type · Complications that jump to their part; the "Done" row and the
+ *  tabs stay on top while scrolling; each part opens and closes and shows what is missing. */
 function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string; focus?: string; onClose: () => void }) {
   const c = useCase();
   useFocusField(focus);
@@ -600,6 +621,25 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const ptype = p?.primary_procedure_type;
   const [picked, setPicked] = usePickedItems(id);
   const fresh = useNewRow(ed, 'EP_PROCEDURES', id, 'procedure', onClose);
+  // The ticks stay open for a procedure just added; otherwise "Edit" opens them.
+  const [editTicks, setEditTicks] = useState(() => ed.isNew(id));
+  const [tab, setTab] = useState('part-general');
+  // The tab follows the part being read: the last part whose top has passed under the bar.
+  useEffect(() => {
+    const body = document.querySelector('[data-testid="procedure-sheet"] .sheet-body');
+    const bar = document.querySelector('[data-testid="proc-bar"]');
+    if (!body || !bar) return;
+    const onScroll = () => {
+      const edge = bar.getBoundingClientRect().bottom + 12;
+      let cur = 'part-general';
+      for (const el of body.querySelectorAll<HTMLElement>('.proc-part')) {
+        if (el.getBoundingClientRect().top <= edge) cur = el.id === 'part-mapping' ? 'part-general' : el.id;
+      }
+      setTab(cur);
+    };
+    body.addEventListener('scroll', onScroll, { passive: true });
+    return () => body.removeEventListener('scroll', onScroll);
+  }, [open]);
 
   if (open) return <RowSheet ed={ed} entity={open.entity} id={open.id} onClose={() => setOpen(null)} />;
   if (!p)
@@ -643,13 +683,61 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const review = ed.slot('EXT_PROCEDURE_REVIEW', id);
   const complications = ed.rows('COMPLICATIONS').filter((c) => c.procedure_id === id);
 
-  return (
-    <Sheet title={procedureTitle(p, i)} onClose={fresh.cancel} onDone={fresh.done} testId="procedure-sheet">
-      {fresh.dialog}
-      <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={["procedure_start_datetime"]} />
+  const missingOf = (pred: (x: CoreCheck) => boolean) => c.readiness.checks.filter((x) => x.procedure_id === id && x.state === 'missing' && pred(x)).length;
+  const moduleSet = new Set(shown.map((m) => m.entity));
+  const missMapping = missingOf((x) => x.entity === 'EP_PROCEDURES' && MAPPING.includes(x.field));
+  const missDetails = missingOf((x) => !(x.entity === 'EP_PROCEDURES' && MAPPING.includes(x.field)) && !moduleSet.has(x.entity) && !COMPLICATION_ENTITIES.includes(x.entity));
+  const missComplications = missingOf((x) => COMPLICATION_ENTITIES.includes(x.entity));
+  const t = c.readiness.byProcedure[id];
+  const left = t ? t.total - t.done : 0;
+  const date = p.procedure_start_datetime ? String(p.procedure_start_datetime).slice(0, 10) : null;
+  const name =
+    ptype !== 'ABLATION' && types.length
+      ? types.map((x) => label('PROCEDURE_COMPONENTS', 'component_type', x)).join(' + ')
+      : procedureChip({ id, start: null, status: null, type: (ptype as string) ?? null, components: types }).text;
+  const tabs = [
+    { id: 'part-general', label: 'General', missing: missDetails + missMapping },
+    ...shown.map((m) => ({ id: `part-${m.entity}`, label: m.label.replace(/ ablation$/i, ''), missing: missingOf((x) => x.entity === m.entity) })),
+    { id: 'part-complications', label: 'Complications', missing: missComplications },
+  ];
+  const jump = (tid: string) => document.getElementById(tid)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
 
-      <h3 className="sechead">What was done</h3>
-      <div className="group" data-field="EP_PROCEDURES.primary_procedure_type">
+  return (
+    <Sheet title={name} onClose={fresh.cancel} onDone={fresh.done} testId="procedure-sheet">
+      {fresh.dialog}
+      <div className="proc-bar" data-testid="proc-bar">
+        <div className="proc-sub small">
+          {date ? fmtDate(date) : 'No date'} · {left ? <span className="missing">{left} missing</span> : <span className="ok-text">✓ Nothing missing</span>}
+        </div>
+        <div className="done-row small">
+          <span className="muted strong">DONE:</span>
+          {ticked.length ? (
+            ticked.map((x) => (
+              <span key={x.id} className="chip c-neutral">
+                {x.label}
+              </span>
+            ))
+          ) : (
+            <span className="muted">nothing ticked yet</span>
+          )}
+          {!ed.readOnly && (
+            <button type="button" className="link small push-end" onClick={() => setEditTicks((x) => !x)} data-testid="edit-ticks">
+              {editTicks ? 'Close' : 'Edit'}
+            </button>
+          )}
+        </div>
+        <div className="proc-tabs" role="tablist" aria-label="Parts of the procedure">
+          {tabs.map((x) => (
+            <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className={tab === x.id ? 'on' : ''} onClick={() => jump(x.id)}>
+              {x.label}
+              {x.missing > 0 && <span className="tab-badge">{x.missing}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {(editTicks || !ticked.length) && (
+      <div className="group" data-field="EP_PROCEDURES.primary_procedure_type" data-testid="what-was-done">
         <div className="frow stack">
           {(['Ablation', 'Devices', 'Other'] as const).map((g) => (
             <div key={g}>
@@ -668,19 +756,24 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
           </span>
         </div>
       </div>
-      <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} skip={["procedure_start_datetime"]} />
+      )}
 
-      {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} offer={deviceOffer} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
+      <Part id="part-general" title="Procedure details" missing={missDetails}>
+        <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} skip={MAPPING} />
+        {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} offer={deviceOffer} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
+      </Part>
+      <Part id="part-mapping" title="Mapping & access" missing={missMapping}>
+        <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={MAPPING} />
+      </Part>
 
       {shown.map((m) => {
         const row = moduleRow(m.entity);
         const rid = row?._id ?? ed.slot(m.entity, id);
         return (
-          <div key={m.entity} data-testid={`module-${m.entity}`}>
-            <h3 className="sechead">{m.label}</h3>
+          <Part key={m.entity} id={`part-${m.entity}`} title={m.label} missing={missingOf((x) => x.entity === m.entity)} testId={`module-${m.entity}`}>
             <RowForm ed={ed} entity={m.entity} rowId={rid} parentId={id} row={row} />
             {row && <NestedLists ed={ed} parentEntity={m.entity} parentId={rid} onOpen={(e, cid) => setOpen({ entity: e, id: cid })} />}
-          </div>
+          </Part>
         );
       })}
       {offer.length > 0 && !ed.readOnly && (
@@ -696,7 +789,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         </details>
       )}
 
-      <h3 className="sechead">Complications</h3>
+      <Part id="part-complications" title="Complications" missing={missComplications}>
       <RowForm ed={ed} entity="EXT_PROCEDURE_REVIEW" rowId={review} parentId={id} row={ed.rows('EXT_PROCEDURE_REVIEW').find((r) => r._id === review) ?? null} />
       <div className="group" style={{ marginTop: 10 }} data-field="COMPLICATIONS.category">
         {complications.map((x, k) => (
@@ -712,6 +805,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         )}
         {ed.readOnly && !complications.length && <div className="grow-row muted">None</div>}
       </div>
+      </Part>
 
       {!ed.readOnly && (
         <button className="btn danger-text block" onClick={() => setConfirm('procedure')}>

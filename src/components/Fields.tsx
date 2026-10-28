@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import type { FieldRuling } from '../../shared/rules.ts';
 import { codeLabel, editable, formFields, hasValue, offeredCodes, type EntityDef, type FormField } from '../../shared/dictionary.ts';
 import { dict } from '../lib/dict';
+import { Icon } from './Icon';
 import type { AiMark, DecodedRow } from '../../shared/caseTypes.ts';
 
 const PILL_MAX = 5; // owner, 28 Oct: 5 choices or fewer are buttons; more open a list on the question's line
@@ -173,12 +174,25 @@ function NaLine({ na, onNa, label }: { na: NaInfo; onNa: () => void; label: stri
         </button>
       </span>
     );
+  return null;
+}
+
+/** The "Not available" icon beside an empty core question. */
+function NaIcon({ onNa, label }: { onNa: () => void; label: string }) {
   return (
-    <span className="na-line">
-      <button type="button" className="link small" onClick={onNa} data-testid="na-open" title={`${label}: not available`}>
-        Not available…
-      </button>
-    </span>
+    <button
+      type="button"
+      className="na-icon"
+      onClick={(e) => {
+        e.preventDefault(); // inside the question's label: do not open its control
+        onNa();
+      }}
+      data-testid="na-open"
+      aria-label="Not available"
+      title={`${label}: not available…`}
+    >
+      <Icon name="ban" size={17} />
+    </button>
   );
 }
 
@@ -225,10 +239,12 @@ export function FieldRow({
   const id = `f-${def.entity}-${f.name}-${rowId}`.replace(/[^A-Za-z0-9_-]/g, '_');
   const star = dict.core.has(`${def.entity}.${f.name}`);
   const ro = readOnly || !editable(def, f) || !!locked;
+  const naOpen = na?.state === 'missing' && onNa && !ro && !hasValue(value) ? <NaIcon onNa={onNa} label={f.label} /> : null;
   const lab = (
     <span className="lab">
       {f.label}
       {star && <span className="req" title="Core field"> *</span>}
+      {naOpen}
       {locked && <span className="muted small"> ({locked})</span>}
       {copied && (
         <span className="copied-tag" title={copied} data-testid="copied-tag">

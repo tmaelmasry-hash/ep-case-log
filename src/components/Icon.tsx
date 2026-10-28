@@ -10,6 +10,8 @@ const PATHS: Record<string, string> = {
   filter: 'M4 6h16M7 12h10M10 18h4',
   inbox: 'M3 13h5l1.5 3h5L16 13h5M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z',
   chevron: 'M9 6l6 6-6 6',
+  down: 'M6 9l6 6 6-6',
+  ban: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 18.4L18.4 5.6',
   back: 'M15 6l-6 6 6 6',
   close: 'M6 6l12 12M18 6L6 18',
   menu: 'M4 7h16M4 12h16M4 17h16',

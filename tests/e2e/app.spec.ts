@@ -241,7 +241,7 @@ test('without the server the app says so clearly and recovers when it is back', 
   await context.setOffline(false);
   const again = page.getByRole('button', { name: 'Try again' });
   await again.click({ timeout: 2000 }).catch(() => undefined);
-  await expect(page.getByRole('heading', { name: 'Procedures', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Registry Cases', exact: true })).toBeVisible();
 });
 
 test('layout fits the screen on every page', async ({ page }, info) => {

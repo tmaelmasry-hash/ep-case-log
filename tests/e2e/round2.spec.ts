@@ -144,7 +144,7 @@ test('Admin renames and hides a built-in cohort, then brings it back from Hidden
   await expect(page.getByTestId('cat-COMPLICATIONS')).toContainText('Complications');
 });
 
-test('part 4: same MRN and date warns of a duplicate; search by No. and procedure; Dashboard follows the menu', async ({ page }, info) => {
+test('part 4: same MRN and date warns of a duplicate; search by MRN and procedure (No. dropped 28 Oct); Dashboard follows the menu', async ({ page }, info) => {
   await open(page);
   const m = mrn(info);
   const create = async () => {
@@ -172,8 +172,6 @@ test('part 4: same MRN and date warns of a duplicate; search by No. and procedur
   await search.fill(m);
   await expect(page.getByTestId('case-row')).toHaveCount(1);
   await search.fill(`avnrt ${m.slice(0, 0)}`.trim());
-  await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(1);
-  await search.fill(`No. ${no}`);
   await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(1);
   await search.fill('');
 

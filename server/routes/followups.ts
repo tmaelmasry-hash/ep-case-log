@@ -14,6 +14,6 @@ export function followupRoutes(app: Router) {
     if (!rule?.enabled) return { enabled: false, today, items: [] };
     const mine = new Set(await groupIdsFor(ctx, u));
     const cases = (await store.listCases()).filter((c) => mine.has(c.meta.group_id));
-    return { enabled: true, today, items: followUpsDue(rule, cases, today) };
+    return { enabled: true, today, ahead_days: rule.ahead_days, items: followUpsDue(rule, cases, today) };
   });
 }

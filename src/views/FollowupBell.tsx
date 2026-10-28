@@ -24,11 +24,15 @@ const when = (d: number) => (d < 0 ? `${-d} day${d === -1 ? '' : 's'} overdue` :
 export function FollowupBell() {
   const { groups } = useStore();
   const [items, setItems] = useState<DueItem[]>([]);
+  const [ahead, setAhead] = useState(90);
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const load = () =>
-      api<{ items: DueItem[] }>('GET', '/api/followups')
-        .then((r) => setItems(r.items))
+      api<{ items: DueItem[]; ahead_days?: number }>('GET', '/api/followups')
+        .then((r) => {
+          setItems(r.items);
+          if (r.ahead_days) setAhead(r.ahead_days);
+        })
         .catch(() => {
           /* offline: keep the last list */
         });
@@ -65,7 +69,7 @@ export function FollowupBell() {
             </div>
           ) : (
             <Empty icon="check" title="Nothing due">
-              <p>No follow-up visit or device check is due in the next 30 days.</p>
+              <p>No follow-up visit or device check is due in the next {ahead} days.</p>
             </Empty>
           )}
         </Sheet>

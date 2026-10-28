@@ -151,7 +151,7 @@
       "date_field": "check_datetime",
       "due_field": "next_check_due_date"
     },
-    "ahead_days": 30,
+    "ahead_days": 90,
     "overdue_days": 90
   }
 }

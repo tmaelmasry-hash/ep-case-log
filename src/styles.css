@@ -331,6 +331,11 @@ p {
   letter-spacing: -0.02em;
   margin: 4px 0 12px;
 }
+/* Main list title, smaller so the list gets the room (owner, 28 Oct). */
+.large-title.list-title {
+  font-size: 1.5rem;
+  margin: 2px 0 10px;
+}
 .section-label {
   font-size: 0.78rem;
   font-weight: 600;
@@ -1544,6 +1549,23 @@ body:has(.overlay) {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 20px 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Cases in the month, in a colored circle (owner, 28 Oct). */
+.month-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .group {
   background: var(--card);

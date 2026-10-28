@@ -115,6 +115,12 @@ describe('matching', () => {
   it('a case with no procedure is Unclassified and Incomplete', () => {
     const t = tags(summarize(dict, makeCase()));
     expect([t.has(UNCLASSIFIED), t.has('INCOMPLETE'), t.has('PILGRIM_NOT_RECORDED')]).toEqual([true, true, true]);
+    // Owner 28 Oct: "Pilgrims" counts Hajj + Umrah only, not Not recorded or Non-pilgrim.
+    expect(t.has('PILGRIMS')).toBe(false);
+    const rec = makeCase();
+    applyEdits(dict, rec, { changes: [{ entity: 'EP_EPISODES', id: rec.meta.episode_id, field: 'pilgrim_status', value: 'NON_PILGRIM' }] }, a, new Set(['u1']));
+    const n = tags(summarize(dict, rec));
+    expect([n.has('NON_PILGRIM'), n.has('PILGRIMS')]).toEqual([true, false]);
   });
 
   it('pilgrims come from pilgrim_status as entered; the year comes from the episode date (Hajj: Muharram counts back)', () => {

@@ -42,6 +42,8 @@ export interface CategoryItem {
   match?: { proc?: Cond; case?: Cond };
   /** Children by Hijri year of the episode date; "hajj" counts Muharram toward the previous year's season (R2-5). */
   years?: 'hijri' | 'hajj';
+  /** false: its cases are not counted in the parent (owner 28 Oct: "Pilgrims" counts Hajj + Umrah only). */
+  rollup?: boolean;
 }
 
 export interface CategoryConfig {
@@ -125,7 +127,7 @@ export class CategoryMatcher {
       !!it.match && ((!!it.match.proc && procs.some((p) => this.test(it.match!.proc!, p, s, procs))) || (!!it.match.case && this.test(it.match.case, whole, s, procs)));
     const visit = (it: CategoryItem): boolean => {
       let hit = own(it);
-      for (const k of this.kids.get(it.id) ?? []) if (visit(k)) hit = true;
+      for (const k of this.kids.get(it.id) ?? []) if (visit(k) && k.rollup !== false) hit = true;
       if (hit) {
         tags.add(it.id);
         if (it.years) {

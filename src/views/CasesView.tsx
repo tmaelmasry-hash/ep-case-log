@@ -31,10 +31,9 @@ export function procedureChip(p: ProcedureSummary): { text: string; cls: string;
   return { text, cls: p.components.length ? 'c-cat' : (p.type && CHIP_CLASS[p.type]) || 'c-neutral', color: p.components.length ? componentColor(p.components[0]) : null };
 }
 
-/** Search (owner R2-8): digits match the MRN or the case No. ("12", "No. 12"); words match a procedure or category name. */
+/** Search (owner R2-8; case No. dropped 28 Oct): digits match the MRN; words match a procedure or category name. */
 export function matchesSearch(c: CaseSummary, term: string, tags: Set<string>): boolean {
-  const no = /^(no\.?\s*)?(\d+)$/.exec(term);
-  if (no) return c.mrn.includes(no[2]) || String(c.group_seq) === no[2];
+  if (/^\d+$/.test(term)) return c.mrn.includes(term);
   const words = [...c.procedures.map((p) => procedureChip(p).text), ...[...tags].map(itemLabel)].join(' ').toLowerCase();
   return term.split(/\s+/).every((w) => words.includes(w));
 }
@@ -280,7 +279,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
   const countIn = (id: string) => cases.filter((c) => c.group_id === id).length;
 
   return (
-    <section className="view" aria-label="Procedures">
+    <section className="view" aria-label="Registry Cases">
       <div className="navbar">
         {!wide && (
           <button className="menu-btn" onClick={() => setDrawer(true)} data-testid="open-categories">
@@ -290,7 +289,8 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           </button>
         )}
         <span className="grow" />
-        <SaveIndicator />
+        {/* On desktop the sidebar footer shows it (owner, 28 Oct: "Synced" once). */}
+        {!wide && <SaveIndicator />}
         {me?.features?.followup_bell && <FollowupBell />}
         {can('case.import') && (
           <button className="icon-btn accent" aria-label="Bulk add MRNs" title="Bulk add MRNs" onClick={() => setBulk(true)} data-testid="bulk-add" disabled={!groups.length}>
@@ -303,10 +303,10 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           </button>
         )}
       </div>
-      <h1 className="large-title">Procedures</h1>
+      <h1 className="large-title list-title">Registry Cases</h1>
       <div className="search">
         <Icon name="search" size={18} />
-        <input type="search" placeholder="Search MRN, No. or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN, No. or procedure" />
+        <input type="search" placeholder="Search MRN or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN or procedure" />
       </div>
       {(groups.length > 1 || can('groups.manage')) && (
         <div className="seg" role="radiogroup" aria-label="Group">
@@ -405,7 +405,12 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           </p>
           {months.map((m) => (
             <div key={m.key}>
-              <h2 className="monthhead">{m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}</h2>
+              <h2 className="monthhead">
+                {m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}
+                <span className="month-count" aria-label={`${m.items.length} case${m.items.length === 1 ? '' : 's'}`}>
+                  {m.items.length}
+                </span>
+              </h2>
               <div className="group">
                 {m.items.map((c) => (
                   <CaseRow key={c.case_id} c={c} selected={c.case_id === selectedId} showGroup={activeGroup === 'ALL' && groups.length > 1 ? gname(c.group_id) : undefined} />

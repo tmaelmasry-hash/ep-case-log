@@ -70,7 +70,7 @@ pilgrim status were counted under "Pilgrims". Fix (owner picked it): the parent 
 Not recorded stay as their own lines.
 
 ## Build plan (proposed 28 Oct; each step: preview → owner yes → build → tests → deploy on yes)
-1. **Quick fixes, no new look:** Pilgrims count; follow-ups window 90 days; remove search by No.; "Synced" once; title
+1. **Quick fixes, no new look (built and live 28 Oct, Worker fbaf4dc7):** Pilgrims count; follow-ups window 90 days; remove search by No.; "Synced" once; title
    "Registry Cases"; month count in a colored circle; cases newest first.
 2. **Case card and main list:** new card (MRN big, age · sex, N missing, Hajj mark); date chips, status filter, sort;
    group colors; + as a floating button with New case / Bulk add.

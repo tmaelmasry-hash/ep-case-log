@@ -225,13 +225,16 @@ test('patients and my work follow the cases', async ({ page }, info) => {
   await page.getByTestId('addproc-next').click();
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
-  await page.goto('/#/patients');
-  await page.getByLabel('Search patients').fill(m);
-  await page.getByTestId('patient-row').click();
-  await expect(page.getByRole('heading', { name: `MRN ${m}` })).toBeVisible();
-  await expect(page.getByTestId('case-row')).toContainText('CIED implant');
-  await page.goto('/#/stats');
-  await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('core');
+  // Step 5: no Patients tab; the MRN in the case header and in search open the patient page.
+  await page.getByTestId('mrn-link').click();
+  await expect(page.getByTestId('patient-view').getByRole('heading', { name: m })).toBeVisible();
+  await expect(page.getByTestId('patient-proc')).toContainText('CIED implant');
+  await page.goto('/#/cases');
+  await page.getByLabel('Search MRN or procedure').fill(m);
+  await page.getByTestId('patient-hit').click();
+  await expect(page.getByTestId('patient-view')).toContainText('1 case');
+  await page.getByTestId('tab-mywork').click();
+  await expect(page.getByTestId('mywork').getByTestId('mywork-row').filter({ hasText: m })).toContainText('missing');
 });
 
 test('without the server the app says so clearly and recovers when it is back', async ({ page, context }) => {
@@ -255,7 +258,7 @@ test('without the server the app says so clearly and recovers when it is back', 
 test('layout fits the screen on every page', async ({ page }, info) => {
   await open(page);
   await createCase(page, mrn(info));
-  for (const h of ['#/cases', '#/patients', '#/stats', '#/settings']) {
+  for (const h of ['#/mywork', '#/cases', '#/followup', '#/stats', '#/settings']) {
     await page.goto('/' + h);
     await page.waitForTimeout(200);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

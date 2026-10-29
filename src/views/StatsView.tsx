@@ -1,12 +1,10 @@
-// Dashboard tab (phase 9, EP Workspace): "My work" for everyone (own open cases, what is missing, reminders) and the
-// Admin dashboard (collection progress and clinical counts per procedure; counts only, no MRNs).
+// Dashboard tab (phase 9, EP Workspace; Admin only since step 5, My work has its own tab): cohorts, collection progress
+// and clinical counts per procedure (counts only, no MRNs).
 import { useCallback, useEffect, useState } from 'react';
 import { applyFilters, clearFilters, itemColor, itemLabel, useFilters, useTagged } from '../lib/filters';
 import { api, ApiError } from '../lib/api';
-import { useAuth } from '../auth';
 import { useStore } from '../store';
-import { Icon } from '../components/Icon';
-import { Empty } from '../components/ui';
+import { CategoryTree } from '../components/CategoryTree';
 
 interface Tally {
   total: number;
@@ -30,13 +28,6 @@ interface Dashboard {
     pilgrim: Record<string, number>;
   };
 }
-interface MyWork {
-  stale_days: number;
-  totals: { mine: number; in_progress: number; completed: number };
-  reminders: { kind: string; text: string; count: number }[];
-  items: { case_id: string; group_name: string | null; group_seq: number; mrn: string; stage: string; core_done: number; core_total: number; stale: boolean; ready: boolean; missing: string[]; missing_more: number }[];
-}
-
 const monthLabel = (m: string) => {
   const [y, mo] = m.split('-').map(Number);
   return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
@@ -328,113 +319,30 @@ function AdminDashboard() {
   );
 }
 
-function MyWorkView() {
-  const { data: w, error, load } = useLoad<MyWork>('/api/mywork');
-  if (error)
-    return (
-      <p className="field-error" role="alert">
-        {error}{' '}
-        <button className="link strong" onClick={load}>
-          Try again
-        </button>
-      </p>
-    );
-  if (!w)
-    return (
-      <p className="muted">
-        <span className="spinner inline" /> Loading…
-      </p>
-    );
+/** Dashboard tab (Admin): cohorts (moved here from the menu, owner step 5) and the numbers, which follow them. */
+export function StatsView() {
   return (
-    <div data-testid="mywork">
-      <div className="kpis">
-        <div className="kpi">
-          <span>My cases</span>
-          <b>{w.totals.mine}</b>
-        </div>
-        <div className="kpi ip">
-          <span>In progress</span>
-          <b>{w.totals.in_progress}</b>
-        </div>
-        <div className="kpi ok">
-          <span>Completed</span>
-          <b>{w.totals.completed}</b>
-        </div>
-      </div>
-      {w.reminders.length > 0 && (
-        <div className="group" data-testid="reminders">
-          {w.reminders.map((r) => (
-            <div key={r.kind} className="grow-row check-item">
-              <span className={`ic ${r.kind === 'ready' ? 'ok' : 'warn'}`}>{r.kind === 'ready' ? '✓' : 'i'}</span>
-              <span className="grow">{r.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <h2 className="sechead">My open cases</h2>
-      {!w.items.length ? (
-        <Empty icon="check" title="Nothing open">
-          <p>Cases you add or edit appear here until they are completed.</p>
-        </Empty>
-      ) : (
-        <div className="group">
-          {w.items.map((x) => (
-            <a key={x.case_id} className="grow-row" href={`#/cases/${x.case_id}`} data-testid="mywork-row">
-              <span className="grow">
-                <span className="line1">
-                  <b>{x.mrn}</b>{' '}
-                  <span className="muted">
-                    · {x.group_name} No. {x.group_seq}
-                  </span>
-                  {x.ready && <span className="status s-done"> Ready to complete</span>}
-                  {x.stale && <span className="kind"> STALE</span>}
-                </span>
-                <span className="sub">
-                  core {x.core_done}/{x.core_total}
-                  {x.missing.length ? ` · missing: ${x.missing.join(', ')}${x.missing_more ? ` and ${x.missing_more} more` : ''}` : ''}
-                </span>
-              </span>
-              <Icon name="chevron" size={16} className="muted" />
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
+    <section className="view" aria-label="Dashboard">
+      <h1 className="large-title">Dashboard</h1>
+      <CohortsPanel />
+      <AdminDashboard />
+    </section>
   );
 }
 
-export function StatsView() {
-  const { can } = useAuth();
-  const admin = can('dashboard.view');
-  const [view, setView] = useState<'mywork' | 'dashboard'>(() => {
-    try {
-      return admin && localStorage.getItem('ep.dash.view') === 'dashboard' ? 'dashboard' : 'mywork';
-    } catch {
-      return 'mywork';
-    }
-  });
-  const pick = (v: 'mywork' | 'dashboard') => {
-    setView(v);
-    try {
-      localStorage.setItem('ep.dash.view', v);
-    } catch {
-      /* storage blocked */
-    }
-  };
+function CohortsPanel() {
+  const { cases } = useStore();
+  const f = useFilters();
+  const tagged = useTagged(cases);
+  const n = f.group.length ? applyFilters(cases, tagged, { ...f, grp: 'ALL' }).length : 0;
   return (
-    <section className="view" aria-label="Dashboard">
-      <h1 className="large-title">{view === 'dashboard' ? 'Dashboard' : 'My Work'}</h1>
-      {admin && (
-        <div className="seg" role="radiogroup" aria-label="View">
-          <button type="button" role="radio" aria-checked={view === 'mywork'} className={view === 'mywork' ? 'on' : ''} onClick={() => pick('mywork')}>
-            My work
-          </button>
-          <button type="button" role="radio" aria-checked={view === 'dashboard'} className={view === 'dashboard' ? 'on' : ''} onClick={() => pick('dashboard')}>
-            Dashboard
-          </button>
-        </div>
+    <div className="panel cohorts-panel" data-testid="cohorts-panel">
+      <CategoryTree cases={cases} show="cohorts" />
+      {n > 0 && (
+        <a className="link strong show-cases" href="#/cases" data-testid="show-cohort-cases">
+          Show these {n} case{n === 1 ? '' : 's'} →
+        </a>
       )}
-      {view === 'dashboard' && admin ? <AdminDashboard /> : <MyWorkView />}
-    </section>
+    </div>
   );
 }

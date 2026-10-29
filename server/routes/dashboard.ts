@@ -1,5 +1,5 @@
 // Admin dashboard (dashboard.view) and My work (every user, own cases in own groups) — phase 9.
-import { buildDashboard, buildMyWork, collectorOf } from '../domain/dashboard.ts';
+import { buildDashboard, buildMyWork, collectorOf, localDay, weekStart } from '../domain/dashboard.ts';
 import { HttpError, groupIdsFor, requireCap, type Router } from '../http.ts';
 
 export function dashboardRoutes(app: Router) {
@@ -39,6 +39,12 @@ export function dashboardRoutes(app: Router) {
     // Owner, 28 Oct: only the Admin adds cases, so a case nobody has filled in yet is work for every Member of its group.
     const untouched = (c: (typeof cases)[number]) => u.role === 'MEMBER' && !c.meta.collector_user_id;
     const own = cases.filter((c) => !c.meta.is_deleted && mine.includes(c.meta.group_id) && (collectorOf(c) === u.userId || untouched(c)));
-    return buildMyWork(dict, site, { mine: own, groups, now: ctx.now() });
+    // "Done this week" (step 5): cases this user marked Completed since Sunday, in the user's groups.
+    const now = ctx.now();
+    const from = weekStart(now, site.timezone);
+    const doneThisWeek = cases.filter(
+      (c) => !c.meta.is_deleted && mine.includes(c.meta.group_id) && c.meta.collection_status === 'COMPLETED' && c.meta.completed_by === u.userId && !!c.meta.completed_at && localDay(new Date(c.meta.completed_at), site.timezone) >= from,
+    ).length;
+    return buildMyWork(dict, site, { mine: own, groups, now, doneThisWeek });
   });
 }

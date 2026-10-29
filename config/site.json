@@ -114,8 +114,8 @@
   "_note": "MRN, names and phone numbers are removed before a note is sent. Raw notes are never stored or logged. The AI fills the draft only; a person accepts every value. Copied from EP Workspace config/site.json ai (models checked by the owner 15–16 Oct 2026). Keys only in the Worker's secrets / local .env."
  },
   "followup_due": {
-    "_note": "Follow-up bell (EP Workspace F-16; off as in its F-19 — set enabled to true to switch it on). Operational reminder only: a dictionary follow-up timepoint falls due after a procedure's date and that procedure has no follow-up visit with that timepoint yet; and the latest device check's next_check_due_date. Days after the procedure are the registry's reminder rule, not a clinical field.",
-    "enabled": false,
+    "_note": "Follow-ups due (EP Workspace F-16): the Follow-up tab (owner, 29 Oct, step 5: switched on for everyone; set enabled to false to hide the tab). Operational reminder only: a dictionary follow-up timepoint falls due after a procedure's date and that procedure has no follow-up visit with that timepoint yet; and the latest device check's next_check_due_date. Days after the procedure are the registry's reminder rule, not a clinical field.",
+    "enabled": true,
     "procedure_date_field": "EP_PROCEDURES.procedure_start_datetime",
     "procedure_status_field": "EP_PROCEDURES.procedure_status",
     "skip_procedure_status": [

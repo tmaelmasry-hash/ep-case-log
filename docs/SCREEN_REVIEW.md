@@ -123,3 +123,21 @@ contrast questions), one per type module, Complications. "Not available" is a sm
 question; its dialog keeps the four ready reasons and "another reason".
 Not changed: questions that do not apply are shown or hidden by the existing rules (e.g. accessory-pathway questions
 still show under SVT ablation for AVNRT, as before).
+
+
+## Step 5 (built 29 Oct, not deployed yet): https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP
+Preview approved as drawn ("build it"). Owner answers on the preview: a Member does **not** see Cohorts (Dashboard tab
+stays Admin only; a Member's tabs are My work · Cases · Follow-up · Settings); the Follow-up tab is switched on for
+everyone (`config/site.json` `followup_due.enabled: true`). Owner's edit on the canvas: the patient page lists
+**procedures** ("Procedures you can see"), one row per procedure.
+- Tabs: My work · Cases · Follow-up (red number = overdue + due within 7 days) · Dashboard (Admin) · Settings. No
+  Patients tab; the bell on the Cases screen is gone (the tab replaces it). Opening the app lands on My work.
+- My work: "Done this week" = cases the user marked Completed since Sunday (Riyadh time), Open, Ready; open cases with
+  the fewest missing first (same count as the case card); not-started cases show "Not started".
+- Follow-up tab: Overdue / This week / Later (90 days), filter All / Visits / Device checks, device type on device checks.
+- Menu: Ablation, Devices, **Structural, Diagnostic** (order changed in `config/categories.json`); several items at once
+  (a tick on each picked item); Cohorts moved to the Dashboard; your name at the bottom opens Settings (My account).
+- Dashboard: Cohorts panel on top (same items, edit, New cohort, Hidden cohorts); picking a cohort changes the numbers;
+  "Show these N cases" opens the Cases list with that cohort as a filter chip.
+- Patient page: from the MRN in the case header or a "Patient …" row in search (3+ digits); device next to the MRN.
+- Desktop with no case open: big New case (Admin), or Bulk add; your open cases (top 5); follow-ups this week.

@@ -9,15 +9,14 @@ test('My work lists my open case with what is missing; Admin sees the dashboard,
   await createCase(page, m);
   await page.context().clearCookies();
   await page.reload();
-  await open(page, 'sara', '#/stats');
+  await open(page, 'sara', '#/mywork');
   await expect(page.getByTestId('mywork')).toBeVisible();
-  await expect(page.getByTestId('mywork-row').filter({ hasText: m })).toContainText('missing: Sex');
-  await expect(page.getByRole('radio', { name: 'Dashboard' })).toHaveCount(0);
+  await expect(page.getByTestId('mywork').getByTestId('mywork-row').filter({ hasText: m })).toContainText('Not started');
+  await expect(page.getByTestId('tab-stats')).toHaveCount(0);
 
   await page.context().clearCookies();
   await page.reload();
   await open(page, 'admin', '#/stats');
-  await page.getByRole('radio', { name: 'Dashboard' }).click();
   const d = page.getByTestId('dashboard');
   await expect(d.getByTestId('acute')).toContainText('AF Ablation');
   await expect(d).not.toContainText(m);

@@ -222,7 +222,7 @@ export function SaveIndicator() {
 }
 
 export function useHashRoute(): [string[], (path: string) => void] {
-  const parse = () => (window.location.hash.replace(/^#\/?/, '') || 'cases').split('/').map(decodeURIComponent);
+  const parse = () => (window.location.hash.replace(/^#\/?/, '') || 'mywork').split('/').map(decodeURIComponent);
   const [route, setRoute] = useState<string[]>(parse);
   useEffect(() => {
     const on = () => setRoute(parse());

@@ -1,7 +1,7 @@
 // Phase 9: Admin dashboard (counts only, per procedure) and My work. Synthetic MRNs (9990xxx) only.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { expectedSlot } from '../../server/domain/cases.ts';
-import { afGateOk } from '../../server/domain/dashboard.ts';
+import { afGateOk, weekStart } from '../../server/domain/dashboard.ts';
 import { as, dict, edit, harness, newCase, rid, type Harness } from './harness.ts';
 
 let h: Harness;
@@ -82,5 +82,33 @@ describe('My work', () => {
     expect(w.items[0]).toMatchObject({ mrn: '9990511', stage: 'MRN_ONLY' });
     expect(w.items[0].missing).toContain('Sex');
     expect(w.reminders.map((r: { kind: string }) => r.kind)).toContain('mrn_only');
+  });
+
+  it('step 5: fewest missing first, and "done this week" counts my Completed cases since Sunday (Riyadh)', async () => {
+    const sara = await as(h, 'sara');
+    const a = (await newCase(sara, '9990513')).case_id;
+    const b = (await newCase(sara, '9990514')).case_id;
+    const d = (await sara.call('GET', `/api/cases/${b}`)).data;
+    await edit(sara, b, { changes: [{ entity: 'PATIENTS', id: d.meta.patient_id, field: 'sex_at_birth', value: 'FEMALE' }] });
+    const w = (await sara.call('GET', '/api/mywork')).data;
+    expect(w.items.map((x: { mrn: string }) => x.mrn)).toEqual(['9990514', '9990513']);
+    expect(w.items[0].missing_count).toBe(w.items[1].missing_count - 1);
+    expect(w.totals.done_this_week).toBe(0);
+
+    // Marked Completed by Sara this week (the harness clock is Thu 22 Oct 2026) and last week.
+    const me = (await sara.call('GET', '/api/auth/me')).data.user.id;
+    const mark = async (id: string, at: string) => {
+      const rec = (await h.store.getCase(id, { forEdit: true }))!;
+      await h.store.putCase({ ...rec, meta: { ...rec.meta, collection_status: 'COMPLETED', completed_by: me, completed_at: at } }, rec);
+    };
+    await mark(a, '2026-10-17T22:00:00Z'); // Sun 18 Oct 01:00 in Riyadh: this week
+    await mark(b, '2026-10-17T20:00:00Z'); // Sat 17 Oct 23:00 in Riyadh: last week
+    expect((await sara.call('GET', '/api/mywork')).data.totals.done_this_week).toBe(1);
+  });
+
+  it('the week starts on Sunday in the site time zone', () => {
+    expect(weekStart(new Date('2026-10-22T08:00:00Z'), 'Asia/Riyadh')).toBe('2026-10-18');
+    expect(weekStart(new Date('2026-10-24T22:00:00Z'), 'Asia/Riyadh')).toBe('2026-10-25'); // Sunday 01:00 local
+    expect(weekStart(new Date('2026-10-24T20:00:00Z'), 'Asia/Riyadh')).toBe('2026-10-18'); // Saturday 23:00 local
   });
 });

@@ -48,7 +48,7 @@ describe('category config', () => {
   });
 
   it('has the owner-approved main menus in order', () => {
-    expect(m.children(null).filter((i) => i.section === 'procedures').map((i) => i.label)).toEqual(['Ablation', 'Devices', 'Diagnostic', 'Structural']);
+    expect(m.children(null).filter((i) => i.section === 'procedures').map((i) => i.label)).toEqual(['Ablation', 'Devices', 'Structural', 'Diagnostic']);
     expect(m.children('ABLATION').map((i) => i.label)).toEqual(['AF ablation', 'Flutter ablation', 'SVT ablation', 'Accessory pathway ablation', 'AV node ablation', 'Ventricular ablation']);
     expect(m.children('DEV').map((i) => i.label)).toEqual(['Pacemaker', 'ICD', 'CRT', 'Conduction system pacing', 'Extraction and revision', 'Generator change and upgrade']);
     expect(m.children('DEV_ICD').map((i) => i.label)).toEqual(['Single chamber', 'Dual chamber', 'Subcutaneous ICD', 'EV-ICD']);
@@ -143,8 +143,8 @@ describe('hijri year', () => {
 });
 
 describe('follow-up state', () => {
-  it('is reported while the bell stays switched off', () => {
-    expect(site.followup_due?.enabled).toBe(false);
+  it('is reported for the menu (the Follow-up tab is switched on since step 5)', () => {
+    expect(site.followup_due?.enabled).toBe(true);
     const rec = makeCase('2026-09-01');
     addProcedure(rec, ['AF'], { primary_procedure_type: 'ABLATION', procedure_start_datetime: '2026-09-20T09:00' });
     const state = followupState(site.followup_due, [rec], '2026-10-23').get(rec.meta.case_id);

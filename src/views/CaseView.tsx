@@ -1509,7 +1509,10 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
 
         <div className="hcard" data-testid="case-head">
           <div className="hc-top">
-            <b className="hc-mrn">{d.meta.mrn}</b>
+            {/* Owner, step 5: the MRN opens the patient page (no Patients tab). */}
+            <a className="hc-mrn" href={`#/patients/${encodeURIComponent(d.meta.mrn)}`} title="Open the patient page" data-testid="mrn-link">
+              {d.meta.mrn}
+            </a>
             {ageSex(head?.age ?? null, head?.sex ?? null) && <span className="muted">{ageSex(head?.age ?? null, head?.sex ?? null)}</span>}
             {hajj && (
               <span className="chip c-cat hajj-mark" style={{ '--chip': 'var(--cat-pilgrim)' } as CSSProperties}>

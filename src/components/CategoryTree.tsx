@@ -1,5 +1,6 @@
-// Category menu (owner R2-4, revised 23 Oct): Procedures tree, Cohorts and Period, with counts that follow the other
-// filters. Several items can be picked at once (any of them). Used in the desktop sidebar and the phone drawer.
+// Category menu (owner R2-4, revised 23 Oct): Procedures tree and Period, with counts that follow the other filters.
+// Several items can be picked at once (any of them). Used in the desktop sidebar and the phone drawer. Cohorts moved to
+// the Dashboard (owner, step 5): show="cohorts" draws only them there.
 import { useState } from 'react';
 import type { CategoryItem } from '../../shared/categories.ts';
 import { UNCLASSIFIED } from '../../shared/categories.ts';
@@ -43,7 +44,7 @@ export function periodPresets(): [string, string, string][] {
   ];
 }
 
-export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; onCustomPeriod: () => void }) {
+export function CategoryTree({ cases, onCustomPeriod, show = 'menu' }: { cases: CaseSummary[]; onCustomPeriod?: () => void; show?: 'menu' | 'cohorts' }) {
   const f = useFilters();
   const tagged = useTagged(cases);
   const [open, setOpen] = useState(loadOpen);
@@ -86,7 +87,7 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
           )}
           <button type="button" className="cat-name" aria-pressed={on} onClick={() => toggleFilter(side, it.id)} data-testid={`cat-${it.id}`}>
             <span className="cat-ic" aria-hidden>
-              <Icon name={iconOf(it.id)} size={depth === 0 ? 16 : 13} />
+              <Icon name={on ? 'check' : iconOf(it.id)} size={depth === 0 ? 16 : 13} />
             </span>
             <span className="grow">{itemLabel(it.id)}</span>
             <span className={`cat-count${n ? '' : ' zero'}`}>{n}</span>
@@ -115,6 +116,64 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
   const unclassified = count(forProc, UNCLASSIFIED);
   const presets = periodPresets();
   const anyFilter = !!(f.proc.length || f.group.length || f.from || f.to);
+  if (show === 'cohorts')
+    return (
+      <div className="cat-tree" data-testid="cohort-tree">
+        <div className="cat-head">Cohorts</div>
+        <ul className="cat-list">
+          {roots.filter((r) => r.section === 'groups').map((r) => tree(r, 'group', 0))}
+          {custom.map((c) => {
+            const key = cohortKey(c.id);
+            const on = f.group.includes(key);
+            const n = count(forGroup, key);
+            return (
+              <li key={key}>
+                <div className={`cat-row top${on ? ' on' : ''}`} style={{ paddingLeft: 4, ['--dot' as string]: `var(--${c.color})` }}>
+                  <span className="cat-arrow" />
+                  <button type="button" className="cat-name" aria-pressed={on} onClick={() => toggleFilter('group', key)} data-testid="cat-custom" title={c.note || undefined}>
+                    <span className="cat-ic" aria-hidden>
+                      <Icon name={c.kind === 'rule' ? 'filter' : 'clip'} size={16} />
+                    </span>
+                    <span className="grow">{c.name}</span>
+                    <span className={`cat-count${n ? '' : ' zero'}`}>{n}</span>
+                  </button>
+                  {admin && (
+                    <button type="button" className="cat-arrow" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
+                      <Icon name="edit" size={14} />
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+          {admin && (
+            <li>
+              <button type="button" className="link small cat-new" onClick={() => setEditing('new')} data-testid="new-cohort">
+                <Icon name="plus" size={14} /> New cohort
+              </button>
+            </li>
+          )}
+        </ul>
+        {admin && Object.keys(overrides).some(hidden) && (
+          <>
+            <div className="cat-head">Hidden cohorts</div>
+            <ul className="cat-list">
+              {Object.keys(overrides)
+                .filter((id) => hidden(id) && matcher.item(id))
+                .map((id) => (
+                  <li key={id}>
+                    <button type="button" className="link small cat-new" onClick={() => setEditBuiltin(id)}>
+                      <Icon name="edit" size={14} /> {itemLabel(id)}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </>
+        )}
+        {editBuiltin && <BuiltinCohortSheet id={editBuiltin} onClose={() => setEditBuiltin(null)} />}
+        {editing && <CohortSheet cohort={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
+      </div>
+    );
   return (
     <div className="cat-tree" data-testid="category-tree">
       <ul className="cat-list">
@@ -131,64 +190,11 @@ export function CategoryTree({ cases, onCustomPeriod }: { cases: CaseSummary[]; 
           </div>
         </li>
       </ul>
-      <div className="cat-head">Procedures</div>
+      <div className="cat-head">Procedures · pick one or more</div>
       <ul className="cat-list">
         {roots.filter((r) => r.section === 'procedures').map((r) => tree(r, 'proc', 0))}
         {unclassified > 0 && row({ id: UNCLASSIFIED, label: 'Unclassified' }, 'proc', 0, [])}
       </ul>
-      <div className="cat-head">Cohorts</div>
-      <ul className="cat-list">
-        {roots.filter((r) => r.section === 'groups').map((r) => tree(r, 'group', 0))}
-        {custom.map((c) => {
-          const key = cohortKey(c.id);
-          const on = f.group.includes(key);
-          const n = count(forGroup, key);
-          return (
-            <li key={key}>
-              <div className={`cat-row top${on ? ' on' : ''}`} style={{ paddingLeft: 4, ['--dot' as string]: `var(--${c.color})` }}>
-                <span className="cat-arrow" />
-                <button type="button" className="cat-name" aria-pressed={on} onClick={() => toggleFilter('group', key)} data-testid="cat-custom" title={c.note || undefined}>
-                  <span className="cat-ic" aria-hidden>
-                    <Icon name={c.kind === 'rule' ? 'filter' : 'clip'} size={16} />
-                  </span>
-                  <span className="grow">{c.name}</span>
-                  <span className={`cat-count${n ? '' : ' zero'}`}>{n}</span>
-                </button>
-                {admin && (
-                  <button type="button" className="cat-arrow" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
-                    <Icon name="edit" size={14} />
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-        {admin && (
-          <li>
-            <button type="button" className="link small cat-new" onClick={() => setEditing('new')} data-testid="new-cohort">
-              <Icon name="plus" size={14} /> New cohort
-            </button>
-          </li>
-        )}
-      </ul>
-      {admin && Object.keys(overrides).some(hidden) && (
-        <>
-          <div className="cat-head">Hidden cohorts</div>
-          <ul className="cat-list">
-            {Object.keys(overrides)
-              .filter((id) => hidden(id) && matcher.item(id))
-              .map((id) => (
-                <li key={id}>
-                  <button type="button" className="link small cat-new" onClick={() => setEditBuiltin(id)}>
-                    <Icon name="edit" size={14} /> {itemLabel(id)}
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </>
-      )}
-      {editBuiltin && <BuiltinCohortSheet id={editBuiltin} onClose={() => setEditBuiltin(null)} />}
-      {editing && <CohortSheet cohort={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
       <div className="cat-head">Period</div>
       <div className="cat-period" data-testid="period-menu">
         {presets.map(([label, a, b]) => {

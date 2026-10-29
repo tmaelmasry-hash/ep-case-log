@@ -7,26 +7,32 @@ import { CategoryTree } from './components/CategoryTree';
 import { PeriodSheet } from './components/PeriodSheet';
 import { CasesView } from './views/CasesView';
 import { CaseView } from './views/CaseView';
-import { PatientsView } from './views/PatientsView';
+import { PatientView } from './views/PatientsView';
 import { StatsView } from './views/StatsView';
 import { SettingsView } from './views/SettingsView';
+import { MyWorkView } from './views/MyWorkView';
+import { FollowupView, useFollowups } from './views/Followups';
+import { EmptyPane } from './views/EmptyPane';
 import { useOnline } from './lib/sync';
-
-const TABS = [
-  { key: 'cases', label: 'Cases', icon: 'cases' },
-  { key: 'patients', label: 'Patients', icon: 'patients' },
-  { key: 'stats', label: 'Dashboard', icon: 'stats' },
-  { key: 'settings', label: 'Settings', icon: 'settings' },
-];
+import { UserLink } from './components/UserLink';
 
 export function App() {
   const { loaded, cases } = useStore();
-  const { me } = useAuth();
+  const { me, can } = useAuth();
   const [route, nav] = useHashRoute();
   const wide = useMediaQuery('(min-width: 960px)');
   const [period, setPeriod] = useState(false);
   const online = useOnline();
-  const tab = route[0];
+  const fu = useFollowups(!!me?.features?.followups);
+  // Owner, step 5: My work first; Follow-up tab; no Patients tab (the patient page opens from an MRN); Dashboard for the Admin.
+  const TABS = [
+    { key: 'mywork', label: 'My work', icon: 'clipboard' },
+    { key: 'cases', label: 'Cases', icon: 'cases' },
+    ...(me?.features?.followups ? [{ key: 'followup', label: 'Follow-up', icon: 'cal', badge: fu.urgent }] : []),
+    ...(can('dashboard.view') ? [{ key: 'stats', label: 'Dashboard', icon: 'stats' }] : []),
+    { key: 'settings', label: 'Settings', icon: 'settings' },
+  ];
+  const tab = route[0] === 'patients' || TABS.some((t) => t.key === route[0]) ? route[0] : 'mywork';
 
   if (!loaded) {
     return (
@@ -38,23 +44,25 @@ export function App() {
   }
 
   let main;
-  if (tab === 'cases' || !TABS.some((t) => t.key === tab)) {
-    const caseId = tab === 'cases' ? route[1] : undefined;
+  if (tab === 'cases') {
+    const caseId = route[1];
     if (wide) {
       main = (
         <div className="split">
           <div className="split-list">
             <CasesView selectedId={caseId} nav={nav} />
           </div>
-          <div className="split-detail">{caseId ? <CaseView key={caseId} id={caseId} nav={nav} wide /> : <div className="placeholder">Select a case, or press + to create one.</div>}</div>
+          <div className="split-detail">{caseId ? <CaseView key={caseId} id={caseId} nav={nav} wide /> : <EmptyPane fu={fu} nav={nav} />}</div>
         </div>
       );
     } else main = caseId ? <CaseView key={caseId} id={caseId} nav={nav} wide={false} /> : <CasesView nav={nav} />;
-  } else if (tab === 'patients') main = <PatientsView mrn={route[1]} nav={nav} />;
+  } else if (tab === 'patients') main = <PatientView mrn={route[1] ?? ''} />;
+  else if (tab === 'mywork') main = <MyWorkView />;
+  else if (tab === 'followup') main = <FollowupView fu={fu} />;
   else if (tab === 'stats') main = <StatsView />;
   else main = <SettingsView />;
 
-  const activeTab = TABS.some((t) => t.key === tab) ? tab : 'cases';
+  const activeTab = tab === 'patients' ? 'cases' : tab;
 
   return (
     <div className={`app ${wide ? 'is-wide' : 'is-narrow'}`}>
@@ -68,8 +76,15 @@ export function App() {
           </div>
         )}
         {TABS.map((t) => (
-          <a key={t.key} href={`#/${t.key}`} className={activeTab === t.key ? 'active' : ''} aria-current={activeTab === t.key ? 'page' : undefined}>
-            <Icon name={t.icon} size={22} />
+          <a key={t.key} href={`#/${t.key}`} className={activeTab === t.key ? 'active' : ''} aria-current={activeTab === t.key ? 'page' : undefined} data-testid={`tab-${t.key}`}>
+            <span className="tab-ic">
+              <Icon name={t.icon} size={22} />
+              {'badge' in t && t.badge ? (
+                <span className="badge" aria-label={`${t.badge} due within 7 days or overdue`}>
+                  {t.badge}
+                </span>
+              ) : null}
+            </span>
             <span>{t.label}</span>
           </a>
         ))}
@@ -81,11 +96,7 @@ export function App() {
         {wide && (
           <div className="tabbar-foot">
             <SaveIndicator />
-            {me && (
-              <div className="muted small" data-testid="sidebar-user">
-                {me.name} · {me.role === 'ADMIN' ? 'Admin' : 'Member'}
-              </div>
-            )}
+            {me && <UserLink />}
           </div>
         )}
       </nav>

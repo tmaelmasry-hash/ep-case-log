@@ -5,21 +5,14 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
 stop after each step, deploy only on his yes.
 
-## START HERE — screen review, build step 5 of 8
+## START HERE — screen review, step 5 built (29 Oct), deploy waits for the owner's yes
 The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
-**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–4 are built and live. **Next: step 5 (navigation)** — make a
-preview first, show it, build only on his yes, then deploy only on his yes. Step 5 contents (round 2 answers):
-- Bottom tabs: add a **Follow-up** tab (visits and device checks due; the bell list is the base, window 90 days);
-  **drop the Patients tab** (open the patient page from the MRN in search or in the case). Owner asked "what does the
-  + do" — answered: the center-+ suggestion was not picked, nothing to build.
-- **My work** as the first screen on opening, fewest missing first, a "done this week" number.
-- **Cohorts move to the Dashboard** (name stays "Cohorts", owner 28 Oct); built-in Pilgrims counts Hajj + Umrah only
-  (done in step 1).
-- Side menu footer: tapping your name opens your account. Procedure categories: several at once (multi-select);
-  owner asked for a suggested order — proposed Ablation (AF, Flutter, SVT, AP, AV node, VT), Devices, Structural,
-  Diagnostic; confirm in the preview.
-- Empty desktop pane: proposed a big New case button (Admin only) and the user's open cases; confirm in the preview.
-Then steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
+**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–4 are live. **Step 5 (navigation)** was previewed
+(https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved and built on 29 Oct (committed, **not deployed**): My work
+first, Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin only),
+menu order Ablation · Devices · Structural · Diagnostic, name → account, desktop empty pane. Details in SCREEN_REVIEW.md
+→ "Step 5". Next: deploy step 5 on the owner's yes, then
+steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
 
 How previews were done: a Design canvas artifact per step (phone screens 390 wide, the app's own colors, yellow notes
 in Arabic). Step 3: https://claude.ai/artifact/Ld4BVxmXShvzcdqvg9G7uU · step 4:

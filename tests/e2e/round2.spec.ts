@@ -1,5 +1,5 @@
 // Browser tests for round 2 part 2 (owner R2-4 / R2-6, revised 23 Oct): category menu (sidebar on desktop, left
-// drawer on phones), several items at once, cohorts, period presets and Clear. Synthetic MRNs (9990xxx) only.
+// drawer on phones), several items at once, cohorts (on the Dashboard since step 5), period presets and Clear. Synthetic MRNs (9990xxx) only.
 import { expect, test, type Page } from '@playwright/test';
 import { signIn } from './helpers';
 
@@ -35,6 +35,18 @@ async function inMenu(page: Page, ...clicks: { id?: string; parent?: string; per
   }
 }
 
+/** Cohorts live on the Dashboard since step 5 (owner, 29 Oct): clicks them there. */
+async function inCohorts(page: Page, ...clicks: { id?: string; parent?: string; name?: string }[]) {
+  await page.goto('/#/stats');
+  const panel = page.getByTestId('cohorts-panel');
+  for (const c of clicks) {
+    const arrow = c.parent ? panel.getByRole('button', { name: `Open ${c.parent}`, exact: true }) : null;
+    if (arrow && (await arrow.count())) await arrow.click();
+    if (c.id) await panel.getByTestId(`cat-${c.id}`).click();
+    if (c.name) await panel.getByTestId('cat-custom').filter({ hasText: c.name }).click();
+  }
+}
+
 test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine; Clear', async ({ page }, info) => {
   await open(page);
   const m = mrn(info);
@@ -64,10 +76,14 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await expect(page.getByTestId('filter-bar')).toContainText('AF ablation');
   await expect(rows).toHaveCount(1);
 
-  // Cohort combines with the procedure items: no pilgrim status recorded yet.
-  await inMenu(page, { id: 'PILGRIM_NOT_RECORDED', parent: 'Pilgrims' });
+  // Cohort (on the Dashboard) combines with the procedure items: no pilgrim status recorded yet.
+  await inCohorts(page, { id: 'PILGRIM_NOT_RECORDED', parent: 'Pilgrims' });
+  await page.getByTestId('show-cohort-cases').click();
+  await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
   await expect(rows).toHaveCount(1);
-  await inMenu(page, { id: 'PILGRIM_NOT_RECORDED', parent: 'Pilgrims' });
+  await inCohorts(page, { id: 'PILGRIM_NOT_RECORDED', parent: 'Pilgrims' });
+  await page.goto('/#/cases');
+  await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
 
   // Period: "Last year" drops it (episode 12 March 2026); the filters are kept after a reload.
   await inMenu(page, { period: 'Last year' });
@@ -94,11 +110,8 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await expect(page.getByTestId('case-head')).toContainText(`${m}`);
   const caseUrl = page.url();
 
-  // New tag cohort from the menu.
-  await page.goto('/#/cases');
-  const menu = page.getByTestId('open-categories');
-  const phone = await menu.isVisible();
-  if (phone) await menu.click();
+  // New tag cohort from the Dashboard.
+  await page.goto('/#/stats');
   await page.getByTestId('new-cohort').click();
   const cs = page.getByTestId('cohort-sheet');
   await cs.locator('#cohort-name').fill(name);
@@ -110,7 +123,6 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await cs.getByRole('radio', { name: 'By tag' }).click();
   await cs.getByRole('button', { name: 'Save cohort' }).click();
   await expect(cs).toHaveCount(0);
-  if (phone) await page.getByTestId('category-drawer').getByRole('button', { name: 'Done' }).click();
 
   // Tag the case from inside it.
   await page.goto(caseUrl);
@@ -119,11 +131,9 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await expect(page.getByTestId('case-cohorts-sheet').getByRole('checkbox', { name })).toBeChecked();
   await page.getByTestId('case-cohorts-sheet').getByRole('button', { name: 'Close' }).click();
 
-  // Filter by it.
-  await page.goto('/#/cases');
-  if (phone) await menu.click();
-  await page.getByTestId('cat-custom').filter({ hasText: name }).click();
-  if (phone) await page.getByTestId('category-drawer').getByRole('button', { name: 'Done' }).click();
+  // Filter by it, then show its cases.
+  await inCohorts(page, { name });
+  await page.getByTestId('show-cohort-cases').click();
   await expect(page.getByTestId('filter-bar')).toContainText(name);
   await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
   await expect(page.getByTestId('case-row')).toHaveCount(1);
@@ -132,9 +142,7 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
 
 test('Admin renames and hides a built-in cohort, then brings it back from Hidden cohorts', async ({ page }) => {
   await open(page);
-  const menu = page.getByTestId('open-categories');
-  const phone = await menu.isVisible();
-  if (phone) await menu.click();
+  await page.goto('/#/stats');
   await page.getByRole('button', { name: 'Edit Complications', exact: true }).click();
   const s = page.getByTestId('builtin-cohort-sheet');
   await s.locator('#builtin-name').fill('Complications seen');
@@ -182,7 +190,6 @@ test('part 4: same MRN and date warns of a duplicate; search by MRN and procedur
 
   await inMenu(page, { id: 'SVT' });
   await page.goto('/#/stats');
-  await page.getByRole('radiogroup', { name: 'View' }).getByRole('radio', { name: 'Dashboard' }).click();
   await expect(page.getByTestId('dashboard-filter')).toContainText('SVT ablation');
   await page.getByTestId('dashboard-filter').getByRole('button', { name: 'All cases' }).click();
   await expect(page.getByTestId('dashboard-filter')).toHaveCount(0);

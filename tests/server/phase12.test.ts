@@ -1,4 +1,5 @@
-// Phase 12: follow-up bell (built switched off, as in EP Workspace F-19). Synthetic MRNs (9990xxx) only.
+// Phase 12: follow-ups due (built switched off, as in EP Workspace F-19; switched on for the Follow-up tab in step 5).
+// Synthetic MRNs (9990xxx) only.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { checkFollowupConfig, followUpsDue } from '../../server/domain/followups.ts';
 import type { CaseRecord } from '../../shared/caseTypes.ts';
@@ -6,11 +7,12 @@ import { as, config, dict, edit, harness, newCase, rid, type Harness } from './h
 
 let h: Harness;
 const rule = config.site.followup_due!;
+const enabledInConfig = rule.enabled;
 beforeEach(async () => {
   h = await harness(); // today = 2026-10-22
 });
 afterEach(() => {
-  rule.enabled = false;
+  rule.enabled = enabledInConfig;
 });
 
 async function caseWithProcedure(c: Awaited<ReturnType<typeof as>>, mrn: string, start: string, group?: string, values: Record<string, unknown> = {}) {
@@ -20,14 +22,14 @@ async function caseWithProcedure(c: Awaited<ReturnType<typeof as>>, mrn: string,
   return { case_id, proc };
 }
 
-describe('follow-up bell', () => {
-  it('is off by default: no list, and the app is told not to show the bell', async () => {
+describe('follow-ups due', () => {
+  it('when switched off: no list, and the app is told not to show the Follow-up tab', async () => {
+    rule.enabled = false;
     const sara = await as(h, 'sara');
     await caseWithProcedure(sara, '9990501', '2026-09-25T09:20');
-    expect(rule.enabled).toBe(false);
     const r = await sara.call('GET', '/api/followups');
     expect(r.data).toEqual({ enabled: false, today: '2026-10-22', items: [] });
-    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followup_bell: false });
+    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followups: false });
   });
 
   it('when on: lists timepoints due per procedure until a visit with that timepoint exists; own groups only', async () => {
@@ -48,7 +50,7 @@ describe('follow-up bell', () => {
       ['9990502', 'D30 visit', 3],
     ]);
     expect(r.data.items[1]).toMatchObject({ case_id: a.case_id, procedure_id: a.proc, kind: 'visit', due_date: '2026-10-25' });
-    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followup_bell: true });
+    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followups: true });
 
     // The M6 visit is recorded for that procedure → it leaves the list.
     await edit(sara, b.case_id, { creates: [{ entity: 'FOLLOW_UPS', id: rid('FOLLOW_UPS'), parent_id: b.proc, values: { followup_timepoint: 'M6' } }] });

@@ -256,7 +256,20 @@ export function buildDashboard(dict: Dictionary, site: Site & { dashboard: DashC
 
 // ── My work (every user: their own cases) ──
 
-export function buildMyWork(dict: Dictionary, site: Site & { dashboard: DashConfig }, input: { mine: CaseRecord[]; groups: Group[]; now: Date; maxMissing?: number }) {
+/** Local calendar day (YYYY-MM-DD) of an instant in the site's time zone. */
+export function localDay(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+}
+
+/** First day (Sunday, the Saudi work week) of the week that holds `now`, as YYYY-MM-DD in the site's time zone. */
+export function weekStart(now: Date, timeZone: string): string {
+  const [y, m, d] = localDay(now, timeZone).split('-').map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d));
+  day.setUTCDate(day.getUTCDate() - day.getUTCDay());
+  return day.toISOString().slice(0, 10);
+}
+
+export function buildMyWork(dict: Dictionary, site: Site & { dashboard: DashConfig }, input: { mine: CaseRecord[]; groups: Group[]; now: Date; maxMissing?: number; doneThisWeek?: number }) {
   const d = site.dashboard;
   const groupName = new Map(input.groups.map((g) => [g.group_id, g.name]));
   const max = input.maxMissing ?? 6;
@@ -274,6 +287,7 @@ export function buildMyWork(dict: Dictionary, site: Site & { dashboard: DashConf
       stage: stageOf(c),
       core_done: r.done,
       core_total: r.total,
+      missing_count: r.total - r.done,
       updated_at: c.meta.updated_at,
       stale,
       ready,
@@ -282,8 +296,8 @@ export function buildMyWork(dict: Dictionary, site: Site & { dashboard: DashConf
     };
   });
   const open = items.filter((x) => x.collection_status === 'IN_PROGRESS');
-  const order = (x: (typeof items)[number]) => (x.ready ? 0 : x.stale ? 1 : 2);
-  open.sort((a, b) => order(a) - order(b) || a.updated_at.localeCompare(b.updated_at));
+  // Owner, 28 Oct (step 5): fewest missing first; ready to complete before the rest at the same count.
+  open.sort((a, b) => a.missing_count - b.missing_count || Number(b.ready) - Number(a.ready) || a.updated_at.localeCompare(b.updated_at));
   const reminders: { kind: string; text: string; count: number }[] = [];
   const n = (f: (x: (typeof items)[number]) => boolean) => open.filter(f).length;
   const push = (kind: string, count: number, one: string, many: string) => {
@@ -295,7 +309,7 @@ export function buildMyWork(dict: Dictionary, site: Site & { dashboard: DashConf
   return {
     generated_at: input.now.toISOString(),
     stale_days: d.stale_days,
-    totals: { mine: items.length, in_progress: open.length, completed: items.length - open.length },
+    totals: { mine: items.length, in_progress: open.length, completed: items.length - open.length, ready: open.filter((x) => x.ready).length, done_this_week: input.doneThisWeek ?? 0 },
     reminders,
     items: open,
   };

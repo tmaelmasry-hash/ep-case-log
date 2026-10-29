@@ -1,98 +1,87 @@
-// Patients (kept from EP Case Log, owner D6): one entry per MRN, built from the cases the user can see.
-import { useMemo, useState } from 'react';
-import type { CaseSummary } from '../../shared/caseTypes.ts';
+// Patient page (kept from EP Case Log, owner D6): one MRN, built from the cases the user can see. Since step 5 there is
+// no Patients tab; the page opens from the MRN in search or in a case header. It lists each procedure (owner's edit on
+// the step 5 preview), with the device recorded next to the MRN.
+import { useMemo, type CSSProperties } from 'react';
+import type { CaseSummary, ProcedureSummary } from '../../shared/caseTypes.ts';
 import { ageSex, fmtDate } from '../lib/util';
+import { groupColor } from '../lib/filters';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { Empty } from '../components/ui';
-import { CaseRow } from './CasesView';
+import { missingOf, procedureChip } from './CasesView';
+import { deviceOf } from './Followups';
 
-export function PatientsView({ mrn, nav }: { mrn?: string; nav: (p: string) => void }) {
+const back = () => (window.history.length > 1 ? window.history.back() : (window.location.hash = '#/cases'));
+
+export function PatientView({ mrn }: { mrn: string }) {
   const { cases, groups } = useStore();
-  const [q, setQ] = useState('');
-  const patients = useMemo(() => {
-    const m = new Map<string, CaseSummary[]>();
-    for (const c of cases) m.set(c.mrn, [...(m.get(c.mrn) ?? []), c]);
-    return [...m.entries()]
-      .map(([k, cs]) => {
-        const sorted = [...cs].sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? ''));
-        return { mrn: k, cases: sorted, last: sorted[0] };
-      })
-      .sort((a, b) => (b.last.episode_start_date ?? '').localeCompare(a.last.episode_start_date ?? ''));
-  }, [cases]);
+  const own = useMemo(() => cases.filter((c) => c.mrn === mrn).sort((a, b) => (b.episode_start_date ?? '').localeCompare(a.episode_start_date ?? '')), [cases, mrn]);
   const gname = (id: string) => groups.find((g) => g.group_id === id)?.name ?? '';
-
-  if (mrn) {
-    const p = patients.find((x) => x.mrn === mrn);
-    if (!p)
-      return (
-        <section className="view">
-          <Empty icon="patients" title="Patient not found">
-            <button className="btn" onClick={() => nav('patients')}>
-              Back to patients
-            </button>
-          </Empty>
-        </section>
-      );
-    const procs = p.cases.reduce((n, c) => n + c.procedures.length, 0);
+  const backLink = (
+    <div className="navbar">
+      <button className="back link" onClick={back}>
+        <Icon name="back" size={22} /> Back
+      </button>
+    </div>
+  );
+  if (!own.length)
     return (
-      <section className="view" aria-label="Patient">
-        <div className="navbar">
-          <a href="#/patients" className="back link">
-            <Icon name="back" size={22} /> Patients
-          </a>
-        </div>
-        <h1 className="large-title">MRN {p.mrn}</h1>
-        <div className="hcard">
-          <div>{ageSex(p.last.age, p.last.sex) || 'Age and sex not recorded'}</div>
-          <div className="muted small">
-            {p.cases.length} case{p.cases.length === 1 ? '' : 's'} · {procs} procedure{procs === 1 ? '' : 's'}
-            {p.last.episode_start_date ? ` · last episode ${fmtDate(p.last.episode_start_date)}` : ''}
-          </div>
-        </div>
-        <h2 className="sechead">Cases you can see</h2>
-        <div className="group">
-          {p.cases.map((c) => (
-            <CaseRow key={c.case_id} c={c} showGroup={gname(c.group_id)} />
-          ))}
-        </div>
+      <section className="view">
+        {backLink}
+        <Empty icon="patients" title="Patient not found">
+          <p>No case you can see has this MRN.</p>
+        </Empty>
       </section>
     );
-  }
-
-  const term = q.replace(/\s+/g, '');
-  const filtered = patients.filter((p) => !term || p.mrn.includes(term));
+  const last = own[0];
+  const device = own.map(deviceOf).find(Boolean);
+  const rows = own.flatMap((c): { c: CaseSummary; p: ProcedureSummary | null; date: string | null }[] =>
+    c.procedures.length ? c.procedures.map((p) => ({ c, p, date: p.start?.slice(0, 10) ?? c.episode_start_date })) : [{ c, p: null, date: c.episode_start_date }],
+  );
+  rows.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  const procs = own.reduce((n, c) => n + c.procedures.length, 0);
   return (
-    <section className="view" aria-label="Patients">
-      <h1 className="large-title">Patients</h1>
-      <div className="search">
-        <Icon name="search" size={18} />
-        <input type="search" inputMode="numeric" placeholder="Search MRN" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search patients" />
+    <section className="view" aria-label="Patient" data-testid="patient-view">
+      {backLink}
+      <h1 className="large-title patient-title">
+        {mrn}
+        {device && <span className="dev-chip">{device}</span>}
+      </h1>
+      <div className="hcard">
+        <div>{ageSex(last.age, last.sex) || 'Age and sex not recorded'}</div>
+        <div className="muted small">
+          {own.length} case{own.length === 1 ? '' : 's'} · {procs} procedure{procs === 1 ? '' : 's'}
+          {last.episode_start_date ? ` · last ${fmtDate(last.episode_start_date)}` : ''}
+        </div>
       </div>
-      {patients.length === 0 ? (
-        <Empty icon="patients" title="No patients yet">
-          <p>Patients appear here from the MRNs of the cases you can see.</p>
-        </Empty>
-      ) : filtered.length === 0 ? (
-        <Empty icon="search" title="No matching patients" />
-      ) : (
-        <div className="group" style={{ marginTop: 16 }}>
-          {filtered.map((p) => (
-            <a key={p.mrn} href={`#/patients/${encodeURIComponent(p.mrn)}`} className="grow-row" data-testid="patient-row">
+      <h2 className="sechead">Procedures you can see</h2>
+      <div className="group">
+        {rows.map(({ c, p, date }) => {
+          const done = c.collection_status === 'COMPLETED';
+          const missing = done ? 0 : missingOf(c);
+          return (
+            <a key={`${c.case_id}.${p?.id ?? ''}`} href={`#/cases/${c.case_id}`} className="grow-row case-row" data-testid="patient-proc">
               <span className="grow">
-                <span className="line1">
-                  <b>{p.mrn}</b> <span className="muted">{ageSex(p.last.age, p.last.sex)}</span>
+                <span className="line1 card-top">
+                  <b>{p ? procedureChip(p).text : 'MRN only'}</b>
+                  <span className="card-date muted">{date ? fmtDate(date) : 'No date'}</span>
                 </span>
                 <span className="sub">
-                  {p.cases.length} case{p.cases.length === 1 ? '' : 's'}
-                  {p.last.episode_start_date ? ` · last ${fmtDate(p.last.episode_start_date)}` : ''}
+                  {groups.length > 1 && <span className="gdot" style={{ background: `var(--${groupColor(groups, c.group_id)})` } as CSSProperties} aria-hidden />}
+                  {gname(c.group_id)} · <span className={`status ${done ? 's-done' : 's-prog'}`}>{done ? 'Completed' : 'In progress'}</span>
+                  {missing > 0 && (
+                    <>
+                      {' · '}
+                      <span className="missing">{missing} missing</span>
+                    </>
+                  )}
                 </span>
               </span>
               <Icon name="chevron" size={16} className="muted" />
             </a>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </section>
   );
 }

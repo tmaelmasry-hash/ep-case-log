@@ -20,7 +20,7 @@ import { downloadXlsx } from '../lib/exportFile';
 import { makeOfflineCase, seqText } from '../lib/offlineCase';
 import { sync, useOnline } from '../lib/sync';
 import { BulkAddSheet } from './BulkAdd';
-import { FollowupBell } from './FollowupBell';
+import { UserLink } from '../components/UserLink';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
@@ -94,7 +94,7 @@ export function CaseRow({ c, selected, showGroup, groupDot }: { c: CaseSummary; 
   );
 }
 
-function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => void; onCreated: (id: string) => void; defaultGroup: string }) {
+export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => void; onCreated: (id: string) => void; defaultGroup: string }) {
   const { groups, cases, toast, refreshCases, upsertCase } = useStore();
   const { me } = useAuth();
   const online = useOnline();
@@ -283,7 +283,7 @@ function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: () => voi
 
 export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: string) => void }) {
   const { cases, groups, loadError, refreshCases, toast } = useStore();
-  const { can, me } = useAuth();
+  const { can } = useAuth();
   const wide = useMediaQuery('(min-width: 960px)');
   const f = useFilters();
   const tagged = useTagged(cases);
@@ -310,6 +310,15 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       .filter((c) => !term || matchesSearch(c, term, tagged.get(c.case_id)!))
       .sort(order);
   }, [cases, tagged, f, activeGroup, q, status, sort]);
+
+  // Owner, step 5: no Patients tab; an MRN typed in search offers that patient's page.
+  const patientHits = useMemo(() => {
+    const term = q.trim();
+    if (!/^\d{3,}$/.test(term)) return [];
+    const m = new Map<string, number>();
+    for (const c of cases) if (c.mrn.includes(term)) m.set(c.mrn, (m.get(c.mrn) ?? 0) + 1);
+    return [...m.entries()].slice(0, 3);
+  }, [cases, q]);
 
   const exportFiltered = async () => {
     setExporting(true);
@@ -351,7 +360,6 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         <span className="grow" />
         {/* On desktop the sidebar footer shows it (owner, 28 Oct: "Synced" once). */}
         {!wide && <SaveIndicator />}
-        {me?.features?.followup_bell && <FollowupBell />}
         {wide && can('case.create') && (
           <button className="icon-btn accent" aria-label="Add cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
             <Icon name="plus" size={26} />
@@ -407,6 +415,23 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         <Icon name="search" size={18} />
         <input type="search" placeholder="Search MRN or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN or procedure" />
       </div>
+      {patientHits.length > 0 && (
+        <div className="group patient-hits">
+          {patientHits.map(([mrn, n]) => (
+            <a key={mrn} href={`#/patients/${encodeURIComponent(mrn)}`} className="grow-row" data-testid="patient-hit">
+              <span className="row-ic">
+                <Icon name="user" size={18} />
+              </span>
+              <span className="grow">
+                <span className="line1">
+                  Patient <b>{mrn}</b> · {n} case{n === 1 ? '' : 's'}
+                </span>
+              </span>
+              <Icon name="chevron" size={16} className="muted" />
+            </a>
+          ))}
+        </div>
+      )}
       {/* One group: no tabs. Adding a group is in Settings (owner, 28 Oct). */}
       {groups.length > 1 && (
         <div className="seg" role="radiogroup" aria-label="Group">
@@ -466,6 +491,9 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       {drawer && (
         <SideDrawer title="Categories" onClose={() => setDrawer(false)} testId="category-drawer">
           <CategoryTree cases={cases} onCustomPeriod={() => setPeriod(true)} />
+          <div className="drawer-foot">
+            <UserLink onClick={() => setDrawer(false)} />
+          </div>
         </SideDrawer>
       )}
       {period && <PeriodSheet onClose={() => setPeriod(false)} />}

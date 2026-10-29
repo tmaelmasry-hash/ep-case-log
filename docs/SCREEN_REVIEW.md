@@ -125,7 +125,7 @@ Not changed: questions that do not apply are shown or hidden by the existing rul
 still show under SVT ablation for AVNRT, as before).
 
 
-## Step 5 (built 29 Oct, not deployed yet): https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP
+## Step 5 (live 29 Oct, Worker 496eaa5c): https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP
 Preview approved as drawn ("build it"). Owner answers on the preview: a Member does **not** see Cohorts (Dashboard tab
 stays Admin only; a Member's tabs are My work · Cases · Follow-up · Settings); the Follow-up tab is switched on for
 everyone (`config/site.json` `followup_due.enabled: true`). Owner's edit on the canvas: the patient page lists

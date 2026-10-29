@@ -5,14 +5,13 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
 stop after each step, deploy only on his yes.
 
-## START HERE — screen review, step 5 built (29 Oct), deploy waits for the owner's yes
+## START HERE — screen review, steps 1–5 live; next: step 6 (Settings and Admin)
 The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
-**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–4 are live. **Step 5 (navigation)** was previewed
-(https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved and built on 29 Oct (committed, **not deployed**): My work
+**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–5 are live. **Step 5 (navigation)** was previewed
+(https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved, built and deployed on 29 Oct (Worker `496eaa5c`): My work
 first, Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin only),
 menu order Ablation · Devices · Structural · Diagnostic, name → account, desktop empty pane. Details in SCREEN_REVIEW.md
-→ "Step 5". Next: deploy step 5 on the owner's yes, then
-steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
+→ "Step 5". Next: step 6 preview, then steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
 
 How previews were done: a Design canvas artifact per step (phone screens 390 wide, the app's own colors, yellow notes
 in Arabic). Step 3: https://claude.ai/artifact/Ld4BVxmXShvzcdqvg9G7uU · step 4:
@@ -43,13 +42,14 @@ before changing it and treat his edits as decisions. After building, check the l
 Colors deployed 24 Oct: commit `4655a38` → Worker `59a60ab8`. Cancel on a new procedure / row discards it, page behind a sheet stays still: `17f02af` → Worker `67011dd4` (27 Oct).
 Tests now: unit/server 235 · e2e 72 · e2e:worker 72 (all passing at `aad8aea`).
 
-## Screen review (27–28 Oct) — steps 1–4 live
+## Screen review (27–29 Oct) — steps 1–5 live
 | Step | What | Commit → Worker |
 |---|---|---|
 | 1 | Quick fixes: Pilgrims count, follow-ups 90 days, search MRN or procedure, title "Registry Cases", month counts | `26f6647` → `fbaf4dc7` |
 | 2 | Case card (MRN big, age/sex, Hajj, N missing), quick periods, status filter, order, group colors, floating + (New case / Bulk add); **only the Admin adds cases** (untouched cases are My work of the group's Members) | `a57688c` → `bfad336f` |
 | 3 | New Case (live MRN check, Procedure date + Hijri), MRN prompt, Add procedure = type first, case screen (header card, AI/Cohorts/History/Report icons, procedures with own dates), sections Patient & episode (sheet "Patient Demographics"), Medical History, Investigations & Medications (TEE/CT/CMR via layout row `values`), Follow-up, Notes; Save draft; ≤5 choices = buttons | `f451fc5` → `bb82cd72` |
 | 4 | Procedure sheet: fixed DONE row + tabs (General / each type / Complications) that jump and follow the scroll, parts that open and close, Mapping & access part, Not available icon | `dfe5f02` → `9d50f4e9` |
+| 5 | Navigation: My work first (done this week, fewest missing first), Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin), menu order, name → account, desktop empty pane | `14e943b` → `496eaa5c` |
 
 Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
 Others = Tilt only (no other study in the dictionary).

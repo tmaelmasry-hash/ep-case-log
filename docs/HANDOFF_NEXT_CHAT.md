@@ -5,9 +5,9 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
 stop after each step, deploy only on his yes.
 
-## START HERE — steps 1–6 live; step 7 (Dashboard and export) built and committed, deploy on the owner's yes; then step 8 (look)
+## START HERE — screen review steps 1–7 live (29 Oct); next: step 8 (look: procedure colors, Dark mode, bigger text, Undo messages at the top)
 The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
-**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–6 are live. **Step 5 (navigation)** was previewed
+**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–7 are live. **Step 5 (navigation)** was previewed
 (https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved, built and deployed on 29 Oct (Worker `496eaa5c`): My work
 first, Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin only),
 menu order Ablation · Devices · Structural · Diagnostic, name → account, desktop empty pane. Details in SCREEN_REVIEW.md
@@ -51,6 +51,7 @@ Tests now: unit/server 235 · e2e 72 · e2e:worker 72 (all passing at `aad8aea`)
 | 4 | Procedure sheet: fixed DONE row + tabs (General / each type / Complications) that jump and follow the scroll, parts that open and close, Mapping & access part, Not available icon | `dfe5f02` → `9d50f4e9` |
 | 5 | Navigation: My work first (done this week, fewest missing first), Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin), menu order, name → account, desktop empty pane | `14e943b` → `496eaa5c` |
 | 6 | Settings (theme, text size, default group), Admin page (reset password + share, supervisor, AI show/hide), Move case, Bulk add planned type (Cases column `planned_type`), sign-in look | `bc3d7e1` → `1b6a1fa5` |
+| 7 | Dashboard: period chips, No change 14+ days, cases by month chart, Hajj season vs rest, Excel per table; statistics file (/api/exports/stats) | `e10e374` → `cc82b727` |
 
 Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
 Others = Tilt only (no other study in the dictionary).

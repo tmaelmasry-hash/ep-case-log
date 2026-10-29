@@ -158,7 +158,7 @@ Sheet column `planned_type` added (TEST, then main). Tests: unit/server 245, e2e
 after a slow first run with leftover test servers).
 
 
-## Step 7 (built 29 Oct, not deployed yet): https://claude.ai/artifact/7M5BGbQ3rqjwRqyf1T2xCM
+## Step 7 (live 29 Oct, Worker cc82b727): https://claude.ai/artifact/7M5BGbQ3rqjwRqyf1T2xCM
 Preview approved. Owner answers: "Stale" stays **14 days**, shown as "No change 14+ days" (In progress, untouched);
 statistics file values **in words** (codes listed in its "Columns" sheet).
 - Dashboard: period chips (This year / Last 12 months / Hajj season / Custom; the same period as the menu); tiles

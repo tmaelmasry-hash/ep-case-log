@@ -2,7 +2,8 @@
 // "=" never becomes a formula), numbers as numbers, booleans as TRUE/FALSE. No dependencies, so it runs in Node,
 // the Cloudflare Worker and the browser. Files are stored uncompressed in the zip (valid for Excel and Sheets).
 
-export type XCell = string | number | boolean | null | undefined;
+/** `{ date: 'YYYY-MM-DD' }` is written as a real Excel date (step 7, statistics file). */
+export type XCell = string | number | boolean | null | undefined | { date: string };
 export interface XSheet {
   name: string;
   rows: XCell[][];
@@ -83,6 +84,13 @@ function colName(i: number): string {
   return s;
 }
 
+/** Days since 1899-12-30 (Excel's day 0), or null for a malformed date. */
+function excelDate(d: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  if (!m) return null;
+  return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86_400_000);
+}
+
 function sheetXml(rows: XCell[][]): string {
   const body = rows
     .map((row, r) => {
@@ -91,6 +99,10 @@ function sheetXml(rows: XCell[][]): string {
           if (v === null || v === undefined || v === '') return '';
           const ref = `${colName(c)}${r + 1}`;
           const bold = r === 0 ? ' s="1"' : '';
+          if (typeof v === 'object') {
+            const serial = excelDate(v.date);
+            return serial === null ? `<c r="${ref}" t="inlineStr"><is><t>${esc(v.date)}</t></is></c>` : `<c r="${ref}" s="2"><v>${serial}</v></c>`;
+          }
           if (typeof v === 'number' && Number.isFinite(v)) return `<c r="${ref}"${bold}><v>${v}</v></c>`;
           if (typeof v === 'boolean') return `<c r="${ref}" t="b"${bold}><v>${v ? 1 : 0}</v></c>`;
           return `<c r="${ref}" t="inlineStr"${bold}><is><t xml:space="preserve">${esc(String(v))}</t></is></c>`;
@@ -139,7 +151,7 @@ export function buildXlsx(sheets: XSheet[]): Uint8Array {
     },
     {
       name: 'xl/styles.xml',
-      xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>',
+      xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" applyFont="1"/><xf numFmtId="14" applyNumberFormat="1"/></cellXfs></styleSheet>',
     },
     ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, xml: sheetXml(s.rows) })),
   ];

@@ -12,7 +12,7 @@ export const EXPORT_DROP: Record<string, string[]> = { Users: ['password_hash', 
 /** A group export holds case data only (no people, activity or other groups). */
 export const GROUP_TABS = ['Cases', ...Object.keys(ENTITY_TABS), 'History', 'Lookups'];
 
-function toBase64(b: Uint8Array): string {
+export function toBase64(b: Uint8Array): string {
   let s = '';
   for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
   return btoa(s);

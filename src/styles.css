@@ -3317,3 +3317,59 @@ a.hc-mrn {
 .prefs .seg .ts-larger {
   font-size: 1.18rem;
 }
+
+/* Dashboard, step 7 (owner): period chips, month chart, Excel buttons, Hajj season, statistics file */
+.panel-head,
+.sechead-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.excel-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.month-chart svg {
+  width: 100%;
+  height: 160px;
+  display: block;
+  border-bottom: 1px solid var(--line);
+}
+.month-chart .bar-done {
+  fill: var(--ok);
+}
+.month-chart .bar-open {
+  fill: var(--highlight);
+}
+.month-axis {
+  display: grid;
+  gap: 2px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 4px;
+}
+.legend i.open {
+  background: var(--highlight);
+}
+.hajj-n {
+  color: var(--warn);
+}
+.stats-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.date-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.dash-period {
+  margin-bottom: 8px;
+}

@@ -1,7 +1,12 @@
 // Dashboard tab (phase 9, EP Workspace; Admin only since step 5, My work has its own tab): cohorts, collection progress
 // and clinical counts per procedure (counts only, no MRNs).
 import { useCallback, useEffect, useState } from 'react';
-import { applyFilters, clearFilters, itemColor, itemLabel, useFilters, useTagged } from '../lib/filters';
+import { applyFilters, clearFilters, itemColor, itemLabel, setFilters, useFilters, useTagged } from '../lib/filters';
+import { downloadTable, downloadXlsx } from '../lib/exportFile';
+import { periodPresets } from '../components/CategoryTree';
+import { PeriodSheet } from '../components/PeriodSheet';
+import { Sheet } from '../components/ui';
+import { Icon } from '../components/Icon';
 import { api, ApiError } from '../lib/api';
 import { useStore } from '../store';
 import { CategoryTree } from '../components/CategoryTree';
@@ -16,7 +21,7 @@ interface Tally {
 interface Dashboard {
   generated_at: string;
   stale_days: number;
-  progress: Tally & { in_progress: number; groups: number; collectors: number; by_group: (Tally & { name: string })[]; by_collector: (Tally & { name: string })[]; by_category: { id: string; label: string; total: number; completed: number }[] };
+  progress: Tally & { in_progress: number; groups: number; collectors: number; by_group: (Tally & { name: string })[]; by_collector: (Tally & { name: string })[]; by_category: { id: string; label: string; total: number; completed: number }[]; by_month: { month: string; completed: number; in_progress: number }[] };
   clinical: {
     basis: string;
     cases: number;
@@ -26,6 +31,8 @@ interface Dashboard {
     acute_success: { id: string; label: string; procedures: number; success: number; not_success: number; not_counted: number; not_recorded: number; not_determined: number; pct: number | null }[];
     complications: { reviewed: number; present: number; not_reviewed: number; pct: number | null };
     pilgrim: Record<string, number>;
+    hajj_split: { id: string; label: string; hajj: number; rest: number; no_date: number }[];
+    complications_split: Record<'hajj' | 'rest', { reviewed: number; present: number }>;
   };
 }
 const monthLabel = (m: string) => {
@@ -93,8 +100,201 @@ function TallyTable({ rows, first }: { rows: (Tally & { name: string })[]; first
   );
 }
 
+/** Small Excel button on a dashboard table (owner, step 7): counts only, built in the browser. */
+function ExcelBtn({ title, rows }: { title: string; rows: () => (string | number | null)[][] }) {
+  const { toast } = useStore();
+  return (
+    <button type="button" className="btn small excel-btn" onClick={() => toast({ message: `Downloaded ${downloadTable(title, rows())}`, kind: 'success' })} aria-label={`${title} to Excel`}>
+      <Icon name="download" size={14} /> Excel
+    </button>
+  );
+}
+
+/** Cases by month of the episode start, Completed under In progress (owner, step 7). */
+function MonthChart({ data }: { data: Dashboard['progress']['by_month'] }) {
+  // Every month from the first to the last, so a month with no case shows as an empty slot (last 12 shown).
+  const filled: typeof data = [];
+  if (data.length) {
+    const have = new Map(data.map((m) => [m.month, m]));
+    let [y, mo] = data[0].month.split('-').map(Number);
+    const end = data[data.length - 1].month;
+    for (;;) {
+      const key = `${y}-${String(mo).padStart(2, '0')}`;
+      filled.push(have.get(key) ?? { month: key, completed: 0, in_progress: 0 });
+      if (key >= end) break;
+      mo = mo === 12 ? 1 : mo + 1;
+      if (mo === 1) y++;
+    }
+  }
+  const last = filled.slice(-12);
+  const max = Math.max(1, ...last.map((m) => m.completed + m.in_progress));
+  const w = 100 / Math.max(1, last.length);
+  return (
+    <div className="month-chart" data-testid="month-chart">
+      <svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label={`Cases by month: ${last.map((m) => `${monthLabel(m.month)} ${m.completed + m.in_progress}`).join(', ')}`}>
+        {last.map((m, i) => {
+          const hc = (m.completed / max) * 48;
+          const hp = (m.in_progress / max) * 48;
+          return (
+            <g key={m.month}>
+              <rect x={i * w + w * 0.15} y={50 - hc} width={w * 0.7} height={hc} className="bar-done" />
+              <rect x={i * w + w * 0.15} y={50 - hc - hp} width={w * 0.7} height={hp} className="bar-open" />
+            </g>
+          );
+        })}
+      </svg>
+      <div className="month-axis" style={{ gridTemplateColumns: `repeat(${Math.max(1, last.length)}, minmax(0, 1fr))` }}>
+        {last.map((m) => (
+          <span key={m.month}>{monthLabel(m.month).split(' ')[0]}</span>
+        ))}
+      </div>
+      <div className="legend">
+        <span>
+          <i className="c" /> Completed
+        </span>
+        <span>
+          <i className="open" /> In progress
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Statistics file (owner, step 7): period, Completed only or all, one row per procedure or case, groups. */
+function StatsFileSheet({ onClose }: { onClose: () => void }) {
+  const { groups, toast } = useStore();
+  const presets = periodPresets().filter(([t]) => t === 'This year' || t === 'Last year' || t.startsWith('Hajj season'));
+  const choices: [string, string | null, string | null][] = [...presets, ['All dates', null, null]];
+  const [period, setPeriod] = useState<[string | null, string | null]>([choices[0][1], choices[0][2]]);
+  const [basis, setBasis] = useState<'COMPLETED' | 'ALL'>('COMPLETED');
+  const [per, setPer] = useState<'PROCEDURE' | 'CASE'>('PROCEDURE');
+  const [sel, setSel] = useState<string[]>(groups.map((g) => g.group_id));
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      toast({ message: `Downloaded ${await downloadXlsx({ from: period[0], to: period[1], basis, per, group_ids: sel }, '/api/exports/stats')}`, kind: 'success' });
+      onClose();
+    } catch (e) {
+      toast({ message: (e as ApiError).message, kind: 'error' });
+      setBusy(false);
+    }
+  };
+  return (
+    <Sheet title="Statistics File" onClose={onClose} testId="stats-sheet">
+      <div className="card pad prefs">
+        <div className="pref">
+          <span>Period (procedure date)</span>
+          <div className="chip-pick" role="radiogroup" aria-label="Period">
+            {choices.map(([t, a, b]) => {
+              const on = period[0] === a && period[1] === b;
+              return (
+                <button key={t} type="button" role="radio" aria-checked={on} className={`chip filter-chip quick${on ? ' on' : ''}`} onClick={() => setPeriod([a, b])}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+          <div className="date-pair">
+            <label>
+              From <input type="date" value={period[0] ?? ''} onChange={(e) => setPeriod([e.target.value || null, period[1]])} />
+            </label>
+            <label>
+              To <input type="date" value={period[1] ?? ''} onChange={(e) => setPeriod([period[0], e.target.value || null])} />
+            </label>
+          </div>
+        </div>
+        <div className="pref">
+          <span>Cases</span>
+          <div className="seg" role="radiogroup" aria-label="Cases">
+            {(
+              [
+                ['COMPLETED', 'Completed only'],
+                ['ALL', 'All'],
+              ] as const
+            ).map(([k, t]) => (
+              <button key={k} type="button" role="radio" aria-checked={basis === k} className={basis === k ? 'on' : ''} onClick={() => setBasis(k)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="pref">
+          <span>One row per</span>
+          <div className="seg" role="radiogroup" aria-label="One row per">
+            {(
+              [
+                ['PROCEDURE', 'Procedure'],
+                ['CASE', 'Case'],
+              ] as const
+            ).map(([k, t]) => (
+              <button key={k} type="button" role="radio" aria-checked={per === k} className={per === k ? 'on' : ''} onClick={() => setPer(k)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+        {groups.length > 1 && (
+          <div className="pref">
+            <span>Groups</span>
+            <div className="chip-pick">
+              {groups.map((g) => {
+                const on = sel.includes(g.group_id);
+                return (
+                  <button key={g.group_id} type="button" aria-pressed={on} className={`chip filter-chip quick${on ? ' on' : ''}`} onClick={() => setSel(on ? sel.filter((x) => x !== g.group_id) : [...sel, g.group_id])}>
+                    {on ? '✓ ' : ''}
+                    {g.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="note">Values in words, dates as dates. A "Columns" sheet explains each column and lists the codes. No names: MRN and age only. The full Sheet copy (all tabs, codes) stays in Settings.</p>
+      <button className="btn primary block" onClick={run} disabled={busy || !sel.length} data-testid="stats-download">
+        {busy ? 'Preparing…' : 'Download Excel'}
+      </button>
+    </Sheet>
+  );
+}
+
+/** Period chips at the top of the Dashboard (owner, step 7); they set the same period as the menu. */
+function PeriodChips() {
+  const f = useFilters();
+  const [custom, setCustom] = useState(false);
+  const today = new Date();
+  const y12 = new Date(today);
+  y12.setFullYear(today.getFullYear() - 1);
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const presets = periodPresets();
+  const year = presets.find(([t]) => t === 'This year');
+  const hajj = presets.find(([t]) => t.startsWith('Hajj season'));
+  const list: [string, string, string][] = [...(year ? [year] : []), ['Last 12 months', iso(y12), iso(today)], ...(hajj ? [hajj] : [])];
+  const isCustom = !!(f.from || f.to) && !list.some(([, a, b]) => f.from === a && f.to === b);
+  return (
+    <div className="filter-bar dash-period" role="radiogroup" aria-label="Dashboard period">
+      {list.map(([t, a, b]) => {
+        const on = f.from === a && f.to === b;
+        return (
+          <button key={t} type="button" role="radio" aria-checked={on} className={`chip filter-chip quick${on ? ' on' : ''}`} onClick={() => setFilters(on ? { from: null, to: null } : { from: a, to: b })}>
+            {t}
+          </button>
+        );
+      })}
+      <button type="button" className={`chip filter-chip quick${isCustom ? ' on' : ''}`} onClick={() => setCustom(true)}>
+        {isCustom ? `${f.from ?? '…'} – ${f.to ?? '…'}` : 'Custom…'}
+      </button>
+      {custom && <PeriodSheet onClose={() => setCustom(false)} />}
+    </div>
+  );
+}
+
+const tallyRows = (t: { name: string; total: number; completed: number; started: number; mrn_only: number; stale: number }[], first: string) => [[first, 'Cases', 'Completed', 'Started', 'MRN only', 'No change'], ...t.map((r) => [r.name, r.total, r.completed, r.started, r.mrn_only, r.stale])];
+
 function AdminDashboard() {
   const { groups, cases } = useStore();
+  const [statsFile, setStatsFile] = useState(false);
   const [group, setGroup] = useState('ALL');
   const [basis, setBasis] = useState<'COMPLETED' | 'ALL'>('COMPLETED');
   // The Dashboard follows the menu's procedures, cohorts and period (owner R2-8); its own group switcher stays.
@@ -160,17 +360,28 @@ function AdminDashboard() {
               <small>{pct(p.completed, p.total)} of all</small>
             </div>
             <div className="kpi ip">
-              <span>Started</span>
-              <b>{p.started}</b>
+              <span>In progress</span>
+              <b>{p.in_progress}</b>
               <small>{p.mrn_only} MRN only</small>
             </div>
-            <div className="kpi warn">
-              <span>Stale</span>
+            <div className="kpi warn" data-testid="kpi-no-change">
+              <span>No change {d.stale_days}+ days</span>
               <b>{p.stale}</b>
-              <small>no change &gt; {d.stale_days} days</small>
+              <small>In progress, untouched</small>
             </div>
           </div>
-          <h2 className="sechead">By group</h2>
+          <div className="panel">
+            <div className="panel-head">
+              <h3>Cases by month</h3>
+              <ExcelBtn title="Cases by month" rows={() => [['Month', 'Completed', 'In progress', 'Total'], ...p.by_month.map((m) => [m.month, m.completed, m.in_progress, m.completed + m.in_progress])]} />
+            </div>
+            <p className="hint">Month of the episode start date.</p>
+            {p.by_month.length ? <MonthChart data={p.by_month} /> : <p className="muted">No dates yet.</p>}
+          </div>
+          <div className="sechead-row">
+            <h2 className="sechead">By group</h2>
+            <ExcelBtn title="Cases by group" rows={() => tallyRows(p.by_group, 'Group')} />
+          </div>
           <div className="panel">
             <TallyTable rows={p.by_group} first="Group" />
             <div className="legend">
@@ -185,7 +396,10 @@ function AdminDashboard() {
               </span>
             </div>
           </div>
-          <h2 className="sechead">By collector</h2>
+          <div className="sechead-row">
+            <h2 className="sechead">By collector</h2>
+            <ExcelBtn title="Cases by collector" rows={() => tallyRows(p.by_collector, 'Collector')} />
+          </div>
           <div className="panel">{p.by_collector.length ? <TallyTable rows={p.by_collector} first="Collector" /> : <p className="muted">No cases yet.</p>}</div>
           <h2 className="sechead">By procedure type (cases)</h2>
           <div className="panel">
@@ -221,7 +435,10 @@ function AdminDashboard() {
             </p>
           </div>
           <div className="panel">
-            <h3>Procedures by type and month</h3>
+            <div className="panel-head">
+              <h3>Procedures by type and month</h3>
+              <ExcelBtn title="Procedures by type and month" rows={() => [['Type', ...c.months, 'No date', 'Total'], ...c.by_type.map((t) => [t.label, ...c.months.map((m) => t.by_month[m] ?? 0), t.no_date, t.procedures])]} />
+            </div>
             <p className="hint">Month of the procedure start date.</p>
             <div className="tscroll">
               <table className="dt" data-testid="by-type">
@@ -257,7 +474,10 @@ function AdminDashboard() {
             </div>
           </div>
           <div className="panel">
-            <h3>Acute success by type</h3>
+            <div className="panel-head">
+              <h3>Acute success by type</h3>
+              <ExcelBtn title="Acute success by type" rows={() => [['Type', 'Procedures', 'Success', 'Partial / failed', 'Not recorded / not determined', 'Acute success %'], ...c.acute_success.map((a) => [a.label, a.procedures, a.success, a.not_success, a.not_recorded + a.not_counted + a.not_determined, a.pct])]} />
+            </div>
             <p className="hint">From each type's acute endpoint field, as in the dictionary roll-up. AF counts as success only with the PV requirement met and the block confirmed; otherwise "not determined". % of determined procedures.</p>
             <div className="tscroll">
               <table className="dt" data-testid="acute">
@@ -312,6 +532,51 @@ function AdminDashboard() {
               ))}
             </div>
           </div>
+          <div className="panel" data-testid="hajj-split">
+            <div className="panel-head">
+              <h3>Hajj season vs rest of year</h3>
+              <ExcelBtn title="Hajj season vs rest of year" rows={() => [['Type', 'Hajj season', 'Rest of year', 'No date'], ...c.hajj_split.map((t) => [t.label, t.hajj, t.rest, t.no_date])]} />
+            </div>
+            <p className="hint">By procedure date; Hajj season = 1 Dhu al-Qa'dah to 15 Muharram, any patient.</p>
+            {!c.hajj_split.some((t) => t.hajj + t.rest) && <p className="muted">No dated procedures in these cases yet.</p>}
+            <div className="tscroll">
+              <table className="dt">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th className="n">Hajj season</th>
+                    <th className="n">Rest of year</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {c.hajj_split
+                    .filter((t) => t.hajj + t.rest > 0)
+                    .map((t) => (
+                      <tr key={t.id}>
+                        <th scope="row">{t.label}</th>
+                        <td className="n">
+                          <b className="hajj-n">{t.hajj}</b>
+                        </td>
+                        <td className="n">{t.rest}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="muted small">
+              Complications: Hajj season {c.complications_split.hajj.present} of {c.complications_split.hajj.reviewed} reviewed ({pct(c.complications_split.hajj.present, c.complications_split.hajj.reviewed)}) · rest {c.complications_split.rest.present} of {c.complications_split.rest.reviewed} ({pct(c.complications_split.rest.present, c.complications_split.rest.reviewed)})
+            </p>
+          </div>
+          <div className="panel stats-file">
+            <span className="grow">
+              <b>Statistics file</b>
+              <span className="muted small block">Excel ready for analysis: one row per procedure, values in words</span>
+            </span>
+            <button className="btn primary" onClick={() => setStatsFile(true)} data-testid="stats-file">
+              Download…
+            </button>
+          </div>
+          {statsFile && <StatsFileSheet onClose={() => setStatsFile(false)} />}
           <p className="muted small">Updated {new Date(d.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
         </>
       )}
@@ -324,6 +589,7 @@ export function StatsView() {
   return (
     <section className="view" aria-label="Dashboard">
       <h1 className="large-title">Dashboard</h1>
+      <PeriodChips />
       <CohortsPanel />
       <AdminDashboard />
     </section>

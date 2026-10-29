@@ -156,3 +156,18 @@ real procedure exists; no procedure is opened.
 - Sign-in: navy band with the name, labelled boxes, wide button.
 Sheet column `planned_type` added (TEST, then main). Tests: unit/server 245, e2e 80, e2e:worker 80 (desktop rerun
 after a slow first run with leftover test servers).
+
+
+## Step 7 (built 29 Oct, not deployed yet): https://claude.ai/artifact/7M5BGbQ3rqjwRqyf1T2xCM
+Preview approved. Owner answers: "Stale" stays **14 days**, shown as "No change 14+ days" (In progress, untouched);
+statistics file values **in words** (codes listed in its "Columns" sheet).
+- Dashboard: period chips (This year / Last 12 months / Hajj season / Custom; the same period as the menu); tiles
+  Cases, Completed, In progress, No change 14+ days; "Cases by month" chart (episode start month, Completed under In
+  progress, empty months shown); "Hajj season vs rest of year" per type (procedure date, 1 Dhu al-Qa'dah to 15 Muharram,
+  any patient) with complications in and out of season; an Excel button on every table (built in the browser, counts
+  only).
+- Statistics file (`POST /api/exports/stats`, Admin): period by procedure date, Completed only or all, one row per
+  procedure or per case, groups; sheets Procedures/Cases, Columns (dictionary key, type, codes), About. Every form field
+  in dictionary order; several rows joined with "; "; dates as Excel dates; PATIENT_IDENTIFIERS left out (age given).
+  The Sheet copy (all tabs, codes) stays in Settings.
+Tests: unit/server 249, e2e 84, e2e:worker 83 + 1 known intermittent (fieldreview Holter duration, passes on rerun).

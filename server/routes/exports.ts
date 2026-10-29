@@ -1,13 +1,34 @@
 // Excel export (phase 10; EP Workspace routes/exports.ts). Admin: everything (export.all). Members (and Admins for
 // one group): one of their groups (export.group). Anyone with export.group: the cases of the filtered list (scope CASES,
 // owner R2-6), limited to their groups. The file goes to the browser in the answer; nothing is kept.
-import { EXPORT_DROP, GROUP_TABS, localExport } from '../domain/export.ts';
+import { EXPORT_DROP, GROUP_TABS, localExport, toBase64 } from '../domain/export.ts';
+import { buildStatsSheets } from '../domain/statsExport.ts';
+import { buildXlsx } from '../../shared/xlsx.ts';
 import { HttpError, badRequest, groupIdsFor, requireCap, type Router } from '../http.ts';
 import type { ExportRequest } from '../store/types.ts';
 
 export function exportRoutes(app: Router) {
   const { ctx } = app;
   const { store } = ctx;
+
+  /** Statistics file (owner, step 7; Admin): one flat table in words for analysis. Built here, never kept. */
+  app.post('/api/exports/stats', async (req) => {
+    const u = requireCap(req, 'dashboard.view');
+    const b = req.body ?? {};
+    const DATE = /^\d{4}-\d{2}-\d{2}$/;
+    for (const k of ['from', 'to']) if (b[k] && (typeof b[k] !== 'string' || !DATE.test(b[k]))) throw badRequest('Enter a valid date.', { field: k });
+    const [cases, groups] = await Promise.all([store.listCases(), store.listGroups()]);
+    const live = groups.filter((g) => !g.is_deleted);
+    const groupIds = Array.isArray(b.group_ids) && b.group_ids.length ? live.filter((g) => b.group_ids.includes(g.group_id)).map((g) => g.group_id) : live.map((g) => g.group_id);
+    if (!groupIds.length) throw badRequest('Choose at least one group.', { field: 'group_ids' });
+    const request = { from: b.from || null, to: b.to || null, basis: b.basis === 'ALL' ? ('ALL' as const) : ('COMPLETED' as const), per: b.per === 'CASE' ? ('CASE' as const) : ('PROCEDURE' as const), groupIds };
+    const out = buildStatsSheets(ctx.config.dict, cases, groups, request, ctx.now());
+    const bytes = buildXlsx(out.sheets);
+    const span = request.from || request.to ? `${request.from ?? 'start'}_to_${request.to ?? 'now'}` : 'all_dates';
+    const file_name = `KAMC_EP_Registry_statistics_${span}.xlsx`;
+    await store.appendActivity([{ actor: u.userId, action: 'export.create', detail: { scope: 'STATS', cases: out.cases, rows: out.rows, file_name } }]);
+    return { file_name, base64: toBase64(bytes), bytes: bytes.length, rows: out.rows, cases: out.cases };
+  });
 
   app.post('/api/exports', async (req) => {
     const b = req.body ?? {};

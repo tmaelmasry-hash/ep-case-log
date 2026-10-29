@@ -8,6 +8,7 @@ import { categoriesOf, type Readiness } from '../../shared/readiness.ts';
 import type { Site } from '../appconfig.ts';
 import type { Group, User } from '../store/types.ts';
 import { decodeRows, readinessOf } from './cases.ts';
+import { inHajjSeason } from '../../shared/derive.ts';
 
 const DAY = 86_400_000;
 
@@ -221,6 +222,35 @@ export function buildDashboard(dict: Dictionary, site: Site & { dashboard: DashC
       if (v === d.complications_present_code) present++;
     } else notReviewed++;
   }
+  // Owner step 7: Hajj season (1 Dhu al-Qa'dah → 15 Muharram, by procedure date) against the rest of the year.
+  const season = dict.layout.form?.hajj_season;
+  const seasonOf = (p: (typeof basisProcs)[number]) => {
+    const v = p.values[d.procedure_date_field];
+    if (blank(v) || !season) return null;
+    return inHajjSeason(String(v).slice(0, 10), season) ? 'hajj' : 'rest';
+  };
+  const hajjSplit = catIds.map((id) => {
+    const ps = basisProcs.filter((p) => p.categories.includes(id));
+    return { id, label: catLabel(id), hajj: ps.filter((p) => seasonOf(p) === 'hajj').length, rest: ps.filter((p) => seasonOf(p) === 'rest').length, no_date: ps.filter((p) => seasonOf(p) === null).length };
+  });
+  const compSplit = { hajj: { reviewed: 0, present: 0 }, rest: { reviewed: 0, present: 0 } };
+  for (const p of basisProcs) {
+    const s = seasonOf(p);
+    const v = String(p.values[d.complications_field] ?? '');
+    if (!s || !d.complications_reviewed_codes.includes(v)) continue;
+    compSplit[s].reviewed++;
+    if (v === d.complications_present_code) compSplit[s].present++;
+  }
+  // Cases by month of the episode start (all live cases), Completed vs In progress.
+  const byMonth = new Map<string, { completed: number; in_progress: number }>();
+  for (const c of live) {
+    const mo = month(decoded.get(c.meta.case_id)!.EP_EPISODES?.[0]?.episode_start_date);
+    if (!mo) continue;
+    const m = byMonth.get(mo) ?? { completed: 0, in_progress: 0 };
+    if (c.meta.collection_status === 'COMPLETED') m.completed++;
+    else m.in_progress++;
+    byMonth.set(mo, m);
+  }
   const [pe, pf] = d.pilgrim_field.split('.');
   const pilgrim: Record<string, number> = { HAJJ: 0, UMRAH: 0, NON_PILGRIM: 0, UNKNOWN: 0, not_recorded: 0 };
   for (const c of basisCases) {
@@ -240,6 +270,7 @@ export function buildDashboard(dict: Dictionary, site: Site & { dashboard: DashC
       by_group: groupsOrdered.map((g) => ({ group_id: g.group_id, name: g.name, ...byGroup.get(g.group_id)! })),
       by_collector: [...byCollector.entries()].map(([id, t]) => ({ name: userName.get(id) ?? 'Unknown user', ...t })).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
       by_category: byCategory,
+      by_month: [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([m, v]) => ({ month: m, ...v })),
     },
     clinical: {
       basis: input.basis,
@@ -250,6 +281,8 @@ export function buildDashboard(dict: Dictionary, site: Site & { dashboard: DashC
       acute_success: acute,
       complications: { reviewed, present, not_reviewed: notReviewed, pct: reviewed ? Math.round((1000 * present) / reviewed) / 10 : null },
       pilgrim,
+      hajj_split: hajjSplit,
+      complications_split: compSplit,
     },
   };
 }

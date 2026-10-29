@@ -52,6 +52,16 @@ function hijri(date: string): [number, number] | null {
 
 const md = ([m, d]: [number, number]) => m * 100 + d;
 
+/** Is the date inside the Hajj season (owner: 1 Dhu al-Qa'dah → 15 Muharram)? Any patient, pilgrim or not. */
+export function inHajjSeason(date: string | null | undefined, season: HajjSeason): boolean {
+  const h = date ? hijri(date) : null;
+  if (!h) return false;
+  const x = md(h);
+  const start = md(season.start);
+  const end = md(season.end);
+  return start <= end ? x >= start && x <= end : x >= start || x <= end;
+}
+
 /** Hajj timing of a date for a Hajj pilgrim (owner: season 1 Dhu al-Qa'dah → 15 Muharram; rites 8–13 Dhu al-Hijjah). */
 export function hajjTiming(date: string | null, pilgrim: unknown, season: HajjSeason): string | null {
   if (pilgrim === 'UMRAH') return 'UMRAH_RELATED';

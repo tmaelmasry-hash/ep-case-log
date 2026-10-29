@@ -199,7 +199,7 @@ export function adminRoutes(app: Router) {
         case 'settings.ai':
           return [`AI provider set to ${d.provider}`];
         case 'export.create':
-          return [d.scope === 'GROUP' ? `Excel of ${gname.get(d.group_id) ?? 'a group'} (${d.cases} cases)` : d.scope === 'CASES' ? `Excel of a filtered list (${d.cases} cases)` : 'Excel of the whole registry'];
+          return [d.scope === 'GROUP' ? `Excel of ${gname.get(d.group_id) ?? 'a group'} (${d.cases} cases)` : d.scope === 'CASES' ? `Excel of a filtered list (${d.cases} cases)` : d.scope === 'STATS' ? `Statistics file (${d.rows} rows, ${d.cases} cases)` : 'Excel of the whole registry'];
         case 'cohort.create':
           return [`Cohort ${d.cohort} added (${d.kind === 'tag' ? 'by tag' : 'by rule'})`];
         case 'cohort.edit':

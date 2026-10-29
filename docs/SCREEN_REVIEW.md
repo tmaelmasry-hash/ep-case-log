@@ -173,7 +173,7 @@ statistics file values **in words** (codes listed in its "Columns" sheet).
 Tests: unit/server 249, e2e 84, e2e:worker 83 + 1 known intermittent (fieldreview Holter duration, passes on rerun).
 
 
-## Step 8 (built 29 Oct, not deployed yet): https://claude.ai/artifact/SZf3eNGTkH25cZdDvGGdYA
+## Step 8 (live 29 Oct, Worker ff9096e3): https://claude.ai/artifact/SZf3eNGTkH25cZdDvGGdYA
 Preview approved. Owner answer: the person who deleted a case may Undo it **within a minute** (server allows restore
 by the deleter for 60 s; after that, Admin from the recycle bin).
 - Procedure colors (light / dark tokens in `src/styles.css`): AF orange, Flutter magenta, SVT amber, AP purple, AV node

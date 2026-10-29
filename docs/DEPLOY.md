@@ -86,6 +86,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `14e943b` (screen review step 5: navigation, My work first, Follow-up tab) | `496eaa5c-a4e0-4881-8c17-eb38f99dcd1f` | same Sheet, no Sheet change |
 | `bc3d7e1` (screen review step 6: Settings, Admin page, move case, bulk planned type, sign-in) | `1b6a1fa5-0cf6-4542-a3c6-4f3cdaa17aab` | same Sheet + Cases column `planned_type` (TEST and main, 29 Oct) |
 | `e10e374` (screen review step 7: Dashboard chart, Hajj season split, statistics file) | `cc82b727-231b-4f05-a489-d87eb66a9a82` | same Sheet, no Sheet change |
+| `64a15d9` (screen review step 8: colors, bigger text, dark mode, Undo) | `ff9096e3-c77c-46c1-9382-8ff64c435283` | same Sheet, no Sheet change |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

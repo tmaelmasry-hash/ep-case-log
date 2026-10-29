@@ -143,7 +143,7 @@ everyone (`config/site.json` `followup_due.enabled: true`). Owner's edit on the 
 - Desktop with no case open: big New case (Admin), or Bulk add; your open cases (top 5); follow-ups this week.
 
 
-## Step 6 (built 29 Oct, NOT deployed; paused by the owner): https://claude.ai/artifact/95pdJVfnbSoYqjHougXeT8
+## Step 6 (live 29 Oct, Worker 1b6a1fa5): https://claude.ai/artifact/95pdJVfnbSoYqjHougXeT8
 Preview approved ("build it"). Owner answers: a moved case gets a **new number** in the new group (old one in History);
 Bulk add's procedure type is **for filtering only** — kept as an operational "planned" mark (Cases column
 `planned_type`, a PROCEDURE_COMPONENTS.component_type code), shown as "AF (planned)" and matched by the menu until a
@@ -154,6 +154,5 @@ real procedure exists; no procedure is opened.
   Activity log, AI Assistant show / hide switch (`/api/settings/ui`, `features.ai`), AI provider.
 - Case screen: Move tool (Admin, more than one group) → `POST /api/cases/:id/move`.
 - Sign-in: navy band with the name, labelled boxes, wide button.
-Left to do before deploy: run `npm run e2e:worker` (not run yet), add the Sheet column with
-`node scripts/sheets.ts setup --test` then `node scripts/sheets.ts setup`, then deploy on the owner's yes.
-Tests run: unit/server 245 passed, e2e 80 passed.
+Sheet column `planned_type` added (TEST, then main). Tests: unit/server 245, e2e 80, e2e:worker 80 (desktop rerun
+after a slow first run with leftover test servers).

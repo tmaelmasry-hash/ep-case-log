@@ -101,6 +101,11 @@ function CredentialsSheet({ creds, onClose }: { creds: Credentials; onClose: () 
       >
         {copied ? 'Copied' : 'Copy'}
       </button>
+      {typeof navigator.share === 'function' && (
+        <button className="btn block" onClick={() => navigator.share({ text }).catch(() => undefined)} data-testid="share-credentials">
+          Share…
+        </button>
+      )}
     </Sheet>
   );
 }
@@ -236,6 +241,7 @@ function EditUserSheet({ user, groups, isSelf, onClose, onSaved, onCredentials }
         <div className="field">
           <span>Groups</span>
           <ChipSelect label="Groups" options={groups.map((g) => g.name)} value={selGroups} onChange={setSelGroups} />
+          {role === 'Admin' && <span className="hint">An Admin may have no group: a supervisor who sees every group.</span>}
         </div>
       </div>
       {err && (
@@ -253,7 +259,7 @@ function EditUserSheet({ user, groups, isSelf, onClose, onSaved, onCredentials }
           </button>
         )}
         <button className="row add-row" onClick={() => setConfirm('password')}>
-          <Icon name="edit" size={20} /> Set a new password
+          <Icon name="edit" size={20} /> Reset password
         </button>
         {!isSelf &&
           (user.status === 'ACTIVE' ? (
@@ -283,7 +289,7 @@ function EditUserSheet({ user, groups, isSelf, onClose, onSaved, onCredentials }
       )}
       {confirm === 'password' && (
         <Confirm
-          title="Set a new password?"
+          title="Reset password?"
           message={`A one-time password will be generated. ${user.display_name} will be signed out everywhere and must choose their own password at the next sign-in.`}
           confirmLabel="Generate password"
           danger={false}
@@ -362,6 +368,7 @@ export function UsersSection() {
                     {gname(g)}
                   </span>
                 ))}
+                {u.role === 'ADMIN' && !u.groups.length && <span className="pill">Supervisor (all groups)</span>}
               </div>
             </div>
             <Icon name="chevron" size={18} className="muted" />

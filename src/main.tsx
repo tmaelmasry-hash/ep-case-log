@@ -5,6 +5,9 @@ import { AuthProvider, useAuth } from './auth';
 import { StoreProvider } from './store';
 import { ChangePasswordScreen, SignIn } from './views/SignIn';
 import './styles.css';
+import { applyPrefs } from './lib/prefs';
+
+applyPrefs();
 
 function Gate() {
   const { state, retry } = useAuth();

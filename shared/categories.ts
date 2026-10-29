@@ -121,6 +121,8 @@ export class CategoryMatcher {
       components: new Set(p.components),
       types: new Set(p.type ? [p.type] : []),
     }));
+    // Bulk add's planned type (owner step 6) counts as a procedure with that component until a real one exists.
+    if (!procs.length && s.planned_type) procs.push({ codes: new Set(), components: new Set([s.planned_type]), types: new Set() });
     const whole: Facts = { codes: new Set(s.codes ?? []), components: new Set(), types: new Set() };
     const tags = new Set<string>();
     const own = (it: CategoryItem) =>

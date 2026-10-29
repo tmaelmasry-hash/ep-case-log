@@ -51,7 +51,7 @@ test('a note naming another MRN is stopped before anything is sent', async ({ pa
 });
 
 test('Admin sees the AI provider choice and key status', async ({ page }) => {
-  await open(page, 'admin', '#/settings');
+  await open(page, 'admin', '#/admin');
   await expect(page.getByTestId('ai-settings')).toContainText('Test AI');
   await expect(page.getByTestId('ai-settings')).toContainText('key not set');
 });

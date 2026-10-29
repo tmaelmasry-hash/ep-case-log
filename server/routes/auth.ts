@@ -23,11 +23,12 @@ export function authRoutes(app: Router) {
 
   app.get('/api/auth/me', async (req) => {
     const u = req.user!;
-    const row = await store.getUser(u.userId);
+    const [row, ui] = await Promise.all([store.getUser(u.userId), store.getSetting<{ ai_visible?: boolean } | null>('ui', null)]);
     return {
       user: { id: u.userId, username: u.username, name: u.name, role: u.role, capabilities: capabilitiesOf(u.role), must_change_password: u.mustChangePassword, groups: row?.groups ?? [] },
       csrf: u.csrf,
-      features: { followups: !!ctx.config.site.followup_due?.enabled },
+      // ai: the Admin's show / hide switch for the AI Assistant (owner step 6; shown unless switched off).
+      features: { followups: !!ctx.config.site.followup_due?.enabled, ai: ui?.ai_visible !== false },
     };
   });
 

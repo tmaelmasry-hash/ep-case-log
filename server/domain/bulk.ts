@@ -103,7 +103,7 @@ export function jobResult(job: ImportJob, replayed: boolean): CommitResult {
 
 export async function commit(
   ctx: AppContext,
-  args: { actorId: string; groupId: string; text: string; episodeStart: string | null; idempotencyKey: string; addExisting: number[]; visibleGroups: string[]; today: string },
+  args: { actorId: string; groupId: string; text: string; episodeStart: string | null; idempotencyKey: string; addExisting: number[]; plannedType?: string | null; visibleGroups: string[]; today: string },
 ): Promise<CommitResult> {
   const { store, config } = ctx;
   const now = ctx.now().toISOString();
@@ -147,6 +147,7 @@ export async function commit(
       },
       a,
     );
+    if (args.plannedType) rec.meta.planned_type = args.plannedType;
     addHistory(rec, { kind: 'create', text: `Case created in ${gname(args.groupId)} as No. ${first + i} (bulk add)` }, a);
     if (source) copyForward(config.dict, rec, source, `Copied from ${gname(source.meta.group_id)} No. ${source.meta.group_seq}`, a);
     return rec;

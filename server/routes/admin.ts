@@ -168,7 +168,7 @@ export function adminRoutes(app: Router) {
     type D = Record<string, any>;
     const kindOf = (a: string, d: D): string => {
       if (a === 'case.edit') return !d.fields?.length && !d.removed?.length && !d.additional && d.added?.length ? 'ADD' : !d.fields?.length && !d.added?.length && !d.additional && d.removed?.length ? 'REMOVE' : 'EDIT';
-      return ({ 'case.create': 'NEW CASE', 'case.delete': 'DELETE', 'case.restore': 'RESTORE', 'case.complete': 'COMPLETE', 'case.reopen': 'REOPEN', 'auth.login': 'SIGN IN', 'auth.password_changed': 'PASSWORD', 'auth.lockout': 'LOCKED', 'import.mrns': 'BULK ADD', 'report.pdf': 'PDF', 'export.create': 'EXPORT', 'ai.extract': 'AI', 'ai.review': 'AI', 'settings.ai': 'ADMIN' } as D)[a] ?? 'ADMIN';
+      return ({ 'case.create': 'NEW CASE', 'case.delete': 'DELETE', 'case.restore': 'RESTORE', 'case.complete': 'COMPLETE', 'case.reopen': 'REOPEN', 'case.move': 'MOVE', 'auth.login': 'SIGN IN', 'auth.password_changed': 'PASSWORD', 'auth.lockout': 'LOCKED', 'import.mrns': 'BULK ADD', 'report.pdf': 'PDF', 'export.create': 'EXPORT', 'ai.extract': 'AI', 'ai.review': 'AI', 'settings.ai': 'ADMIN', 'settings.ui': 'ADMIN' } as D)[a] ?? 'ADMIN';
     };
     const parts = (a: string, d: D): string[] => {
       switch (a) {
@@ -192,6 +192,10 @@ export function adminRoutes(app: Router) {
           return [`AI Assistant: ${d.filled ?? 0} filled, ${d.conflicts ?? 0} conflicts, ${d.dropped ?? 0} dropped`];
         case 'ai.review':
           return [`${d.done} AI value${d.done === 1 ? '' : 's'} reviewed`];
+        case 'case.move':
+          return [`Case moved from ${gname.get(d.from) ?? 'a group'} to ${gname.get(d.to) ?? 'a group'} No. ${d.group_seq}`];
+        case 'settings.ui':
+          return [`AI Assistant ${d.ai_visible ? 'shown' : 'hidden'}`];
         case 'settings.ai':
           return [`AI provider set to ${d.provider}`];
         case 'export.create':

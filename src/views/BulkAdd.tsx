@@ -4,6 +4,10 @@ import { api, ApiError } from '../lib/api';
 import { todayISO } from '../lib/util';
 import { useStore } from '../store';
 import { Sheet } from '../components/ui';
+import { fieldOf } from '../lib/dict';
+
+/** Owner step 6: one procedure type for the whole list, a dictionary component code kept as a "planned" mark. */
+const PLANNED = (fieldOf('PROCEDURE_COMPONENTS', 'component_type').codes ?? []).filter((c) => c.code !== 'OTHER');
 
 interface Row {
   position: number;
@@ -38,8 +42,9 @@ export function BulkAddSheet({ onClose, defaultGroup }: { onClose: () => void; d
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [planned, setPlanned] = useState<string | null>(null);
   const key = useMemo(() => `bulk-${crypto.randomUUID()}`, [preview]); // one key per reviewed list: a second click is the same add
-  const body = { group_id: group, text, ...(date ? { episode_start_date: date } : {}) };
+  const body = { group_id: group, text, ...(date ? { episode_start_date: date } : {}), ...(planned ? { planned_type: planned } : {}) };
   const reset = () => {
     setPreview(null);
     setTicked([]);
@@ -140,6 +145,17 @@ export function BulkAddSheet({ onClose, defaultGroup }: { onClose: () => void; d
                 </div>
               </div>
             )}
+            <div className="frow stack">
+              <span className="lab">Procedure type for every MRN (optional)</span>
+              <div className="chip-pick" role="radiogroup" aria-label="Procedure type for every MRN" data-testid="bulk-planned">
+                {PLANNED.map((c) => (
+                  <button key={c.code} type="button" role="radio" aria-checked={planned === c.code} className={`chip filter-chip quick${planned === c.code ? ' on' : ''}`} onClick={() => setPlanned(planned === c.code ? null : c.code)}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <span className="muted small">Shown as "planned" and found by the menu until a procedure is added. No procedure is opened.</span>
+            </div>
             <div className="frow inline">
               <label className="lab-wrap" htmlFor="bulk-date">
                 <span className="lab">Episode start date (optional)</span>

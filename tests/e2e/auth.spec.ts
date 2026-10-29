@@ -32,7 +32,7 @@ test('a Member does not see Users; sign out asks first and returns to sign-in', 
 
 test('Admin adds a user; the user must choose their own password, then signs in with it', async ({ page, browser }, info) => {
   const uname = `omar.${info.project.name}`;
-  await page.goto('/#/settings');
+  await page.goto('/#/admin');
   await signIn(page, 'admin');
   await expect(page.getByTestId('users-list')).toBeVisible();
   await page.getByRole('button', { name: 'Add user' }).click();

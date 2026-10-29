@@ -29,7 +29,7 @@ describe('follow-ups due', () => {
     await caseWithProcedure(sara, '9990501', '2026-09-25T09:20');
     const r = await sara.call('GET', '/api/followups');
     expect(r.data).toEqual({ enabled: false, today: '2026-10-22', items: [] });
-    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followups: false });
+    expect((await sara.call('GET', '/api/auth/me')).data.features).toMatchObject({ followups: false });
   });
 
   it('when on: lists timepoints due per procedure until a visit with that timepoint exists; own groups only', async () => {
@@ -50,7 +50,7 @@ describe('follow-ups due', () => {
       ['9990502', 'D30 visit', 3],
     ]);
     expect(r.data.items[1]).toMatchObject({ case_id: a.case_id, procedure_id: a.proc, kind: 'visit', due_date: '2026-10-25' });
-    expect((await sara.call('GET', '/api/auth/me')).data.features).toEqual({ followups: true });
+    expect((await sara.call('GET', '/api/auth/me')).data.features).toMatchObject({ followups: true });
 
     // The M6 visit is recorded for that procedure → it leaves the list.
     await edit(sara, b.case_id, { creates: [{ entity: 'FOLLOW_UPS', id: rid('FOLLOW_UPS'), parent_id: b.proc, values: { followup_timepoint: 'M6' } }] });

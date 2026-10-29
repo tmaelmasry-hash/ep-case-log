@@ -8,6 +8,7 @@ import { NewCaseSheet } from './CasesView';
 import { BulkAddSheet } from './BulkAdd';
 import { MyWorkRow, useMyWork } from './MyWorkView';
 import { DueRow, type Followups } from './Followups';
+import { pickGroup } from '../lib/prefs';
 
 export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void }) {
   const { can, me } = useAuth();
@@ -63,7 +64,7 @@ export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void
       {!can('case.create') && !w?.items.length && !soon.length && <div className="placeholder">Select a case from the list.</div>}
       {sheet === 'new' && (
         <NewCaseSheet
-          defaultGroup={groups[0]?.group_id}
+          defaultGroup={pickGroup(me?.id, groups)}
           onClose={() => setSheet(null)}
           onCreated={(id) => {
             setSheet(null);
@@ -71,7 +72,7 @@ export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void
           }}
         />
       )}
-      {sheet === 'bulk' && <BulkAddSheet defaultGroup={groups[0]?.group_id} onClose={() => setSheet(null)} />}
+      {sheet === 'bulk' && <BulkAddSheet defaultGroup={pickGroup(me?.id, groups)} onClose={() => setSheet(null)} />}
     </div>
   );
 }

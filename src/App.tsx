@@ -9,7 +9,7 @@ import { CasesView } from './views/CasesView';
 import { CaseView } from './views/CaseView';
 import { PatientView } from './views/PatientsView';
 import { StatsView } from './views/StatsView';
-import { SettingsView } from './views/SettingsView';
+import { AdminView, SettingsView } from './views/SettingsView';
 import { MyWorkView } from './views/MyWorkView';
 import { FollowupView, useFollowups } from './views/Followups';
 import { EmptyPane } from './views/EmptyPane';
@@ -32,7 +32,7 @@ export function App() {
     ...(can('dashboard.view') ? [{ key: 'stats', label: 'Dashboard', icon: 'stats' }] : []),
     { key: 'settings', label: 'Settings', icon: 'settings' },
   ];
-  const tab = route[0] === 'patients' || TABS.some((t) => t.key === route[0]) ? route[0] : 'mywork';
+  const tab = route[0] === 'patients' || route[0] === 'admin' || TABS.some((t) => t.key === route[0]) ? route[0] : 'mywork';
 
   if (!loaded) {
     return (
@@ -60,9 +60,10 @@ export function App() {
   else if (tab === 'mywork') main = <MyWorkView />;
   else if (tab === 'followup') main = <FollowupView fu={fu} />;
   else if (tab === 'stats') main = <StatsView />;
+  else if (tab === 'admin') main = <AdminView />;
   else main = <SettingsView />;
 
-  const activeTab = tab === 'patients' ? 'cases' : tab;
+  const activeTab = tab === 'patients' ? 'cases' : tab === 'admin' ? 'settings' : tab;
 
   return (
     <div className={`app ${wide ? 'is-wide' : 'is-narrow'}`}>

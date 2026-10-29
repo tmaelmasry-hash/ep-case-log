@@ -141,3 +141,19 @@ everyone (`config/site.json` `followup_due.enabled: true`). Owner's edit on the 
   "Show these N cases" opens the Cases list with that cohort as a filter chip.
 - Patient page: from the MRN in the case header or a "Patient …" row in search (3+ digits); device next to the MRN.
 - Desktop with no case open: big New case (Admin), or Bulk add; your open cases (top 5); follow-ups this week.
+
+
+## Step 6 (built 29 Oct, NOT deployed; paused by the owner): https://claude.ai/artifact/95pdJVfnbSoYqjHougXeT8
+Preview approved ("build it"). Owner answers: a moved case gets a **new number** in the new group (old one in History);
+Bulk add's procedure type is **for filtering only** — kept as an operational "planned" mark (Cases column
+`planned_type`, a PROCEDURE_COMPONENTS.component_type code), shown as "AF (planned)" and matched by the menu until a
+real procedure exists; no procedure is opened.
+- Settings: My account; Appearance on this device (Light / Dark / Auto, text size Small / Normal / Large / Larger);
+  Default group (New case and Bulk add start on it; kept per user on the device); Admin link; Excel export; About.
+- Admin page `#/admin`: Users (Reset password + Share, Admin may have no group = supervisor), Groups, Recycle bin,
+  Activity log, AI Assistant show / hide switch (`/api/settings/ui`, `features.ai`), AI provider.
+- Case screen: Move tool (Admin, more than one group) → `POST /api/cases/:id/move`.
+- Sign-in: navy band with the name, labelled boxes, wide button.
+Left to do before deploy: run `npm run e2e:worker` (not run yet), add the Sheet column with
+`node scripts/sheets.ts setup --test` then `node scripts/sheets.ts setup`, then deploy on the owner's yes.
+Tests run: unit/server 245 passed, e2e 80 passed.

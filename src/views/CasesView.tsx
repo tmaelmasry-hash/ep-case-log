@@ -21,6 +21,7 @@ import { makeOfflineCase, seqText } from '../lib/offlineCase';
 import { sync, useOnline } from '../lib/sync';
 import { BulkAddSheet } from './BulkAdd';
 import { UserLink } from '../components/UserLink';
+import { pickGroup as startGroup } from '../lib/prefs';
 
 const CHIP_CLASS: Record<string, string> = { ABLATION: 'c-abl', EPS: 'c-eps', CIED_IMPLANT: 'c-dev', GENERATOR_CHANGE: 'c-dev', LEAD_REVISION: 'c-dev', EXTRACTION: 'c-dev', ILR: 'c-dev' };
 
@@ -71,6 +72,10 @@ export function CaseRow({ c, selected, showGroup, groupDot }: { c: CaseSummary; 
                 </span>
               );
             })
+          ) : c.planned_type ? (
+            <span className="chip c-neutral planned" data-testid="planned-chip">
+              {label('PROCEDURE_COMPONENTS', 'component_type', c.planned_type)} (planned)
+            </span>
           ) : (
             <span className="chip c-neutral">MRN only</span>
           )}
@@ -283,7 +288,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
 
 export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: string) => void }) {
   const { cases, groups, loadError, refreshCases, toast } = useStore();
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const wide = useMediaQuery('(min-width: 960px)');
   const f = useFilters();
   const tagged = useTagged(cases);
@@ -497,7 +502,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         </SideDrawer>
       )}
       {period && <PeriodSheet onClose={() => setPeriod(false)} />}
-      {bulk && <BulkAddSheet defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id} onClose={() => setBulk(false)} />}
+      {bulk && <BulkAddSheet defaultGroup={startGroup(me?.id, groups, activeGroup)} onClose={() => setBulk(false)} />}
 
       {loadError && (
         <div className="notice-err" role="alert">
@@ -565,7 +570,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       )}
       {showNew && (
         <NewCaseSheet
-          defaultGroup={activeGroup !== 'ALL' ? activeGroup : groups[0]?.group_id}
+          defaultGroup={startGroup(me?.id, groups, activeGroup)}
           onClose={() => setShowNew(false)}
           onCreated={(id) => {
             setShowNew(false);

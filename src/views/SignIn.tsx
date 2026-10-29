@@ -10,7 +10,7 @@ function Brand() {
         <Icon name="spike" size={34} />
       </div>
       <h1>KAMC EP Registry</h1>
-      <p className="muted">Electrophysiology registry</p>
+      <p className="muted brand-sub">Electrophysiology registry</p>
     </div>
   );
 }
@@ -51,14 +51,22 @@ export function SignIn({ notice }: { notice?: string }) {
   };
 
   return (
-    <main className="auth-page">
-      <form className="auth-card" onSubmit={submit} noValidate aria-label="Sign in">
+    // Owner step 6: cluster colors and a clearer screen: name on the navy band, two labelled boxes, a wide button.
+    <main className="auth-page signin">
+      <div className="signin-hero">
         <Brand />
+      </div>
+      <form className="auth-card signin-card" onSubmit={submit} noValidate aria-label="Sign in">
+        <h2 className="signin-title">Sign in</h2>
         {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
-        <div className="ios-group">
-          <input className="ios-input" id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Username" aria-label="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input className="ios-input" id="password" name="password" type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
+        <label className="signin-field">
+          <span>Username</span>
+          <input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => setUsername(e.target.value)} />
+        </label>
+        <label className="signin-field">
+          <span>Password</span>
+          <input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
         <label className="ios-group ios-row switch-row">
           <span>Keep me signed in (30 days)</span>
           <span className="switch">

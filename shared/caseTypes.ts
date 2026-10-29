@@ -20,6 +20,9 @@ export interface CaseMeta {
   group_seq: number;
   /** Data-collection status (exactly In progress / Completed). */
   collection_status: 'IN_PROGRESS' | 'COMPLETED';
+  /** Operational, not clinical (owner step 6): the procedure component code chosen in Bulk add, shown as "(planned)" and
+   * used by the menu filters until the case has a real procedure. A PROCEDURE_COMPONENTS.component_type code. */
+  planned_type?: string | null;
   /** First person who edited the case (dashboard "by collector"). */
   collector_user_id?: string | null;
   completed_at?: string | null;
@@ -50,7 +53,7 @@ export interface HistoryEntry {
   id?: string;
   at: string;
   by: string;
-  kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore' | 'ai';
+  kind: 'create' | 'edit' | 'add' | 'remove' | 'na' | 'complete' | 'reopen' | 'delete' | 'restore' | 'ai' | 'move';
   /** Where in the case, at the time of the change (e.g. "Procedure 2", "ECG 1"). */
   where?: string;
   entity?: string;
@@ -145,6 +148,8 @@ export interface CaseSummary {
   followup?: 'DUE' | 'OVERDUE' | null;
   /** Custom cohorts (owner R2-12) the case belongs to: rule cohorts it meets and tag cohorts it was added to. */
   cohorts?: string[];
+  /** Bulk add's planned procedure type (a component code), only while the case has no procedure. */
+  planned_type?: string | null;
   updated_at: string;
 }
 

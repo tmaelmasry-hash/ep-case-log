@@ -3188,3 +3188,132 @@ a.hc-mrn {
 .na-icon:hover {
   color: var(--accent);
 }
+
+/* Sign-in, step 6 (owner): Makkah Health Cluster colors, clearer */
+.auth-page.signin {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  background: var(--brand);
+}
+.signin-hero {
+  padding: 72px 24px 36px;
+  color: #fff;
+}
+.signin-hero .auth-brand h1 {
+  color: #fff;
+}
+.signin-hero .brand-sub {
+  color: rgb(255 255 255 / 0.8);
+}
+.signin-hero .app-icon {
+  background: var(--highlight);
+}
+.signin-card {
+  flex: 1;
+  max-width: none;
+  align-items: center;
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 40px;
+}
+.signin-card > * {
+  width: 100%;
+  max-width: 400px;
+}
+.signin-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+.signin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.signin-field input {
+  height: 50px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 1.05rem;
+  background: var(--card);
+  color: var(--text);
+}
+.signin-field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.signin-card .ios-btn {
+  height: 54px;
+  font-weight: 700;
+}
+.prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pref {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ts-small {
+  font-size: 0.85rem;
+}
+.ts-large {
+  font-size: 1.08rem;
+}
+.ts-larger {
+  font-size: 1.18rem;
+}
+.block {
+  display: block;
+}
+.admin-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  margin: 16px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.admin-ic {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.admin-link .grow {
+  display: flex;
+  flex-direction: column;
+}
+.chip-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip.planned {
+  font-style: italic;
+}
+.row .pref-select {
+  flex: none;
+  width: auto;
+  max-width: 55%;
+}
+.prefs .seg .ts-small {
+  font-size: 0.85rem;
+}
+.prefs .seg .ts-large {
+  font-size: 1.08rem;
+}
+.prefs .seg .ts-larger {
+  font-size: 1.18rem;
+}

@@ -23,7 +23,14 @@ export function bulkRoutes(app: Router) {
       if (b.episode_start_date > siteLocalDate(ctx.config.site.timezone, ctx.now())) throw badRequest('Episode start date cannot be in the future.', { field: 'episode_start_date' });
       episodeStart = b.episode_start_date;
     }
-    return { u, groups, groupId: b.group_id as string, text, episodeStart };
+    // Owner step 6: one procedure type for the whole list, kept as an operational "planned" mark (no procedure is opened).
+    let plannedType: string | null = null;
+    if (b.planned_type) {
+      const codes = ctx.config.dict.entities.PROCEDURE_COMPONENTS.fields.find((f) => f.name === 'component_type')?.codes ?? [];
+      if (!codes.some((c) => c.code === b.planned_type)) throw badRequest('Choose a procedure type from the list.', { field: 'planned_type' });
+      plannedType = String(b.planned_type);
+    }
+    return { u, groups, groupId: b.group_id as string, text, episodeStart, plannedType };
   }
 
   app.post('/api/imports/mrns/preview', async (req) => {
@@ -40,7 +47,7 @@ export function bulkRoutes(app: Router) {
   });
 
   app.post('/api/imports/mrns/commit', async (req) => {
-    const { u, groups, groupId, text, episodeStart } = await input(req);
+    const { u, groups, groupId, text, episodeStart, plannedType } = await input(req);
     const b = req.body ?? {};
     const key = String(b.idempotency_key ?? '');
     if (!/^[A-Za-z0-9_-]{8,80}$/.test(key)) throw badRequest('idempotency_key is required');
@@ -53,6 +60,6 @@ export function bulkRoutes(app: Router) {
       throw new HttpError(409, 'STALE_PREVIEW', 'The list or destination changed after review. Review again before adding.');
     }
     const addExisting = Array.isArray(b.add_existing) ? b.add_existing.map(Number).filter((n: number) => Number.isInteger(n) && n > 0) : [];
-    return commit(ctx, { actorId: u.userId, groupId, text, episodeStart, idempotencyKey: key, addExisting, visibleGroups: groups, today: siteLocalDate(ctx.config.site.timezone, ctx.now()) });
+    return commit(ctx, { actorId: u.userId, groupId, text, episodeStart, idempotencyKey: key, addExisting, plannedType, visibleGroups: groups, today: siteLocalDate(ctx.config.site.timezone, ctx.now()) });
   });
 }

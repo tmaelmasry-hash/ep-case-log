@@ -159,6 +159,17 @@ export function aiRoutes(app: Router) {
     return { ...r, case: await detail(rec) };
   });
 
+  /** Admin: show or hide the AI Assistant in every case (owner step 6). */
+  app.post('/api/settings/ui', async (req) => {
+    const u = requireCap(req, 'settings.manage');
+    const b = req.body ?? {};
+    if (typeof b.ai_visible !== 'boolean') throw badRequest('ai_visible must be true or false.');
+    const value = { ...(await store.getSetting<Record<string, unknown> | null>('ui', null)), ai_visible: b.ai_visible };
+    await store.setSetting('ui', value, u.userId);
+    await store.appendActivity([{ actor: u.userId, action: 'settings.ui', detail: { ai_visible: b.ai_visible } }]);
+    return { ok: true, ai_visible: b.ai_visible };
+  });
+
   /** Admin: which provider and model run (keys stay in the Worker's secrets / .env). */
   app.post('/api/settings/ai', async (req) => {
     const u = requireCap(req, 'settings.manage');

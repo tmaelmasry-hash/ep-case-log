@@ -491,6 +491,12 @@ export function completeCase(dict: Dictionary, rec: CaseRecord, a: Actor): Readi
   return r;
 }
 
+/** Admin moves a case to another group (owner step 6): it takes the next number there; the old one stays in History. */
+export function moveCase(rec: CaseRecord, to: { group_id: string; seq: number; from_label: string; to_label: string }, a: Actor) {
+  Object.assign(rec.meta, { group_id: to.group_id, group_seq: to.seq, updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
+  addHistory(rec, { kind: 'move', text: `Moved from ${to.from_label} to ${to.to_label}` }, a);
+}
+
 export function reopenCase(rec: CaseRecord, reason: string, a: Actor) {
   Object.assign(rec.meta, { collection_status: 'IN_PROGRESS', completed_at: null, completed_by: null, reopen_reason: reason, updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
   addHistory(rec, { kind: 'reopen', text: `Reopened — ${reason}` }, a);
@@ -650,6 +656,8 @@ export function summarize(dict: Dictionary, rec: CaseRecord, followup: CaseSumma
     })(),
     codes: codes.get('') ?? [],
     followup,
+    // Shown and filtered only until a real procedure is added (owner step 6).
+    planned_type: procedures.length ? null : (rec.meta.planned_type ?? null),
     updated_at: rec.meta.updated_at,
   };
 }

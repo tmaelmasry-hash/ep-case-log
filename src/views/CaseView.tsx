@@ -18,6 +18,7 @@ import { bmi } from '../../shared/derive.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
 import { AiSheet, aiPending } from './AiAssistant';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
+import { MoveCaseSheet } from '../components/MoveCaseSheet';
 import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
 import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../lib/procedureTypes';
@@ -1074,6 +1075,7 @@ const KIND_LABEL: Record<HistoryItem['kind'], [string, string]> = {
   delete: ['DELETED', 'del'],
   restore: ['RESTORED', 'add'],
   ai: ['AI', ''],
+  move: ['MOVED', ''],
 };
 
 function fmtWhen(iso: string): string {
@@ -1355,11 +1357,12 @@ type OpenSheet =
   | { kind: 'history' }
   | { kind: 'ai' }
   | { kind: 'cohorts' }
+  | { kind: 'move' }
   | null;
 
 export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => void; wide: boolean }) {
   const ed = useCaseEditor(id);
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const { toast, refreshCases, groups } = useStore();
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const cohorts = useCohorts();
@@ -1556,7 +1559,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         </div>
 
         <div className="tools-row" data-testid="case-tools">
-          {can('ai.extract') && !completed && (
+          {can('ai.extract') && !completed && me?.features?.ai !== false && (
             <button className="tool" onClick={() => setSheet({ kind: 'ai' })} data-testid="ai-row" disabled={!serverCase} aria-label="AI Assistant: fill from a clinical note" title="AI Assistant: fill from a clinical note">
               <Icon name="extract" size={22} />
               <span>AI</span>
@@ -1576,6 +1579,12 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <button className="tool" onClick={() => setSheet({ kind: 'report' })} data-testid="report-row" disabled={!serverCase} aria-label="Case report (PDF)">
               <Icon name="doc" size={22} />
               <span>Report</span>
+            </button>
+          )}
+          {can('case.reassign') && groups.length > 1 && (
+            <button className="tool" onClick={() => setSheet({ kind: 'move' })} data-testid="move-row" disabled={!serverCase || !online} aria-label="Move to another group">
+              <Icon name="refresh" size={22} />
+              <span>Move</span>
             </button>
           )}
         </div>
@@ -1753,6 +1762,9 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'move' && (
+          <MoveCaseSheet caseId={d.meta.case_id} mrn={d.meta.mrn} groupId={d.meta.group_id} seq={d.meta.group_seq} onMoved={() => Promise.all([ed.reload(), refreshCases()])} onClose={() => setSheet(null)} />
+        )}
         {sheet?.kind === 'cohorts' && <CaseCohortsSheet caseId={d.meta.case_id} member={d.summary.cohorts ?? []} onChanged={() => Promise.all([ed.reload(), refreshCases()])} onClose={() => setSheet(null)} />}
         {na && naField && (
           <NaDialog

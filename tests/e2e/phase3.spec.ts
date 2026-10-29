@@ -124,7 +124,7 @@ test('Admin: add and rename a group, restore from the recycle bin, activity log'
   await open(page);
   const name = `Fellows ${info.project.name} ${Date.now() % 10000}`;
   // Adding a group is in Settings (owner, 28 Oct).
-  await page.goto('/#/settings');
+  await page.goto('/#/admin');
   await page.getByTestId('admin-groups').click();
   await page.getByRole('button', { name: 'Add group' }).click();
   await page.getByTestId('group-dialog').getByLabel('Group name').fill(name);
@@ -140,7 +140,7 @@ test('Admin: add and rename a group, restore from the recycle bin, activity log'
   await expect(page.getByText('Case moved to the recycle bin')).toBeVisible();
   await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(0);
 
-  await page.goto('/#/settings');
+  await page.goto('/#/admin');
   await page.getByTestId('admin-groups').click();
   const gs = page.getByTestId('groups-sheet');
   const row = gs.getByTestId('group-row').filter({ hasText: name });

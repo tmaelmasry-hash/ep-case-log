@@ -3,7 +3,7 @@
 import { checkMrn } from '../../shared/mrn.ts';
 import type { CaseRecord, EditBatch } from '../../shared/caseTypes.ts';
 import { siteLocalDate } from '../appconfig.ts';
-import { addHistory, applyEdits, completeCase, copyForward, historyItems, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
+import { addHistory, applyEdits, completeCase, copyForward, historyItems, moveCase, newCaseRecord, reopenCase, summarize, toDetail } from '../domain/cases.ts';
 import { followupState } from '../domain/followups.ts';
 import { cohortMembership } from './cohorts.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
@@ -173,6 +173,27 @@ export function caseRoutes(app: Router) {
     const r = completeCase(dict, rec, actor(u.userId));
     if (!r.canComplete) throw new HttpError(409, 'NOT_READY', `Not ready to complete: ${r.blockers.length} core field${r.blockers.length === 1 ? '' : 's'} missing.`);
     await store.putCase(rec, base, [{ actor: u.userId, action: 'case.complete', detail: { case_id: rec.meta.case_id, core: `${r.done}/${r.total}` } }]);
+    return { ok: true, case: await detail(ctx, rec) };
+  });
+
+  /** Admin moves a case to another group (owner step 6): next number there, old one kept in History. Its collector stays
+   * only if they are in the new group; otherwise the case becomes work for the new group's Members. */
+  app.post('/api/cases/:id/move', async (req) => {
+    const u = requireCap(req, 'case.reassign');
+    const rec = await requireCase(req, req.params.id);
+    const base = structuredClone(rec);
+    const to = String((req.body ?? {}).group_id ?? '');
+    const groups = (await store.listGroups()).filter((g) => !g.is_deleted);
+    const target = groups.find((g) => g.group_id === to);
+    if (!target) throw badRequest('Choose a group.', { field: 'group_id' });
+    if (to === rec.meta.group_id) return { ok: true, case: await detail(ctx, rec) };
+    const from = groups.find((g) => g.group_id === rec.meta.group_id);
+    const seq = await store.allocateSeq(to);
+    const old = `${from?.name ?? 'group'} No. ${rec.meta.group_seq}`;
+    moveCase(rec, { group_id: to, seq, from_label: old, to_label: `${target.name} No. ${seq}` }, actor(u.userId));
+    const collector = rec.meta.collector_user_id ? await store.getUser(rec.meta.collector_user_id) : null;
+    if (collector && collector.role !== 'ADMIN' && !collector.groups.includes(to)) rec.meta.collector_user_id = null;
+    await store.putCase(rec, base, [{ actor: u.userId, action: 'case.move', detail: { case_id: rec.meta.case_id, from: base.meta.group_id, to, group_seq: seq } }]);
     return { ok: true, case: await detail(ctx, rec) };
   });
 

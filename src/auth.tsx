@@ -10,7 +10,7 @@ export interface Me {
   must_change_password: boolean;
   groups: string[];
   /** Switches from config/site.json (follow-up bell is off unless the Admin turns it on). */
-  features?: { followups: boolean };
+  features?: { followups: boolean; ai?: boolean };
 }
 
 type State = { status: 'loading' } | { status: 'signedOut'; notice?: string } | { status: 'offline'; message: string } | { status: 'signedIn'; me: Me };

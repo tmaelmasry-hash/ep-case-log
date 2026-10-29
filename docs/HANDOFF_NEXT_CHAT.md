@@ -5,7 +5,9 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
 stop after each step, deploy only on his yes.
 
-## START HERE — screen review, steps 1–5 live; next: step 6 (Settings and Admin)
+## START HERE — steps 1–5 live; step 6 built and committed, NOT deployed (owner paused 29 Oct)
+Step 6 (Settings and Admin) is built: see SCREEN_REVIEW.md → "Step 6" for what is left (e2e:worker, Sheet column
+`planned_type` via `sheets.ts setup --test` then `setup`, deploy on his yes). Then step 7 (Dashboard and export).
 The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
 **`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–5 are live. **Step 5 (navigation)** was previewed
 (https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved, built and deployed on 29 Oct (Worker `496eaa5c`): My work

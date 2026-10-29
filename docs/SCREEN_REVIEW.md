@@ -171,3 +171,18 @@ statistics file values **in words** (codes listed in its "Columns" sheet).
   in dictionary order; several rows joined with "; "; dates as Excel dates; PATIENT_IDENTIFIERS left out (age given).
   The Sheet copy (all tabs, codes) stays in Settings.
 Tests: unit/server 249, e2e 84, e2e:worker 83 + 1 known intermittent (fieldreview Holter duration, passes on rerun).
+
+
+## Step 8 (built 29 Oct, not deployed yet): https://claude.ai/artifact/SZf3eNGTkH25cZdDvGGdYA
+Preview approved. Owner answer: the person who deleted a case may Undo it **within a minute** (server allows restore
+by the deleter for 60 s; after that, Admin from the recycle bin).
+- Procedure colors (light / dark tokens in `src/styles.css`): AF orange, Flutter magenta, SVT amber, AP purple, AV node
+  indigo, Ventricular deep red, Ablation (menu) brick, Devices teal (no longer the navy of buttons), Structural/LAA
+  green, Diagnostic/EPS blue, Pilgrims brown-gold.
+- Text a bit bigger: base 17 px (was 16); the Settings sizes are 16 / 17 / 19 / 21 px.
+- Dark mode: darker ground, cards edged, lighter chip colors.
+- Undo instead of a delete question: a case (Undo restores it), a procedure, a section, a study marked Not done, an
+  event, a follow-up. Row removals are held on the device for the 7 s of the Undo message, then sent (at once if the
+  case is left). Still asked first: Sign out, account actions, discarding a new procedure, answers a rule would clear.
+- Messages at the top of the screen.
+Tests: unit/server 251, e2e 84, e2e:worker 83 + the known intermittent fieldreview Holter test (passes 6 of 6 on rerun).

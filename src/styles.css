@@ -18,35 +18,35 @@
   --warn-bg: #fdf0d5;
   --ok: #077a37;
   --ok-fill: #10b455;
-  --cat-ablation: #e0745a;
-  --cat-device: #15508a;
-  --cat-structural: #10b455;
+  --cat-ablation: #9b4a2b;
+  --cat-device: #0e7c86;
+  --cat-structural: #2f8a3e;
   --cat-diagnostic: #1278b0;
   --cat-other: #6b7280;
   --info: #1278b0;
-  --cat-af: #e0745a;
-  --cat-flutter: #c7609a;
-  --cat-svt: #d9952b;
-  --cat-ap: #8a63d2;
-  --cat-avn: #5b6bd6;
-  --cat-vent: #c2453f;
+  --cat-af: #d9622b;
+  --cat-flutter: #c2459a;
+  --cat-svt: #a87600;
+  --cat-ap: #7a4fd0;
+  --cat-avn: #4f5fd0;
+  --cat-vent: #b8342f;
   --cat-eps: #1278b0;
-  --cat-dev: #15508a;
-  --cat-laa: #10b455;
-  --cat-pilgrim: #0f9e8e;
+  --cat-dev: #0e7c86;
+  --cat-laa: #2f8a3e;
+  --cat-pilgrim: #8a5a14;
   --radius: 14px;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   color-scheme: light;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.4;
   -webkit-text-size-adjust: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0f151c;
-    --card: #17202a;
+    --bg: #0c1218;
+    --card: #16202a;
     --text: #e4eaf0;
     --muted: #97a4b2;
     --line: #263241;
@@ -63,26 +63,26 @@
     --warn-bg: #352b16;
     --ok: #4ade80;
     --ok-fill: #22c55e;
-    --cat-ablation: #f07f65;
-    --cat-device: #6fb6e6;
-    --cat-structural: #5cc79b;
+    --cat-ablation: #d98b6a;
+    --cat-device: #5fc8cf;
+    --cat-structural: #6cc77d;
     --cat-diagnostic: #4fb3e8;
     --info: #4fb3e8;
-    --cat-af: #f07f65;
+    --cat-af: #f4a174;
     --cat-flutter: #e08bb9;
-    --cat-svt: #e8b75c;
+    --cat-svt: #e8c45c;
     --cat-ap: #ae90ec;
     --cat-avn: #8e9af0;
-    --cat-vent: #e8807a;
+    --cat-vent: #ef8a84;
     --cat-eps: #4fb3e8;
-    --cat-dev: #6fb6e6;
-    --cat-laa: #5cc79b;
-    --cat-pilgrim: #4fd0bf;
+    --cat-dev: #5fc8cf;
+    --cat-laa: #6cc77d;
+    --cat-pilgrim: #e0b46e;
     color-scheme: dark;}
 }
 :root[data-theme='dark'] {
-    --bg: #0f151c;
-    --card: #17202a;
+    --bg: #0c1218;
+    --card: #16202a;
     --text: #e4eaf0;
     --muted: #97a4b2;
     --line: #263241;
@@ -99,21 +99,21 @@
     --warn-bg: #352b16;
     --ok: #4ade80;
     --ok-fill: #22c55e;
-    --cat-ablation: #f07f65;
-    --cat-device: #6fb6e6;
-    --cat-structural: #5cc79b;
+    --cat-ablation: #d98b6a;
+    --cat-device: #5fc8cf;
+    --cat-structural: #6cc77d;
     --cat-diagnostic: #4fb3e8;
     --info: #4fb3e8;
-    --cat-af: #f07f65;
+    --cat-af: #f4a174;
     --cat-flutter: #e08bb9;
-    --cat-svt: #e8b75c;
+    --cat-svt: #e8c45c;
     --cat-ap: #ae90ec;
     --cat-avn: #8e9af0;
-    --cat-vent: #e8807a;
+    --cat-vent: #ef8a84;
     --cat-eps: #4fb3e8;
-    --cat-dev: #6fb6e6;
-    --cat-laa: #5cc79b;
-    --cat-pilgrim: #4fd0bf;
+    --cat-dev: #5fc8cf;
+    --cat-laa: #6cc77d;
+    --cat-pilgrim: #e0b46e;
     color-scheme: dark;}
 
 * {
@@ -909,7 +909,7 @@ body:has(.overlay) {
   display: flex;
   flex-direction: column;
   outline: none;
-  animation: rise 0.2s ease-out;
+  animation: drop 0.2s ease-out;
 }
 .sheet.wide {
   max-width: 900px;
@@ -1045,7 +1045,8 @@ body:has(.overlay) {
   z-index: 70;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  /* Owner step 8: messages at the top. */
+  top: calc(12px + env(safe-area-inset-top));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3372,4 +3373,25 @@ a.hc-mrn {
 }
 .dash-period {
   margin-bottom: 8px;
+}
+@keyframes drop {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+}
+/* Dark mode, step 8: cards edged so they stand off the darker ground. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .group,
+  :root:not([data-theme='light']) .card,
+  :root:not([data-theme='light']) .panel,
+  :root:not([data-theme='light']) .kpi {
+    box-shadow: 0 0 0 1px #243140;
+  }
+}
+:root[data-theme='dark'] .group,
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .kpi {
+  box-shadow: 0 0 0 1px #243140;
 }

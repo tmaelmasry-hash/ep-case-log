@@ -8,7 +8,7 @@ test('Settings: theme and text size apply on this device; the Admin page has use
   await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Dark' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Larger' }).click();
-  expect(await page.evaluate(() => document.documentElement.style.fontSize)).toBe('125%');
+  expect(await page.evaluate(() => document.documentElement.style.fontSize)).toBe('21px');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Auto' }).click();

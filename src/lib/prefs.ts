@@ -5,7 +5,8 @@ import { useSyncExternalStore } from 'react';
 export type Theme = 'light' | 'dark' | 'auto';
 export type TextSize = 'small' | 'normal' | 'large' | 'larger';
 
-export const TEXT_SIZES: Record<TextSize, string> = { small: '93.75%', normal: '100%', large: '112.5%', larger: '125%' };
+// Owner step 8: Normal is a bit bigger than before (17 px, was 16).
+export const TEXT_SIZES: Record<TextSize, string> = { small: '16px', normal: '17px', large: '19px', larger: '21px' };
 
 const read = (k: string) => {
   try {
@@ -39,7 +40,7 @@ export function applyPrefs() {
   const t = getTheme();
   if (t === 'auto') delete root.dataset.theme;
   else root.dataset.theme = t;
-  root.style.fontSize = TEXT_SIZES[getTextSize()] ?? '100%';
+  root.style.fontSize = TEXT_SIZES[getTextSize()] ?? TEXT_SIZES.normal;
 }
 
 export function setTheme(t: Theme) {

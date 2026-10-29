@@ -30,10 +30,9 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await saved(page);
   await row.getByRole('button', { name: 'Done' }).click();
   await expect(cmr.getByRole('radio', { name: 'Done', exact: true })).toHaveAttribute('aria-checked', 'true');
-  // Not done asks, then removes the study.
+  // Not done removes the study at once, with Undo (owner step 8).
   await cmr.getByRole('radio', { name: 'Not done' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click();
-  await saved(page);
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
   await expect(cmr.getByRole('radio', { name: 'Not done' })).toHaveAttribute('aria-checked', 'true');
 
   // Holter (its own section since 28 Oct): 7 days is stored as 168 hours and shown again as 7 days.

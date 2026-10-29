@@ -307,6 +307,8 @@ describe('recycle bin', () => {
     const id = await newCase(sara, '9990102');
     expect((await sara.call('POST', `/api/cases/${id}/delete`, {})).status).toBe(200);
     expect((await sara.call('GET', '/api/recycle-bin')).status).toBe(403);
+    // Owner step 8: the deleter may undo within a minute (tests/server/step8.test.ts); after that only an Admin.
+    clock = new Date(clock.getTime() + 61_000);
     expect((await sara.call('POST', `/api/cases/${id}/restore`, {})).status).toBe(403);
     const bin = (await admin.call('GET', '/api/recycle-bin')).data.cases;
     expect(bin).toEqual([expect.objectContaining({ case_id: id, mrn: '9990102', group_seq: 2, deleted_by: 'Sara' })]);

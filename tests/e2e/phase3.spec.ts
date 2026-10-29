@@ -136,8 +136,7 @@ test('Admin: add and rename a group, restore from the recycle bin, activity log'
   await createCase(page, m, name);
   await expect(page.getByTestId('case-head')).toContainText('No. 1');
   await page.getByRole('button', { name: 'Delete case' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete case' }).click();
-  await expect(page.getByText('Case moved to the recycle bin')).toBeVisible();
+  await expect(page.getByText(/moved to the recycle bin/)).toBeVisible();
   await expect(page.getByTestId('case-row').filter({ hasText: m })).toHaveCount(0);
 
   await page.goto('/#/admin');

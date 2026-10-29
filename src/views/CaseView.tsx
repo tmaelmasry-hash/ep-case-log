@@ -286,7 +286,6 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   const all = def.nest_under ? ed.rows(entity).filter((r) => r[def.nest_under!.fk] === ed.rows(entity).find((x) => x._id === id)?.[def.nest_under!.fk]) : ed.rows(entity);
   const i = all.findIndex((r) => r._id === id);
   const row = all[i] ?? null;
-  const [confirm, setConfirm] = useState(false);
   const [child, setChild] = useState<{ entity: string; id: string } | null>(null);
   const fresh = useNewRow(ed, entity, id, def.label.toLowerCase(), onClose);
   if (child) return <RowSheet ed={ed} entity={child.entity} id={child.id} onClose={() => setChild(null)} />;
@@ -300,24 +299,18 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
           <RowForm ed={ed} entity={entity} rowId={id} row={row} />
           <NestedLists ed={ed} parentEntity={entity} parentId={id} onOpen={(e, cid) => setChild({ entity: e, id: cid })} />
           {!ed.readOnly && (
-            <button className="btn danger-text block" onClick={() => setConfirm(true)}>
+            <button
+              className="btn danger-text block"
+              onClick={() => {
+                // Owner step 8: removed at once, with Undo instead of a question.
+                ed.removeWithUndo([{ entity, id }], `${def.label} removed`);
+                onClose();
+              }}
+            >
               <Icon name="trash" size={18} /> Remove {def.label.toLowerCase()}
             </button>
           )}
         </>
-      )}
-      {confirm && (
-        <Confirm
-          title={`Remove ${def.label.toLowerCase()}?`}
-          message="Its values (and any rows inside it) will be removed from this case."
-          confirmLabel="Remove"
-          onCancel={() => setConfirm(false)}
-          onConfirm={() => {
-            setConfirm(false);
-            ed.removeRow(entity, id);
-            onClose();
-          }}
-        />
       )}
     </Sheet>
   );
@@ -359,7 +352,6 @@ const DONE_FIRST: Record<string, { label: string; values?: Record<string, string
 
 function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: string; options: { label: string; values?: Record<string, string> }[]; onOpen: (id: string) => void }) {
   const def = dict.entities[entity];
-  const [ask, setAsk] = useState<string[] | null>(null);
   const mine = (o: { values?: Record<string, string> }) => ed.rows(entity).filter((r) => Object.entries(o.values ?? {}).every(([k, v]) => r[k] === v));
   return (
     <div data-testid={`done-${entity}`}>
@@ -375,7 +367,7 @@ function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: st
                   <button type="button" role="radio" aria-checked={rows.length > 0} className={rows.length ? 'on' : ''} disabled={ed.readOnly} onClick={() => (rows.length ? onOpen(rows[0]._id) : onOpen(ed.addRow(entity, null, o.values)))}>
                     Done
                   </button>
-                  <button type="button" role="radio" aria-checked={!rows.length} className={rows.length ? '' : 'on'} disabled={ed.readOnly} onClick={() => rows.length && setAsk(rows.map((r) => r._id))}>
+                  <button type="button" role="radio" aria-checked={!rows.length} className={rows.length ? '' : 'on'} disabled={ed.readOnly} onClick={() => rows.length && ed.removeWithUndo(rows.map((r) => ({ entity, id: r._id })), `${o.label} marked Not done`)}>
                     Not done
                   </button>
                 </div>
@@ -396,18 +388,6 @@ function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: st
           );
         })}
       </div>
-      {ask && (
-        <Confirm
-          title="Not done?"
-          message={`This removes ${ask.length === 1 ? 'the study' : `${ask.length} studies`} and ${ask.length === 1 ? 'its' : 'their'} values from this case.`}
-          confirmLabel="Remove"
-          onCancel={() => setAsk(null)}
-          onConfirm={() => {
-            for (const rid of ask) ed.removeRow(entity, rid);
-            setAsk(null);
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -809,24 +789,17 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
       </Part>
 
       {!ed.readOnly && (
-        <button className="btn danger-text block" onClick={() => setConfirm('procedure')}>
+        <button
+          className="btn danger-text block"
+          onClick={() => {
+            ed.removeWithUndo([{ entity: 'EP_PROCEDURES', id }], `${procedureTitle(p, i)} removed`);
+            onClose();
+          }}
+        >
           <Icon name="trash" size={18} /> Remove this procedure
         </button>
       )}
 
-      {confirm === 'procedure' && (
-        <Confirm
-          title="Remove this procedure?"
-          message={`${procedureTitle(p, i)}, its components, procedure sections, complications and follow-ups will be removed from this case.`}
-          confirmLabel="Remove procedure"
-          onCancel={() => setConfirm(null)}
-          onConfirm={() => {
-            setConfirm(null);
-            ed.removeRow('EP_PROCEDURES', id);
-            onClose();
-          }}
-        />
-      )}
       {confirm && typeof confirm === 'object' && (
         <Confirm
           title="Remove this component?"
@@ -1136,7 +1109,6 @@ function followUpTitle(r: DecodedRow, i: number): string {
 
 /** Yes + date for the quick event types, inside one follow-up visit. */
 function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
-  const [confirm, setConfirm] = useState<DecodedRow | null>(null);
   const events = ed.rows('OUTCOME_EVENTS').filter((e) => e[QUICK.fk] === fu._id);
   const typeField = fieldOf('OUTCOME_EVENTS', QUICK.type_field);
   return (
@@ -1161,7 +1133,7 @@ function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
                   >
                     Yes
                   </button>
-                  <button type="button" role="radio" aria-checked={!ev} className={!ev ? 'on' : ''} disabled={ed.readOnly} onClick={() => ev && setConfirm(ev)}>
+                  <button type="button" role="radio" aria-checked={!ev} className={!ev ? 'on' : ''} disabled={ed.readOnly} onClick={() => ev && ed.removeWithUndo([{ entity: 'OUTCOME_EVENTS', id: ev._id }], `${name} removed`)}>
                     No
                   </button>
                 </div>
@@ -1180,18 +1152,6 @@ function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
           );
         })}
       </div>
-      {confirm && (
-        <Confirm
-          title="Remove this event?"
-          message="The event and its details will be removed from this case."
-          confirmLabel="Remove"
-          onCancel={() => setConfirm(null)}
-          onConfirm={() => {
-            ed.removeRow('OUTCOME_EVENTS', confirm._id);
-            setConfirm(null);
-          }}
-        />
-      )}
     </>
   );
 }
@@ -1199,7 +1159,6 @@ function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
 /** One follow-up visit: main fields first, quick events, then More fields and other events. */
 function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onClose: () => void }) {
   const row = ed.rows('FOLLOW_UPS').find((r) => r._id === id) ?? null;
-  const [confirm, setConfirm] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const fresh = useNewRow(ed, 'FOLLOW_UPS', id, 'follow-up', onClose);
   if (open) return <RowSheet ed={ed} entity="OUTCOME_EVENTS" id={open} onClose={() => setOpen(null)} />;
@@ -1236,24 +1195,17 @@ function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onC
             {ed.readOnly && !events.length && <div className="grow-row muted">None</div>}
           </div>
           {!ed.readOnly && (
-            <button className="btn danger-text block" onClick={() => setConfirm(true)}>
+            <button
+              className="btn danger-text block"
+              onClick={() => {
+                ed.removeWithUndo([{ entity: 'FOLLOW_UPS', id }], 'Follow-up removed');
+                onClose();
+              }}
+            >
               <Icon name="trash" size={18} /> Remove this follow-up
             </button>
           )}
         </>
-      )}
-      {confirm && (
-        <Confirm
-          title="Remove this follow-up?"
-          message="Its values will be removed. Events recorded with it stay in the case."
-          confirmLabel="Remove"
-          onCancel={() => setConfirm(false)}
-          onConfirm={() => {
-            setConfirm(false);
-            ed.removeRow('FOLLOW_UPS', id);
-            onClose();
-          }}
-        />
       )}
     </Sheet>
   );
@@ -1367,11 +1319,32 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const cohorts = useCohorts();
   const online = useOnline();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [na, setNa] = useState<{ entity: string; field: string; pid: string | null } | null>(null);
   const [reopening, setReopening] = useState(false);
   const [busy, setBusy] = useState(false);
   const d = ed.detail;
+
+  // Owner step 8: deleted at once, with Undo (the person who deleted it may restore it within a minute).
+  const deleteCase = async () => {
+    if (!d) return;
+    const caseId = d.meta.case_id;
+    await ed.flush();
+    try {
+      await api('POST', `/api/cases/${caseId}/delete`, {});
+      await refreshCases();
+      nav('cases');
+      toast({
+        message: `Case ${d.meta.mrn} moved to the recycle bin`,
+        undo: () =>
+          void api('POST', `/api/cases/${caseId}/restore`, {})
+            .then(() => refreshCases())
+            .then(() => nav(`cases/${caseId}`))
+            .catch((e: Error) => toast({ message: e.message, kind: 'error' })),
+      });
+    } catch (e) {
+      toast({ message: (e as Error).message, kind: 'error' });
+    }
+  };
 
   const head = useMemo(() => {
     if (!d) return null;
@@ -1732,7 +1705,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         )}
 
         {can('case.delete') && !completed && (
-          <button className="btn danger-text block delete-case" onClick={() => setConfirmDelete(true)} disabled={!serverCase}>
+          <button className="btn danger-text block delete-case" onClick={deleteCase} disabled={!serverCase}>
             <Icon name="trash" size={18} /> Delete case
           </button>
         )}
@@ -1778,26 +1751,6 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           />
         )}
         {reopening && <ReasonDialog busy={busy} onClose={() => setReopening(false)} onReopen={reopen} />}
-        {confirmDelete && (
-          <Confirm
-            title="Delete this case?"
-            message={`MRN ${d.meta.mrn} · ${d.meta.group_name} No. ${d.meta.group_seq} will go to the recycle bin. An Admin can restore it with its number.`}
-            confirmLabel="Delete case"
-            onCancel={() => setConfirmDelete(false)}
-            onConfirm={async () => {
-              setConfirmDelete(false);
-              await ed.flush();
-              try {
-                await api('POST', `/api/cases/${d.meta.case_id}/delete`, {});
-                toast({ message: 'Case moved to the recycle bin', kind: 'success' });
-                await refreshCases();
-                nav('cases');
-              } catch (e) {
-                toast({ message: (e as Error).message, kind: 'error' });
-              }
-            }}
-          />
-        )}
       </section>
     </CaseContext.Provider>
   );

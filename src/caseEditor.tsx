@@ -32,6 +32,8 @@ export interface CaseEditor {
   setField: (entity: string, id: string, field: string, value: unknown, opts?: { key?: string; create?: { parent_id?: string | null } }) => void;
   addRow: (entity: string, parentId?: string | null, values?: Record<string, unknown>) => string;
   removeRow: (entity: string, id: string) => void;
+  /** Owner step 8: removes at once on the screen with an Undo message; sent after the message closes. */
+  removeWithUndo: (rows: { entity: string; id: string }[], message: string) => void;
   /** True for a row made by addRow in this visit and not yet closed with Done (Cancel then discards it). */
   isNew: (id: string) => boolean;
   /** The row was kept (Done): Cancel no longer discards it. */
@@ -51,6 +53,9 @@ function opKey(op: Op): string {
   return op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : `${op.kind}|${op.entity}`;
 }
 
+/** How long an Undo message stays (store.tsx toasts with undo); the held removal is sent right after. */
+export const UNDO_MS = 7000;
+
 export function newId(entity: string): string {
   return `${idPrefix(dict.entities[entity].pk)}_${crypto.randomUUID()}`;
 }
@@ -64,6 +69,10 @@ export function useCaseEditor(caseId: string): CaseEditor {
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Rows added in this visit that are still open for the first time (see isNew).
   const added = useRef(new Set<string>());
+  // Removals waiting for their Undo message to close (owner step 8): hidden now, sent later.
+  const [held, setHeld] = useState<{ key: number; ops: Op[] }[]>([]);
+  const heldRef = useRef(held);
+  heldRef.current = held;
   // Re-render whenever the outbox changes; the edits of this case come from it.
   useSyncExternalStore(sync.subscribe, sync.getState);
   const queue = sync.pending(caseId);
@@ -173,7 +182,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
     const rows: Record<string, DecodedRow[]> = {};
     if (detail) for (const [e, rs] of Object.entries(detail.rows)) rows[e] = rs.map((r) => ({ ...r }));
     // Waiting edits (also those on their way) are laid over the saved copy until the server answers.
-    for (const op of queue) {
+    for (const op of [...queue, ...held.flatMap((h) => h.ops)]) {
       if (op.kind === 'create') {
         const list = (rows[op.entity] ??= []);
         if (!list.some((r) => r._id === op.id)) {
@@ -221,7 +230,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
     }
     return { rows, na };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail, JSON.stringify(queue)]);
+  }, [detail, JSON.stringify(queue), held]);
 
   const view = overlay.rows;
   const rows = useCallback((entity: string) => view[entity] ?? [], [view]);
@@ -270,6 +279,35 @@ export function useCaseEditor(caseId: string): CaseEditor {
     },
     [push],
   );
+  // A removal held for Undo is sent when its message closes, or at once when the case is left.
+  useEffect(
+    () => () => {
+      for (const h of heldRef.current) push(h.ops, 50);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [caseId],
+  );
+  const removeWithUndo: CaseEditor['removeWithUndo'] = useCallback(
+    (list, message) => {
+      const key = Date.now() + Math.random();
+      const ops: Op[] = list.map((r) => ({ kind: 'remove', entity: r.entity, id: r.id }));
+      for (const r of list) added.current.delete(r.id);
+      setHeld((h) => [...h, { key, ops }]);
+      const send = window.setTimeout(() => {
+        if (!heldRef.current.some((h) => h.key === key)) return;
+        setHeld((h) => h.filter((x) => x.key !== key));
+        push(ops, 50);
+      }, UNDO_MS);
+      toast({
+        message,
+        undo: () => {
+          window.clearTimeout(send);
+          setHeld((h) => h.filter((x) => x.key !== key));
+        },
+      });
+    },
+    [push, toast],
+  );
   const isNew = useCallback((id: string) => added.current.has(id), []);
   const keepRow = useCallback((id: string) => void added.current.delete(id), []);
 
@@ -282,5 +320,5 @@ export function useCaseEditor(caseId: string): CaseEditor {
   const flush = useCallback(() => sync.flush(), []);
 
   const readOnly = detail?.meta.collection_status === 'COMPLETED';
-  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, isNew, keepRow, slot, additional, flush, reload };
+  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, removeWithUndo, isNew, keepRow, slot, additional, flush, reload };
 }

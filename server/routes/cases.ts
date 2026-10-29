@@ -15,6 +15,9 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const CLIENT_CASE_ID = /^case_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CLIENT_PATIENT_ID = /^patient_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+/** How long the person who deleted a case may undo it (owner step 8). */
+const UNDO_WINDOW_MS = 60_000;
+
 export function caseRoutes(app: Router) {
   const { ctx } = app;
   const { store } = ctx;
@@ -261,11 +264,14 @@ export function caseRoutes(app: Router) {
 
   /** Restore (Admin): back in its group with its old number. */
   app.post('/api/cases/:id/restore', async (req) => {
-    const u = requireCap(req, 'case.restore');
+    // Admin restores from the recycle bin; the person who deleted a case may undo it within a minute (owner step 8).
+    const u = requireCap(req, 'case.read');
     const rec = await store.getCase(req.params.id);
     const base = rec && structuredClone(rec);
     const groups = await groupIdsFor(ctx, u);
     if (!rec || !rec.meta.is_deleted || !groups.includes(rec.meta.group_id)) throw notFound('Case not found in the recycle bin.');
+    const undo = rec.meta.deleted_by === u.userId && !!rec.meta.deleted_at && ctx.now().getTime() - Date.parse(rec.meta.deleted_at) <= UNDO_WINDOW_MS;
+    if (!undo) requireCap(req, 'case.restore');
     Object.assign(rec.meta, { is_deleted: false, deleted_at: null, deleted_by: null });
     addHistory(rec, { kind: 'restore', text: 'Restored from the recycle bin' }, actor(u.userId));
     await store.putCase(rec, base, [{ actor: u.userId, action: 'case.restore', detail: { case_id: rec.meta.case_id } }]);

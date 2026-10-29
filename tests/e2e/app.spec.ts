@@ -161,14 +161,20 @@ test('repeatable rows: add an ECG, fill it, remove it with confirmation', async 
   await expect(list).toContainText('Mar 11');
   await list.click();
   await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ecg/ }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click();
+  // Step 8: removed at once with Undo; Undo brings it back, a second remove stays.
   await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(1);
+  await page.getByTestId('section-sheet').getByTestId('list-row').click();
+  await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ecg/ }).click();
+  await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(0);
+  await page.waitForTimeout(7500); // the Undo message closes, then the removal is sent
   await saved(page);
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('section-ecg')).toContainText('Add');
 });
 
-test('remove a procedure asks first; additional information; delete the case', async ({ page }, info) => {
+test('remove a procedure with Undo; additional information; delete the case with Undo', async ({ page }, info) => {
   const m = mrn(info);
   await open(page);
   await createCase(page, m);
@@ -178,10 +184,11 @@ test('remove a procedure asks first; additional information; delete the case', a
   const ps = page.getByTestId('procedure-sheet');
   await saved(page);
   await ps.getByRole('button', { name: 'Remove this procedure' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
-  await expect(ps).toBeVisible();
+  await expect(page.getByTestId('procedure-row')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByTestId('procedure-row')).toHaveCount(1);
+  await page.getByTestId('procedure-row').click();
   await ps.getByRole('button', { name: 'Remove this procedure' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove procedure' }).click();
   await expect(page.getByTestId('procedure-row')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Add note' }).click();
@@ -194,8 +201,11 @@ test('remove a procedure asks first; additional information; delete the case', a
   await expect(page.getByRole('button', { name: '1 note' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete case' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete case' }).click();
-  await expect(page.getByText('Case moved to the recycle bin')).toBeVisible();
+  await expect(page.getByText(`Case ${m} moved to the recycle bin`)).toBeVisible();
+  await page.locator('.toast', { hasText: 'moved to the recycle bin' }).getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByTestId('case-head')).toContainText(m); // back, by the person who deleted it
+  await page.getByRole('button', { name: 'Delete case' }).click();
+  await expect(page.getByText(`Case ${m} moved to the recycle bin`)).toBeVisible();
   await page.getByLabel('Search MRN').fill(m);
   await expect(page.getByTestId('case-row')).toHaveCount(0);
 });

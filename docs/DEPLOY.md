@@ -16,7 +16,7 @@ The live EP Workspace registry is never touched (decision D5).
    `apps-script/appsscript.json`. Save.
 4. Choose the function **setupSheets** at the top and press **Run**. Google asks for permission (Sheets, Drive,
    triggers, external requests): allow it. This links the Sheet, creates a separate **TEST** Sheet (synthetic data only)
-   and the daily backup at 10:00 Riyadh time (folder **EP Case Log Backups**, newest 30 kept).
+   and the daily backup at 10:00 Riyadh time (an **.xlsx** file in the folder **EP Case Log Backups**, newest 30 kept).
 5. **Deploy → New deployment →** type **Web app**. Execute as: **Me**. Who has access: **Anyone**. Deploy.
    Copy the **Web app URL** (it ends in `/exec`). Keep it private; it is useless without the secret, but do not post it.
    Later code updates: **Deploy → Manage deployments → Edit → New version** (same URL).
@@ -64,11 +64,18 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 - App: `npm run deploy` (tests first: `npm run build && npm test && npm run e2e && npm run e2e:worker`).
 - New dictionary fields: `npm run sheets -- setup` adds the missing columns (never removes or reorders).
 - Apps Script changes: paste the new `Code.js`, then Deploy → Manage deployments → Edit → **New version**.
-- **Which Apps Script project:** the nightly backup copies the Sheet *with* its script, so script.google.com lists one
-  "EP Case Log — Registry" project per backup day. Only the original serves the app: project
+- **Which Apps Script project:** until the .xlsx backup (below) is published, the nightly backup copies the Sheet *with*
+  its script, so script.google.com lists one "EP Case Log — Registry" project per backup day. Only the original serves
+  the app: project
   `1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC` (created 23 Oct, deployment "EP Case Log v1", id ending
   `…YxGBJY`); open it at `https://script.google.com/home/projects/<that id>/edit`. A paste into a backup copy changes
   nothing. Check after publishing: the answer to a batch read carries `read: api` (scratch timing script, gateway `ms`).
+- **.xlsx backup (prepared 30 Oct, not yet published):** `nightlyBackup` saves an .xlsx export of the Sheet
+  (`EP Case Log backup yyyy-MM-dd HHmm.xlsx`, same folder, newest 30 .xlsx kept) instead of a Sheet copy, so no new
+  script projects appear. Older Sheet-copy backups in the folder are not touched or counted. It uses the export address
+  the Excel export already uses (scope `script.external_request`, already granted). After publishing, run
+  `nightlyBackup` once from the editor and check the folder for the new .xlsx. Restore: Google Sheets → File → Import
+  → Upload the .xlsx → **Create new spreadsheet**.
 - Faster reads (30 Oct): in the Apps Script editor, **Services (+) → Google Sheets API → Add** (keep the name
   `Sheets`). Code.js then reads every tab a request needs in one Sheets API request; without the service it reads tab
   by tab as before, so nothing breaks if it is missing. A date typed by hand into the Sheet is read from its display
@@ -102,7 +109,8 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `5a1fa93` (menu: AF by energy, Devices › Other devices › Leadless LVEP / CCM; "Other device" tick) | `b8ed14a4-4f7f-44bf-a377-83bb2b67b409` | same Sheet, no Sheet change |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
-live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.
+live app `node scripts/wrangler.ts rollback <Worker version>`; data: import the wanted .xlsx backup into a new Sheet
+(older backups are Sheet copies: make a copy of the wanted one).
 If the Sheet columns changed after the tag, `npm run sheets -- setup` only adds columns, so old code still runs.
 
 ## Notes

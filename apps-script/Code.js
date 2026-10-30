@@ -1,6 +1,6 @@
 // EP Case Log — thin data layer over the Google Sheet (phase 4; copied from EP Workspace apps-script/Code.js).
 // No business rules here: the app server (Cloudflare Worker) decides everything; this script reads and writes
-// cells, numbers under a lock, makes the daily backup copy, and exports the Sheet as .xlsx. Every call must carry
+// cells, numbers under a lock, makes the daily .xlsx backup, and exports the Sheet as .xlsx. Every call must carry
 // the gateway secret. Deployed as a web app (execute as the registry account, access: anyone).
 
 var PROPS = PropertiesService.getScriptProperties();
@@ -95,15 +95,21 @@ function scheduleBackup_() {
 }
 function scheduleBackup() { Logger.log(JSON.stringify(scheduleBackup_())); }
 
-/** Daily copy of the registry Sheet into "EP Case Log Backups" at BACKUP_HOUR; keeps the newest 30. */
+/** Daily .xlsx export of the registry Sheet into "EP Case Log Backups" at BACKUP_HOUR; keeps the newest 30 of these
+ *  .xlsx files. An .xlsx file carries no Apps Script (a Sheet copy carried one, so every backup day added another
+ *  "EP Case Log — Registry" project). Older Sheet-copy backups in the folder are left as they are. Restore: in Google
+ *  Sheets, File → Import the .xlsx into a new Sheet. */
 function nightlyBackup() {
-  var src = DriveApp.getFileById(PROPS.getProperty('MAIN_ID'));
   var it = DriveApp.getFoldersByName('EP Case Log Backups');
   var folder = it.hasNext() ? it.next() : DriveApp.createFolder('EP Case Log Backups');
-  src.makeCopy('EP Case Log backup ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HHmm'), folder);
+  var name = 'EP Case Log backup ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HHmm') + '.xlsx';
+  folder.createFile(Utilities.newBlob(xlsxOf_(PROPS.getProperty('MAIN_ID')), XLSX_MIME, name));
   var files = [];
   var fi = folder.getFiles();
-  while (fi.hasNext()) files.push(fi.next());
+  while (fi.hasNext()) {
+    var f = fi.next();
+    if (/^EP Case Log backup .*\.xlsx$/.test(f.getName())) files.push(f);
+  }
   files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
   for (var i = 30; i < files.length; i++) files[i].setTrashed(true);
 }
@@ -186,14 +192,21 @@ function export_(ss, req) {
     var cases = cp.getSheetByName('Cases');
     var n = 0;
     if (cases && cases.getLastRow() > 1) n = cases.getRange(2, 1, cases.getLastRow() - 1, 1).getValues().filter(function (r) { return r[0] !== ''; }).length;
-    var resp = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + file.getId() + '/export?format=xlsx',
-      { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
-    if (resp.getResponseCode() !== 200) throw new Error('Excel export failed (Google answered ' + resp.getResponseCode() + ')');
-    var bytes = resp.getContent();
+    var bytes = xlsxOf_(file.getId());
     return { file_name: req.fileName, base64: Utilities.base64Encode(bytes), bytes: bytes.length, tabs: cp.getSheets().map(function (s) { return s.getName(); }), cases: n };
   } finally {
     file.setTrashed(true);
   }
+}
+
+var XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/** A spreadsheet (by Drive id) as .xlsx bytes, through the Drive export address (used by export_ and nightlyBackup). */
+function xlsxOf_(id) {
+  var resp = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + id + '/export?format=xlsx',
+    { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('Excel export failed (Google answered ' + resp.getResponseCode() + ')');
+  return resp.getContent();
 }
 
 /** Run once from the editor before the first Excel export: Google asks to allow "connect to an external service"

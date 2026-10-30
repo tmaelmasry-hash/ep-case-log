@@ -45,19 +45,19 @@ describe('completenessBySection', () => {
 
   it('counts recorded, not available, missing and AI apart; not applicable is left out', () => {
     const pat = r.rows[0];
-    expect(pat).toMatchObject({ recorded: 1, not_available: 1, missing: 0, ai: 1, total: 3 });
+    expect(pat).toMatchObject({ recorded: 1, not_available: 1, missing: 0, ai_pending: 1, applicable: 3 });
     expect(pat.fix?.field).toBe('residence_status');
-    expect(r.rows[2]).toMatchObject({ recorded: 1, missing: 1, total: 2 });
+    expect(r.rows[2]).toMatchObject({ recorded: 1, missing: 1, applicable: 2 });
     expect(r.rows[2].fix?.field).toBe('procedure_status');
-    expect(r.rows[3]).toMatchObject({ missing: 1, total: 1 });
+    expect(r.rows[3]).toMatchObject({ missing: 1, applicable: 1 });
   });
 
-  it('a section without core items has total 0 and nothing to fix', () => {
-    expect(r.rows[1]).toMatchObject({ total: 0, recorded: 0, fix: null });
+  it('a section without core items has applicable 0 and nothing to fix', () => {
+    expect(r.rows[1]).toMatchObject({ applicable: 0, recorded: 0, fix: null });
   });
 
   it('totals: answered = recorded + not available; AI is not answered', () => {
-    expect(r.totals).toEqual({ recorded: 2, not_available: 1, missing: 2, ai: 1, total: 6 });
+    expect(r.totals).toEqual({ recorded: 2, not_available: 1, missing: 2, ai_pending: 1, applicable: 6 });
   });
 
   it('names complications by procedure when there are two procedures', () => {
@@ -85,9 +85,9 @@ describe('completeness agrees with readiness', () => {
     };
     const ready = evaluateReadiness(dict, rows, {});
     const c = completenessBySection(dict.layout.groups, ready.checks, [{ id: 'proc_1', label: 'Procedure 1' }]);
-    expect(c.totals.total).toBe(ready.total);
+    expect(c.totals.applicable).toBe(ready.total);
     expect(c.totals.recorded + c.totals.not_available).toBe(ready.done);
-    expect(c.rows.reduce((n, x) => n + x.total, 0)).toBe(ready.total);
+    expect(c.rows.reduce((n, x) => n + x.applicable, 0)).toBe(ready.total);
     // Every row comes from the layout or the procedure: no stray section.
     expect(c.rows.every((x) => x.kind !== 'section' || dict.layout.groups.some((g) => g.rows.some((r) => r.id === x.section)))).toBe(true);
   });

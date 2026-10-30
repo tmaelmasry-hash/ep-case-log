@@ -1105,7 +1105,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
         <div className="cmp-tile" data-testid="cmp-answered">
           <span className="muted small">Core items answered</span>
           <span className="cmp-num">
-            {t.recorded + t.not_available} <small>of {t.total}</small>
+            {t.recorded + t.not_available} <small>of {t.applicable}</small>
           </span>
           <span className="muted small">
             {t.recorded} recorded + {t.not_available} not available
@@ -1114,7 +1114,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
         <div className="cmp-tile" data-testid="cmp-recorded">
           <span className="muted small">Values recorded</span>
           <span className="cmp-num">
-            {t.recorded} <small>of {t.total}</small>
+            {t.recorded} <small>of {t.applicable}</small>
           </span>
           <span className="muted small">not available is not a value</span>
         </div>
@@ -1133,7 +1133,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
             <span className="cmp-label" role="cell">
               {x.label}
             </span>
-            {x.total === 0 ? (
+            {x.applicable === 0 ? (
               <span className="cmp-none muted small" role="cell">
                 No core items here
               </span>
@@ -1146,8 +1146,8 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
                 <span role="cell" className={x.missing ? 'cmp-miss' : 'muted'}>
                   {x.missing}
                 </span>
-                <span role="cell" className={x.ai ? 'cmp-ai' : 'muted'}>
-                  {x.ai}
+                <span role="cell" className={x.ai_pending ? 'cmp-ai' : 'muted'}>
+                  {x.ai_pending}
                 </span>
               </>
             )}
@@ -1156,7 +1156,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
                 <button type="button" className="btn small cmp-fix" onClick={() => fix(x)}>
                   Fix
                 </button>
-              ) : x.total ? (
+              ) : x.applicable ? (
                 <span className="ok-text" aria-label="complete">
                   ✓
                 </span>

@@ -13,6 +13,7 @@ import { exportRoutes } from './routes/exports.ts';
 import { aiRoutes } from './routes/ai.ts';
 import { caseRoutes } from './routes/cases.ts';
 import { cohortRoutes } from './routes/cohorts.ts';
+import { completenessRoutes } from './routes/completeness.ts';
 
 const PUBLIC = [/^\/api\/health$/, /^\/api\/auth\/login$/];
 /** Reachable while a temporary password must still be changed. */
@@ -35,6 +36,7 @@ export function buildRouter(ctx: AppContext): Router {
   cohortRoutes(app);
   bulkRoutes(app);
   dashboardRoutes(app);
+  completenessRoutes(app);
   followupRoutes(app);
   exportRoutes(app);
   aiRoutes(app);

@@ -35,5 +35,6 @@ test('Admin opens Data completeness from Admin; the new case is a row; MRN opens
 test('a Member is refused Data completeness, on screen and on the server', async ({ page }) => {
   await open(page, 'sara', '#/completeness');
   await expect(page.getByText('Admin only.')).toBeVisible();
-  expect((await page.request.get('/api/completeness')).status()).toBe(403);
+  // From the page itself, so the session cookie goes with it.
+  expect(await page.evaluate(() => fetch('/api/completeness').then((r) => r.status))).toBe(403);
 });

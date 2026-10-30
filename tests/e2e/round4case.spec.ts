@@ -22,7 +22,9 @@ test('Next missing walks the missing items of the procedure, opens a closed part
   expect(total).toBeGreaterThan(1);
 
   // Close every part; the first press opens the part that holds the first missing item and marks the field.
-  for (const head of await ps.locator('.part-head[aria-expanded="true"]').all()) await head.click();
+  // Close the first open part until none is open (a fixed list of nth() locators shifts as parts close).
+  const openHeads = ps.locator('.part-head[aria-expanded="true"]');
+  while ((await openHeads.count()) > 0) await openHeads.first().click();
   await expect(ps.locator('.part-head[aria-expanded="true"]')).toHaveCount(0);
   await next.click();
   await expect(ps.locator('.part-head[aria-expanded="true"]')).toHaveCount(1);

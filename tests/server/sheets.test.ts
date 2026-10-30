@@ -121,4 +121,36 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
     await store.putCase(r, base);
     expect(google.calls - n0).toBe(2);
   });
+
+  it('reads all the tabs of a case in one Sheets API request, with the same answer as tab by tab', async () => {
+    const on = await sheets();
+    const off = new FakeAppsScript(undefined, { sheetsApi: false });
+    await off.call('init');
+    const offStore = new SheetsStore(config, off);
+    await offStore.setup();
+    for (const s of [on.store, offStore]) await s.putCase(newCase(), null);
+    const n0 = on.google.apiCalls;
+    const r = await on.store.getCase('case_1');
+    expect(on.google.apiCalls - n0).toBe(1);
+    expect(r).toEqual(await offStore.getCase('case_1'));
+    expect(off.apiCalls).toBe(0);
+  });
+
+  it('a date typed by hand into the Sheet reads as yyyy-MM-dd (date + time with T), in the Sheet\'s locale', async () => {
+    const typedRead = async (locale: string) => {
+      const google = new FakeAppsScript();
+      google.book.locale = locale;
+      await google.call('init');
+      const sh = google.book.insertSheet('Typed');
+      ['k', 'd'].forEach((h, i) => sh.set(1, i + 1, h));
+      ['2026-3-5', '2026-03-05 14:05:00', '5/3/2026', '5/3/2026 00:00:00', 'free text', '12'].forEach((v, i) => {
+        sh.set(i + 2, 1, `r${i}`);
+        sh.set(i + 2, 2, v);
+      });
+      const out = (await google.call('batch', { ops: [{ op: 'read', tab: 'Typed' }] })) as { rows: { d: unknown }[] }[];
+      return out[0].rows.map((x) => x.d);
+    };
+    expect(await typedRead('en_GB')).toEqual(['2026-03-05', '2026-03-05T14:05', '2026-03-05', '2026-03-05', 'free text', '12']);
+    expect((await typedRead('en_US'))[2]).toBe('2026-05-03');
+  });
 });

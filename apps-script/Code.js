@@ -468,9 +468,70 @@ function resolveObj_(o, results) {
   return resolve_(o, results);
 }
 
+/** Speed (30 Oct, step 2): the tabs read before the batch's first write are fetched together in one Sheets API
+ *  request (Advanced Sheets service, `Sheets`). Without that service, or if the request fails, nothing is held
+ *  and read_ reads tab by tab as before. */
+function prefetch_(ss, ops) {
+  if (typeof Sheets === 'undefined') return;
+  var names = [];
+  for (var i = 0; i < ops.length && ops[i].op === 'read'; i++) {
+    if (names.indexOf(ops[i].tab) < 0) names.push(ops[i].tab);
+  }
+  if (!names.length) return;
+  var res;
+  try {
+    res = Sheets.Spreadsheets.Values.batchGet(ss.getId(), {
+      ranges: names.map(function (n) { return "'" + String(n).replace(/'/g, "''") + "'"; }),
+      valueRenderOption: 'UNFORMATTED_VALUE',
+      dateTimeRenderOption: 'FORMATTED_STRING'
+    });
+  } catch (err) {
+    return;
+  }
+  var ranges = (res && res.valueRanges) || [];
+  if (ranges.length !== names.length) return;
+  names.forEach(function (name, k) {
+    var rows = ranges[k].values || [];
+    var width = 0;
+    rows.forEach(function (r) { width = Math.max(width, r.length); });
+    // The API leaves out empty cells at the end of a row; getValues gives ''.
+    var data = rows.map(function (r) {
+      var v = [];
+      for (var j = 0; j < width; j++) v.push(j < r.length && r[j] !== null && r[j] !== undefined ? typedDate_(ss, r[j]) : '');
+      return v;
+    });
+    var entry = { head: data.length && data[0].some(function (h) { return h !== ''; }) ? data[0].map(String) : [], data: data };
+    // The tab itself is looked up only if a later op needs it (a write, or a read after a write).
+    Object.defineProperty(entry, 'sh', { get: function () { return sheet_(ss, name); } });
+    T_[name] = entry;
+  });
+}
+
+/** A date typed by hand into the Sheet comes from the API as its display text; make it the same text getValues
+ *  + out_ give ('yyyy-MM-dd', or 'yyyy-MM-ddTHH:mm'). Text written by the app stays as it is, except text that
+ *  is exactly a date in the Sheet's own display form (accepted; see docs/DEPLOY.md → Updating later). */
+var LOCALE_ = null;
+function typedDate_(ss, v) {
+  if (typeof v !== 'string' || v.length < 8 || v.length > 22) return v;
+  var y, mo, d, h = 0, mi = 0;
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{2})(?::\d{2})?)?$/.exec(v);
+  if (m) { y = m[1]; mo = m[2]; d = m[3]; h = m[4] || 0; mi = m[5] || 0; }
+  else {
+    m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}):(\d{2})(?::\d{2})?)?$/.exec(v);
+    if (!m) return v;
+    if (LOCALE_ === null) LOCALE_ = String(ss.getSpreadsheetLocale() || '');
+    var us = /^en_US/.test(LOCALE_);
+    mo = us ? m[1] : m[2]; d = us ? m[2] : m[1]; y = m[3]; h = m[4] || 0; mi = m[5] || 0;
+  }
+  var p = function (n) { return ('0' + Number(n)).slice(-2); };
+  var date = y + '-' + p(mo) + '-' + p(d);
+  return Number(h) || Number(mi) ? date + 'T' + p(h) + ':' + p(mi) : date;
+}
+
 function batch_(ss, ops) {
   T_ = {};
   BOOK_ = null;
+  prefetch_(ss, ops);
   var results = [];
   ops.forEach(function (raw) {
     var o = resolveObj_(raw, results);

@@ -64,6 +64,11 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 - App: `npm run deploy` (tests first: `npm run build && npm test && npm run e2e && npm run e2e:worker`).
 - New dictionary fields: `npm run sheets -- setup` adds the missing columns (never removes or reorders).
 - Apps Script changes: paste the new `Code.js`, then Deploy → Manage deployments → Edit → **New version**.
+- Faster reads (30 Oct): in the Apps Script editor, **Services (+) → Google Sheets API → Add** (keep the name
+  `Sheets`). Code.js then reads every tab a request needs in one Sheets API request; without the service it reads tab
+  by tab as before, so nothing breaks if it is missing. A date typed by hand into the Sheet is read from its display
+  text (`2026-03-05`, `5/3/2026` in the Sheet's locale: day first unless the locale is en_US) and given back as
+  `yyyy-MM-dd`; app-written text that is exactly a date in that form is given back the same way (accepted).
 
 ## Restore points
 | Tag | Worker version | Sheet |

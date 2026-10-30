@@ -155,6 +155,38 @@ class FakeBook {
     this.sheets = this.sheets.filter((x) => x !== s);
   }
   setSpreadsheetTimeZone() {}
+  locale = 'en_GB';
+  getSpreadsheetLocale() {
+    return this.locale;
+  }
+}
+
+/** Stand-in for the Advanced Sheets service call Code.js makes: whole tabs in one request, empty cells at the end of
+ *  a row and empty rows at the end left out (like the real API). */
+function fakeSheetsApi(book: FakeBook, count: () => void) {
+  return {
+    Spreadsheets: {
+      Values: {
+        batchGet(id: string, opt: { ranges: string[] }) {
+          count();
+          if (id !== book.id) throw new Error('no such sheet');
+          return {
+            valueRanges: opt.ranges.map((r) => {
+              const sh = book.getSheetByName(r.slice(1, -1).replace(/''/g, "'"));
+              if (!sh) throw new Error(`Unable to parse range: ${r}`);
+              const values = sh.getDataRange().getValues().map((row) => {
+                let n = row.length;
+                while (n && row[n - 1] === '') n--;
+                return row.slice(0, n);
+              });
+              while (values.length && !values[values.length - 1].length) values.pop();
+              return { range: r, values };
+            }),
+          };
+        },
+      },
+    },
+  };
 }
 
 /** A fresh fake Google account with one registry Sheet and the real Code.js loaded as its web app. */
@@ -162,10 +194,13 @@ export class FakeAppsScript implements Gateway {
   props = new Map<string, string>();
   book = new FakeBook('main-sheet-id', 'EP Case Log (fake)');
   calls = 0;
+  /** Requests to the Advanced Sheets service (batchGet). */
+  apiCalls = 0;
   private doPost: (e: unknown) => { content: string };
   private secret: string;
 
-  constructor(secret = 'fake-gateway-secret-0123456789-abcdefghijkl') {
+  /** `sheetsApi: false` = the Advanced Sheets service is not switched on (Code.js reads tab by tab). */
+  constructor(secret = 'fake-gateway-secret-0123456789-abcdefghijkl', opts: { sheetsApi?: boolean } = {}) {
     this.secret = secret;
     this.props.set('MAIN_ID', this.book.id);
     const props = this.props;
@@ -178,6 +213,7 @@ export class FakeAppsScript implements Gateway {
       Utilities: { formatDate: (d: Date) => d.toISOString() },
       ScriptApp: { getProjectTriggers: () => [] },
       Logger: { log: () => {} },
+      Sheets: opts.sheetsApi === false ? undefined : fakeSheetsApi(book, () => this.apiCalls++),
     };
     const src = readFileSync(resolve(import.meta.dirname, '../../apps-script/Code.js'), 'utf8');
     const make = new Function(...Object.keys(globals), `${src}\nreturn doPost;`);

@@ -77,6 +77,25 @@ Restore point before this round: tag `checkpoint-2026-10-23-live` (see `docs/DEP
 - **Part 3 (built 23 Oct): M-4a, M-3, M-4b, M-1 from EP Workspace `d84547d`** (owner also approved M-4b; newer EP Workspace items need his yes first). `config/dictionary/amendments.json` + updated `core_dataset.json` / `labels.json` copied unchanged (SOURCE.md); `shared/amendments.ts` lays them on the dictionary (48 fields, 15 codes, LAA_CLOSURES section with its case_layout entry and Sheet tab "Structural"; refuses anything that would change or hide dictionary content). M-4a: prior stroke / TIA / thromboembolism replace the combined core item; CHA₂DS₂-VASc S₂ = 2 if any is Yes, 0 when all three are No, the old item only when none of the three is answered. M-4b: cardiomyopathy types multi-choice, None / Unknown alone (server + picker). Research study patient ID kept out of the PDF and the AI. M-1: `config/rules.json` (72 rules) compiled into the dictionary by `shared/rules.ts`; each procedure reads its own rows and components; server refuses a value the rules forbid and a change that leaves other answers not fitting unless the same save clears them; readiness skips rule-hidden core fields; the screen hides fields, filters choices, shows notes, and asks "Remove n answers?" before clearing. Old combined items (stroke/TIA, single cardiomyopathy type) take no new answers. TEST Sheet `setup --test` added the columns and the Structural tab. Procedure type keeps pills (9 choices).
 - **Part 4 (built 23 Oct):** duplicate warning in the MRN prompt (same MRN + same episode date in this group); search by MRN, case No. ("12", "No. 12") or procedure / category words; the Admin Dashboard follows the menu filters (POST /api/dashboard with case_ids; "Showing … · All cases").
 
+## Round 4 decisions (owner, 30 Oct 2026): Codex prompts 1–2 and the four UI ideas
+Source read (read only): `E:\Codex\2026-10-21\referenced-chatgpt-conversation-this-is-an\outputs\` (prompts 01 / 02,
+`EP_WORKSPACE_FOUR_UI_IDEAS_HANDOFF_AR.md`). They were written for EP Workspace; prompt 1 was done there
+(`ep-workspace/docs/merge/`: CLASSIFICATION_CROSSWALK, PDF_FIELD_CROSSWALK, DYNAMIC_RULES_MATRIX, QUESTION_LEDGER, M3/M4)
+and brought here in R2-7. No `PHASE_1_HANDOFF.md` / `FORM_RULES.md` exist. **Nothing is built before a preview and the
+owner's explicit yes per group** (owner: show the look and say whether it suits first).
+
+| # | Decision |
+|---|---|
+| R4-1 | Apply the ideas to **EP Case Log (this app)**, not EP Workspace. Case model stays D4 (episode with several procedures). Bulk add, MRNs, groups, numbering untouched. |
+| R4-2 | Procedure picker unchanged: one tile "Lead extraction / revision" (supersedes EP Workspace Q-C4); "AT / other SVT" label kept (supersedes Q-C3 label). |
+| R4-3 | 15 NCDR lead locations (Q-F12): **postponed**. NCDR dynamic lists (Q-S1): **left empty**, not invented. |
+| R4-4 | Several pacing reasons / generator-replacement reasons (Q-F11): **preview first** (what it does, old single value, migration). |
+| R4-5 | Open clinical rules (Q-P3 CSP trigger, Q-P4 device / lead capability table): **shown to the owner one at a time** with their source. |
+| R4-6 | Dashboard: click a month or a type to filter the tables + note that a case can count in more than one category. Preview first. |
+| R4-7 | Procedure sheet: one **"Next missing"** button (no Next / Back wizard). Preview first. |
+| R4-8 | Completeness matrix **inside the case** (section × recorded / not available / missing / AI pending, Fix) **and for a whole group (Admin)** with a new paged server endpoint, no Sheet change. Preview first. |
+| R4-9 | **Timeline on the patient page** (recorded events by their real date; undated ones listed apart). Saved appointments: **not now** (Follow-up tab stays). Preview first. |
+
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.
 - Fake data only in tests; never copy secrets; ask before anything that could change or lose real data.

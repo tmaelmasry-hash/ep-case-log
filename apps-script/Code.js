@@ -21,6 +21,7 @@ function doPost(e) {
       var t0 = Date.now();
       out = { ok: true, result: route_(req) };
       out.ms = Date.now() - t0;
+      if (READ_) out.read = READ_;
     }
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
@@ -471,8 +472,11 @@ function resolveObj_(o, results) {
 /** Speed (30 Oct, step 2): the tabs read before the batch's first write are fetched together in one Sheets API
  *  request (Advanced Sheets service, `Sheets`). Without that service, or if the request fails, nothing is held
  *  and read_ reads tab by tab as before. */
+/** How this call read its tabs (in the answer, for speed checks): 'api', 'tabs', or why the API was not used. */
+var READ_ = '';
+
 function prefetch_(ss, ops) {
-  if (typeof Sheets === 'undefined') return;
+  if (typeof Sheets === 'undefined') { READ_ = 'tabs (Sheets service off)'; return; }
   var names = [];
   for (var i = 0; i < ops.length && ops[i].op === 'read'; i++) {
     if (names.indexOf(ops[i].tab) < 0) names.push(ops[i].tab);
@@ -486,8 +490,10 @@ function prefetch_(ss, ops) {
       dateTimeRenderOption: 'FORMATTED_STRING'
     });
   } catch (err) {
+    READ_ = 'tabs (API: ' + String(err && err.message || err).slice(0, 120) + ')';
     return;
   }
+  READ_ = 'api';
   var ranges = (res && res.valueRanges) || [];
   if (ranges.length !== names.length) return;
   names.forEach(function (name, k) {
@@ -531,6 +537,7 @@ function typedDate_(ss, v) {
 function batch_(ss, ops) {
   T_ = {};
   BOOK_ = null;
+  READ_ = '';
   prefetch_(ss, ops);
   var results = [];
   ops.forEach(function (raw) {

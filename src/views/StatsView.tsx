@@ -1,7 +1,10 @@
 // Dashboard tab (phase 9, EP Workspace; Admin only since step 5, My work has its own tab): cohorts, collection progress
 // and clinical counts per procedure (counts only, no MRNs).
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { applyFilters, clearFilters, itemColor, itemLabel, setFilters, useFilters, useTagged } from '../lib/filters';
+import { NO_PICK, pickCaseIds, pickText, type DashPick } from '../lib/dashPick';
+import { dict } from '../lib/dict';
+import { categoriesOf } from '../../shared/readiness.ts';
 import { downloadTable, downloadXlsx } from '../lib/exportFile';
 import { periodPresets } from '../components/CategoryTree';
 import { PeriodSheet } from '../components/PeriodSheet';
@@ -44,13 +47,17 @@ function useLoad<T>(path: string | null, body?: unknown) {
   const key = body === undefined ? '' : JSON.stringify(body);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // R4-6: only the newest request may set the data (a slow older answer must not overwrite a newer filter).
+  const seq = useRef(0);
   const load = useCallback(async () => {
     if (!path) return;
+    const n = ++seq.current;
     setError(null);
     try {
-      setData(await (body === undefined ? api<T>('GET', path) : api<T>('POST', path, body)));
+      const r = await (body === undefined ? api<T>('GET', path) : api<T>('POST', path, body));
+      if (n === seq.current) setData(r);
     } catch (e) {
-      setError((e as ApiError).message);
+      if (n === seq.current) setError((e as ApiError).message);
     }
   }, [path, key]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -110,8 +117,12 @@ function ExcelBtn({ title, rows }: { title: string; rows: () => (string | number
   );
 }
 
-/** Cases by month of the episode start, Completed under In progress (owner, step 7). */
-function MonthChart({ data }: { data: Dashboard['progress']['by_month'] }) {
+const monthLong = (m: string) => pickText({ month: m, type: null }, String);
+/** Dashboard type ids of a procedure's components, as the server counts them. */
+const typesOf = (components: string[]) => categoriesOf(dict, components);
+
+/** Cases by month of the episode start, Completed under In progress (owner, step 7). A month is a button (R4-6). */
+function MonthChart({ data, picked, onPick }: { data: Dashboard['progress']['by_month']; picked: string | null; onPick: (month: string) => void }) {
   // Every month from the first to the last, so a month with no case shows as an empty slot (last 12 shown).
   const filled: typeof data = [];
   if (data.length) {
@@ -135,8 +146,10 @@ function MonthChart({ data }: { data: Dashboard['progress']['by_month'] }) {
         {last.map((m, i) => {
           const hc = (m.completed / max) * 48;
           const hp = (m.in_progress / max) * 48;
+          // The whole column is clickable with the mouse; the month buttons under the chart serve keyboard and screen readers.
           return (
-            <g key={m.month}>
+            <g key={m.month} className={picked ? (picked === m.month ? 'on' : 'dim') : undefined} onClick={() => onPick(m.month)}>
+              <rect x={i * w} y={0} width={w} height={50} className="bar-hit" />
               <rect x={i * w + w * 0.15} y={50 - hc} width={w * 0.7} height={hc} className="bar-done" />
               <rect x={i * w + w * 0.15} y={50 - hc - hp} width={w * 0.7} height={hp} className="bar-open" />
             </g>
@@ -145,7 +158,16 @@ function MonthChart({ data }: { data: Dashboard['progress']['by_month'] }) {
       </svg>
       <div className="month-axis" style={{ gridTemplateColumns: `repeat(${Math.max(1, last.length)}, minmax(0, 1fr))` }}>
         {last.map((m) => (
-          <span key={m.month}>{monthLabel(m.month).split(' ')[0]}</span>
+          <button
+            key={m.month}
+            type="button"
+            className={picked === m.month ? 'on' : picked ? 'dim' : undefined}
+            aria-pressed={picked === m.month}
+            aria-label={`${monthLong(m.month)}: ${m.completed + m.in_progress} cases. ${picked === m.month ? 'Clear the month filter' : 'Filter the Dashboard to this month'}`}
+            onClick={() => onPick(m.month)}
+          >
+            {monthLabel(m.month).split(' ')[0]}
+          </button>
         ))}
       </div>
       <div className="legend">
@@ -301,8 +323,27 @@ function AdminDashboard() {
   const f = useFilters();
   const tagged = useTagged(cases);
   const filtering = !!(f.proc.length || f.group.length || f.from || f.to);
-  const caseIds = filtering ? applyFilters(cases, tagged, { ...f, grp: 'ALL' }).map((c) => c.case_id) : undefined;
-  const { data: d, error, load } = useLoad<Dashboard>(`/api/dashboard?group=${encodeURIComponent(group)}&basis=${basis}`, caseIds ? { group, basis, case_ids: caseIds } : undefined);
+  const base = useMemo(() => (filtering ? applyFilters(cases, tagged, { ...f, grp: 'ALL' }) : cases), [cases, tagged, f, filtering]);
+  // R4-6: a month and/or a type clicked on the Dashboard. The cases that match go to the server as case_ids, like the
+  // menu filters, so the server still does every number. The month chart shows the months of the chosen type and the
+  // type list the types of the chosen month, so the other choices stay visible (at most three requests, same answers shared).
+  const [pick, setPick] = useState<DashPick>(NO_PICK);
+  const path = `/api/dashboard?group=${encodeURIComponent(group)}&basis=${basis}`;
+  const bodyFor = (pk: DashPick) => (filtering || pk.month || pk.type ? { group, basis, case_ids: pickCaseIds(base, pk, typesOf) } : undefined);
+  const mainBody = useMemo(() => bodyFor(pick), [base, pick, group, basis]); // eslint-disable-line react-hooks/exhaustive-deps
+  const monthBody = useMemo(() => bodyFor({ month: null, type: pick.type }), [base, pick.type, group, basis]); // eslint-disable-line react-hooks/exhaustive-deps
+  const typeBody = useMemo(() => bodyFor({ month: pick.month, type: null }), [base, pick.month, group, basis]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [mainKey, monthKey, typeKey] = [mainBody, monthBody, typeBody].map((b) => JSON.stringify(b ?? null));
+  const { data: d, error, load } = useLoad<Dashboard>(path, mainBody);
+  const monthSrc = useLoad<Dashboard>(monthKey !== mainKey ? path : null, monthBody);
+  const typeSrc = useLoad<Dashboard>(typeKey !== mainKey && typeKey !== monthKey ? path : null, typeBody);
+  const monthData = monthKey === mainKey ? d : monthSrc.data;
+  const typeData = typeKey === mainKey ? d : typeKey === monthKey ? monthData : typeSrc.data;
+  const picking = !!(pick.month || pick.type);
+  const typeLabel = (id: string) => d?.progress.by_category.find((x) => x.id === id)?.label ?? id;
+  const pickMonth = (m: string) => setPick((p) => ({ ...p, month: p.month === m ? null : m }));
+  const pickType = (t: string) => setPick((p) => ({ ...p, type: p.type === t ? null : t }));
+  const dimType = (id: string) => (pick.type ? (pick.type === id ? ' picked' : ' dim') : '');
   if (error)
     return (
       <p className="field-error" role="alert">
@@ -346,6 +387,15 @@ function AdminDashboard() {
         </p>
       ) : (
         <>
+          {picking && (
+            <div className="dash-pick" data-testid="dash-pick">
+              <b>Filtered:</b>{' '}
+              <span role="status">{pickText(pick, typeLabel)}</span>
+              <button type="button" className="link strong" onClick={() => setPick(NO_PICK)}>
+                Clear
+              </button>
+            </div>
+          )}
           <div className="kpis">
             <div className="kpi">
               <span>Cases</span>
@@ -375,8 +425,8 @@ function AdminDashboard() {
               <h3>Cases by month</h3>
               <ExcelBtn title="Cases by month" rows={() => [['Month', 'Completed', 'In progress', 'Total'], ...p.by_month.map((m) => [m.month, m.completed, m.in_progress, m.completed + m.in_progress])]} />
             </div>
-            <p className="hint">Month of the episode start date.</p>
-            {p.by_month.length ? <MonthChart data={p.by_month} /> : <p className="muted">No dates yet.</p>}
+            <p className="hint">Month of the episode start date. Click a month to filter the Dashboard; click it again to clear.</p>
+            {(monthData ?? d).progress.by_month.length ? <MonthChart data={(monthData ?? d).progress.by_month} picked={pick.month} onPick={pickMonth} /> : <p className="muted">No dates yet.</p>}
           </div>
           <div className="sechead-row">
             <h2 className="sechead">By group</h2>
@@ -402,9 +452,16 @@ function AdminDashboard() {
           </div>
           <div className="panel">{p.by_collector.length ? <TallyTable rows={p.by_collector} first="Collector" /> : <p className="muted">No cases yet.</p>}</div>
           <h2 className="sechead">By procedure type (cases)</h2>
-          <div className="panel">
-            {p.by_category.map((x) => (
-              <div key={x.id} className="cbar">
+          <div className="panel" data-testid="by-category">
+            {(typeData ?? d).progress.by_category.map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                className={`cbar${dimType(x.id)}`}
+                aria-pressed={pick.type === x.id}
+                aria-label={`${x.label}: ${x.completed} of ${x.total} cases completed. ${pick.type === x.id ? 'Clear the type filter' : 'Filter the Dashboard to this type'}`}
+                onClick={() => pickType(x.id)}
+              >
                 <span className="cl">{x.label}</span>
                 <span className="sbar">
                   <i className="c" style={{ width: `${x.total ? (100 * x.completed) / x.total : 0}%` }} />
@@ -412,8 +469,9 @@ function AdminDashboard() {
                 <span className="cn">
                   {x.completed} / {x.total}
                 </span>
-              </div>
+              </button>
             ))}
+            <p className="hint">Click a type to filter the Dashboard. A case with two procedure types counts once in each type, so the types can add up to more than the cases.</p>
           </div>
 
           <div className="dash-sec">
@@ -456,8 +514,12 @@ function AdminDashboard() {
                 </thead>
                 <tbody>
                   {c.by_type.map((t) => (
-                    <tr key={t.id}>
-                      <th scope="row">{t.label}</th>
+                    <tr key={t.id} className={dimType(t.id).trim() || undefined}>
+                      <th scope="row">
+                        <button type="button" className="row-pick" aria-pressed={pick.type === t.id} aria-label={`${t.label}: ${pick.type === t.id ? 'clear the type filter' : 'filter the Dashboard to this type'}`} onClick={() => pickType(t.id)}>
+                          {t.label}
+                        </button>
+                      </th>
                       {c.months.map((m) => (
                         <td key={m} className="n">
                           {t.by_month[m] ?? '·'}
@@ -493,14 +555,14 @@ function AdminDashboard() {
                 </thead>
                 <tbody>
                   {c.acute_success.map((a) => (
-                    <tr key={a.id}>
+                    <tr key={a.id} className={dimType(a.id).trim() || undefined}>
                       <th scope="row">{a.label}</th>
                       <td className="n">{a.procedures}</td>
                       <td className="n">{a.success}</td>
                       <td className="n">{a.not_success}</td>
                       <td className="n muted">{a.not_recorded + a.not_counted + a.not_determined}</td>
                       <td className="n">
-                        <b>{a.pct === null ? '—' : `${a.pct}%`}</b>
+                        <b>{a.pct === null ? 'Not available' : `${a.pct}%`}</b>
                       </td>
                     </tr>
                   ))}
@@ -510,7 +572,7 @@ function AdminDashboard() {
           </div>
           <div className="panel">
             <h3>Complications</h3>
-            <div className="big">{c.complications.pct === null ? '—' : `${c.complications.pct}%`}</div>
+            <div className="big">{c.complications.pct === null ? 'Not available' : `${c.complications.pct}%`}</div>
             <p className="muted">
               {c.complications.present} procedure{c.complications.present === 1 ? '' : 's'} with complications present of {c.complications.reviewed} reviewed
             </p>

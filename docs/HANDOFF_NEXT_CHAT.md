@@ -7,7 +7,7 @@ Work in steps; show a preview before building anything visible; ask with multipl
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
 ## START HERE (30 Oct, night) — everything merged is now live
-State: `main` = docs commit after `58b8349`, pushed. **Live Worker `c98e3ff1`** (30 Oct ~20:30). Apps Script live =
+State: `main` = `dd9e835`, pushed. **Live Worker `c98e3ff1`** (30 Oct ~20:30). Apps Script live =
 **Version 3** (.xlsx nightly backup; gateway checked `read: api`, 730 ms). Main Sheet got the Cases column
 `picked_items_json` (TEST already had it).
 Live since this deploy: (1) offline New case MRN note + re-check, (2) nightly backup as .xlsx (run once: `EP Case Log

@@ -1,4 +1,4 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026 (night)
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026 (late night)
 
 Read this first, then `docs/SCREEN_REVIEW.md` (every screen decision and what each build step did),
 `docs/MERGE_PLAN.md` (owner decisions R2-* / R3-*) and `AGENTS.md`.
@@ -6,7 +6,49 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct, night) — everything merged is now live
+## START HERE (30 Oct, late night) — round 4: four UI ideas, built in 4 side sessions, not merged
+**Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same
+code as live Worker `c98e3ff1`, Apps Script Version 3). If the owner does not want round 4: see `docs/DEPLOY.md` →
+"To go back to before round 4". `main` has **no** round 4 code yet.
+
+Decisions: `docs/MERGE_PLAN.md` → "Round 4 decisions" (R4-1 … R4-9). Preview the owner approved (Design canvas, 5
+artboards, re-read before judging the builds): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE . Owner: "build what
+you think fits", group matrix now too (no trial week planned). He wants a preview before anything visible and his yes
+before each merge and each deploy.
+
+Side sessions started 30 Oct ~21:10 from the previous chat (each in its own worktree, told: no e2e runs because of the
+shared ports, `npm run build && npm test` only, commit on its own branch, no push to `main`, no deploy, no Sheet change):
+
+| Session (open from the sidebar) | Session id | Branch (full ref) | Builds | Main files |
+|---|---|---|---|---|
+| Dashboard: click a month or type to filter | `local_f9412fb7-325c-435e-b20c-1969091a9870` | `refs/heads/claude/dash-click-filter-1f4ca2` | R4-6: click a month / type filters the Dashboard (via `case_ids` to `POST /api/dashboard`), Filtered bar + Clear, "a case can count in several types" note | `src/views/StatsView.tsx` |
+| Case: Next missing button + Completeness sheet | `local_39d89cb7-52d2-4942-9c86-b759e1b725c4` | `refs/heads/claude/case-next-missing-05e3e1` | R4-7 "Next missing · 1 of 3" in the procedure sheet; R4-8 Completeness sheet from the case header (sections × recorded / N/A / missing / AI, Fix) | `src/views/CaseView.tsx`, a section-grouping function in `shared/` |
+| Patient page: Timeline of recorded events | `local_efaa60df-9d91-446a-a08e-6e890170b9a4` | `refs/heads/claude/patient-timeline-9851b8` | R4-9 Cases / Timeline switch, events by their own dictionary date, "Without a date" box, no planned follow-ups | `src/views/PatientsView.tsx`, `shared/timeline.ts` |
+| Admin: data completeness matrix for a group | `local_6dff1c52-1b74-4b8b-800a-3ef07ffc80c9` | `refs/heads/claude/group-matrix-8ad333` | R4-8 group part: paged Admin-only endpoint (e.g. `GET /api/completeness`), `#/completeness` screen linked from `#/admin`, Excel | `server/routes/*`, `shared/completeness.ts`, `src/views/CompletenessView.tsx`, `src/App.tsx` |
+
+**Steps for the new chat (in order):**
+1. For each session: read its last report (`mcp__ccd_session_mgmt__list_events` with the id above; they are not
+   linked to the new chat, so no automatic note arrives). If one is still running, wait; if one stopped half-way, read
+   its branch and finish it. A report is not proof: read each branch's diff (`git diff main...<ref>`).
+2. Check overlaps before merging: the two "section grouping" functions (case-next-missing and group-matrix) should
+   become one shared function; CSS added to `src/styles.css` by several branches; `src/App.tsx` routes.
+3. Ask the owner (AskUserQuestion) to merge the four branches into `main` (name each by its full ref). Merge
+   `--no-ff` one by one, resolve conflicts, unify the grouping function.
+4. Full run on `main`: `npm run build && npm test && npm run e2e && npm run e2e:worker` (one at a time, in a Terminal
+   panel tab so the owner sees it; stop leftover node / workerd on :8790 / :8793 / :8794 first; if Playwright says
+   "Executable doesn't exist", `npx playwright install chromium-headless-shell`). Fix the new e2e specs the sessions
+   wrote but did not run.
+5. Show the owner the finished screens (local preview `registry-synthetic`, screenshots) against the canvas.
+6. Ask "Deploy now?". On yes: `node scripts/wrangler.ts whoami`, `npm run deploy`, check live JS, add the restore point
+   to `docs/DEPLOY.md`. Round 4 needs no `sheets setup` and no Apps Script change (check the diffs confirm this).
+7. Update this file; tell the owner in Egyptian Arabic what changed on his screen; offer to archive the 4 sessions.
+
+Still open (separate from the four ideas, each needs a preview / the owner's answer): R4-4 several pacing reasons and
+generator-replacement reasons (show what it does first); R4-5 clinical rules Q-P3 (CSP section trigger) and Q-P4
+(device / lead capability table), one at a time with their source. Postponed: 15 NCDR lead locations. NCDR dynamic
+lists stay empty.
+
+## Earlier (30 Oct, night) — everything merged before round 4 is live
 State: `main` = `dd9e835`, pushed. **Live Worker `c98e3ff1`** (30 Oct ~20:30). Apps Script live =
 **Version 3** (.xlsx nightly backup; gateway checked `read: api`, 730 ms). Main Sheet got the Cases column
 `picked_items_json` (TEST already had it).

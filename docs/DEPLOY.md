@@ -110,7 +110,12 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `5030dfa` (Apps Script Version 2, 30 Oct: all tabs in one Sheets API read; Worker unchanged) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet; Apps Script rollback = Manage deployments → Edit → Version 1 |
 | `5a1fa93` (menu: AF by energy, Devices › Other devices › Leadless LVEP / CCM; "Other device" tick) | `b8ed14a4-4f7f-44bf-a377-83bb2b67b409` | same Sheet, no Sheet change |
 | `58b8349` (offline New case MRN note; device ticks saved with the case; AVNRT hides accessory-pathway / AT questions; Holter duration fix) | `c98e3ff1-6518-4cab-947a-6f4b61a232f5` | main Sheet + Cases column `picked_items_json` (30 Oct; TEST already had it). Apps Script **Version 3** (.xlsx nightly backup); Apps Script rollback = Version 2 |
+| **`checkpoint-2026-10-30-before-round4`** (= `97c77fe`, same code as `58b8349`; set on the owner's request before the round 4 ideas are merged) | `c98e3ff1-6518-4cab-947a-6f4b61a232f5` | same Sheet (with `picked_items_json`); Apps Script Version 3. **Go back here if round 4 is not wanted** |
 
+To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
+(history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4
+was deployed, `node scripts/wrangler.ts rollback c98e3ff1-6518-4cab-947a-6f4b61a232f5` (round 4 adds no Sheet column and
+no Apps Script change, so nothing else to undo).
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: import the wanted .xlsx backup into a new Sheet
 (older backups are Sheet copies: make a copy of the wanted one).

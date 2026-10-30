@@ -64,6 +64,11 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 - App: `npm run deploy` (tests first: `npm run build && npm test && npm run e2e && npm run e2e:worker`).
 - New dictionary fields: `npm run sheets -- setup` adds the missing columns (never removes or reorders).
 - Apps Script changes: paste the new `Code.js`, then Deploy → Manage deployments → Edit → **New version**.
+- **Which Apps Script project:** the nightly backup copies the Sheet *with* its script, so script.google.com lists one
+  "EP Case Log — Registry" project per backup day. Only the original serves the app: project
+  `1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC` (created 23 Oct, deployment "EP Case Log v1", id ending
+  `…YxGBJY`); open it at `https://script.google.com/home/projects/<that id>/edit`. A paste into a backup copy changes
+  nothing. Check after publishing: the answer to a batch read carries `read: api` (scratch timing script, gateway `ms`).
 - Faster reads (30 Oct): in the Apps Script editor, **Services (+) → Google Sheets API → Add** (keep the name
   `Sheets`). Code.js then reads every tab a request needs in one Sheets API request; without the service it reads tab
   by tab as before, so nothing breaks if it is missing. A date typed by hand into the Sheet is read from its display
@@ -93,6 +98,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `e10e374` (screen review step 7: Dashboard chart, Hajj season split, statistics file) | `cc82b727-231b-4f05-a489-d87eb66a9a82` | same Sheet, no Sheet change |
 | `64a15d9` (screen review step 8: colors, bigger text, dark mode, Undo) | `ff9096e3-c77c-46c1-9382-8ff64c435283` | same Sheet, no Sheet change |
 | `8245ec5` (open items: desktop sheets beside the sidebar, Holter duration saves on close) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet, no Sheet change |
+| `5030dfa` (Apps Script Version 2, 30 Oct: all tabs in one Sheets API read; Worker unchanged) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet; Apps Script rollback = Manage deployments → Edit → Version 1 |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

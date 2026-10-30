@@ -6,14 +6,17 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct)
-- The screen review is finished: **all 8 build steps are live** (table below). Two open-item fixes are live too.
-- Last thing done: the Apps Script speed change (`b9aadd6`), pasted and published by the owner (new version, same
-  deployment). It made **no clear difference** (numbers under Open items). The owner was offered the next step (Google
-  Sheets API, all tabs in one request) and had not answered; he asked for this handoff instead.
+## START HERE (30 Oct, evening)
+- **Speed done (Apps Script Version 2, live 30 Oct 16:10).** `apps-script/Code.js` reads every tab a batch needs in one
+  Sheets API request (Advanced Sheets service `Sheets`, added in the editor); without the service it falls back to tab
+  by tab. Answers carry `read: api`. Measured on TEST: list 6.4–8.4 s → 1.9–3.4 s, one case 7.6–9.0 s → 1.7–2.2 s,
+  all 23 tabs inside Apps Script 8.1–8.7 s → 0.45–1.8 s; main Sheet 0.5–0.8 s inside (2887 rows).
+- **Why earlier speed work showed no gain:** the deployment had stayed on Version 1 (23 Oct). The owner's pastes went into
+  backup copies: each nightly backup copies the Sheet with its script, so there are many projects with the same name.
+  The real one is in `docs/DEPLOY.md` → Updating later. Claude published Version 2 itself in the built-in browser
+  (the owner signed in there; the clipboard does not reach that browser, the code was loaded from GitHub at `5030dfa`).
 - Next: ask the owner which open item to take (list below), one at a time.
-- Everything is committed and pushed; nothing waits to be deployed. Live Worker: `8a30e0a1`.
-- Tests at the last run: unit/server 251 · e2e 84 · e2e:worker 84.
+- Everything is committed and pushed. Live Worker: `8a30e0a1` (unchanged). Tests: unit/server 253 · e2e 84 · e2e:worker 84.
 
 ## Screen review build steps (27–30 Oct) — all live
 | Step | What | Commit → Worker |
@@ -35,13 +38,6 @@ His Design-canvas edits can fail to save when his connection drops: list the can
 before building.
 
 ## Open items (ask the owner, one at a time)
-- **Speed.** `apps-script/Code.js` (`b9aadd6`): the book's tabs listed once per call, a small tab read whole with its
-  header in one request; live. Measured on the TEST Sheet with scratch scripts (gateway `ms`): list 6.4–7.7 s before
-  vs 6.9–9.5 s after, one case 6.4–7.4 s vs 5.7–9.0 s; inside Apps Script the 15-tab read is 3.3–6.0 s, plus ~2 s of
-  network per call (a bare ping 2.6 s). Possible next step: Advanced Sheets service
-  (`Sheets.Spreadsheets.Values.batchGet`, all tabs in one request) — owner pastes code and enables the service; dates
-  typed by hand into the Sheet would read differently; try on the TEST Sheet first. Not started. Note: the app shows
-  the device copy at once, so the wait is mostly the first open of a case on a device.
 - **Procedure types without a dictionary code:** AF ablation by energy, Leadless LVEP / CCM under Devices, other SVTs;
   also new EP Workspace items (M-4c…) — ask before porting (see memory "EP Workspace sync").
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
@@ -49,7 +45,8 @@ before building.
 - The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
 - Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
   on close) is the likely cause; it passed 84/84 since.
-- `scripts/measure-speed.ts` needs a TEST admin password: `data/test-admin-password.txt` was deleted on the owner's
+- Timing without a password: a scratch script calling the gateway (`.env` secret, target test, read ops) prints the
+  gateway `ms` and `read`. `scripts/measure-speed.ts` needs a TEST admin password: `data/test-admin-password.txt` was deleted on the owner's
   yes (30 Oct, with `data/admin-password.txt`).
 
 Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
@@ -79,7 +76,8 @@ Known, told to the owner: accessory-pathway / AT questions still show under SVT 
   `npm run build && npm test && npm run e2e && npm run e2e:worker`. Then add the restore point to `docs/DEPLOY.md`.
 - Google Sheet "EP Case Log — Registry" (main) + TEST Sheet, one Apps Script serves both; `.env` holds the secrets
   (never print them). New columns: `node scripts/sheets.ts setup --test`, then `node scripts/sheets.ts setup` (only
-  adds columns). Apps Script changes: the owner pastes `apps-script/Code.js` and publishes a **new version** of the same
+  adds columns). Apps Script changes: in the **original** project only (id in `docs/DEPLOY.md`; backups copy the script), the owner
+  pastes `apps-script/Code.js` and publishes a **new version** of the same
   deployment (copy it to his clipboard with PowerShell `Get-Content -Raw -Encoding UTF8 … | Set-Clipboard`).
 
 ## Working notes

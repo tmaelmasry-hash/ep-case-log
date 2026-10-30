@@ -283,6 +283,10 @@ p {
   max-width: 860px;
   margin: 0 auto;
 }
+/* The completeness matrix has ten columns: let it use the desktop width so every column shows without scrolling. */
+.is-wide .main > .view.completeness {
+  max-width: 1200px;
+}
 .split {
   display: grid;
   grid-template-columns: minmax(340px, 420px) 1fr;
@@ -2040,6 +2044,9 @@ body:has(.overlay) {
 }
 .cmp-row > :first-child {
   text-align: start;
+  /* Long section names ("Echocardiography") wrap instead of running into the counts on a phone. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .cmp-none {
   grid-column: span 4;

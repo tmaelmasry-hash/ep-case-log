@@ -19,6 +19,7 @@ export interface CasePatch {
   not_available: Record<string, NotAvailable | null>;
   copied: Record<string, string | null>;
   ai: Record<string, AiMark | null>;
+  picked_items: Record<string, string[] | null>;
   history: RowChange<HistoryEntry>[];
 }
 
@@ -60,6 +61,7 @@ export function diffCase(base: CaseRecord | null, next: CaseRecord): CasePatch {
   const na = mapDiff(base?.not_available ?? {}, next.not_available ?? {});
   const copied = mapDiff(base?.copied ?? {}, next.copied ?? {});
   const ai = mapDiff(base?.ai ?? {}, next.ai ?? {});
+  const picked = mapDiff(base?.picked_items ?? {}, next.picked_items ?? {});
   return {
     case_id: next.meta.case_id,
     meta: changed(base?.meta, next.meta),
@@ -68,12 +70,13 @@ export function diffCase(base: CaseRecord | null, next: CaseRecord): CasePatch {
     not_available: na,
     copied,
     ai,
+    picked_items: picked,
     history: diffList(base?.history ?? [], next.history ?? [], historyId),
   };
 }
 
 export function isEmptyPatch(p: CasePatch): boolean {
-  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !Object.keys(p.copied).length && !Object.keys(p.ai).length && !p.history.length;
+  return !Object.keys(p.meta).length && !Object.keys(p.rows).length && !p.additional.length && !Object.keys(p.not_available).length && !Object.keys(p.copied).length && !Object.keys(p.ai).length && !Object.keys(p.picked_items).length && !p.history.length;
 }
 
 /** Applies a patch to the stored copy of a case (null = not stored yet). */
@@ -107,6 +110,11 @@ export function applyPatch(stored: CaseRecord | null, p: CasePatch): CaseRecord 
   for (const [k, v] of Object.entries(p.ai)) {
     if (v) ai[k] = v;
     else delete ai[k];
+  }
+  const picked = (rec.picked_items ??= {});
+  for (const [k, v] of Object.entries(p.picked_items)) {
+    if (v) picked[k] = v;
+    else delete picked[k];
   }
   const hist = (rec.history ??= []);
   for (const c of p.history) {

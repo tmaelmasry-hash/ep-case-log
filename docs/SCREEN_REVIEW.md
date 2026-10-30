@@ -186,3 +186,22 @@ by the deleter for 60 s; after that, Admin from the recycle bin).
   case is left). Still asked first: Sign out, account actions, discarding a new procedure, answers a rule would clear.
 - Messages at the top of the screen.
 Tests: unit/server 251, e2e 84, e2e:worker 83 + the known intermittent fieldreview Holter test (passes 6 of 6 on rerun).
+
+
+## Device ticks saved with the case (owner 30 Oct, built, not deployed)
+The "What was done?" ticks of a procedure (Pacemaker / ICD / CRT / Conduction system pacing / Generator change /
+Other device, and the rest of the list) are saved with the case, so every device and user sees them. Before, a device
+tick was kept only in that browser (localStorage `kamc-proc-items-<procedure id>`) until the device type, CRT/CSP
+strategy or device action was answered.
+- Operational, not clinical (nothing added to `config/dictionary/`): Cases column `picked_items_json` =
+  `{ "<procedure id>": ["ICD", …] }`, written like `not_available_json` (per-procedure keys merged into the cell, so the
+  last save of a procedure's ticks wins). Item ids are `shared/procedureTypes.ts` PROCEDURE_ITEMS (moved from
+  `src/lib/` so the server can check them); unknown ids or procedures are refused. Removing a procedure drops its key.
+- Save: `PATCH /api/cases/:id` with `picked_items: [{ procedure_id, items }]` (the whole list each time, [] clears),
+  same rights as other case edits (Admin, Member in the case's group; not on a Completed case). No History line (the
+  components the ticks add have their own).
+- Browser: `ed.pickedItems` / `ed.setPickedItems` (`src/caseEditor.tsx`, outbox op `items`). An old localStorage tick
+  is read once when its procedure opens, sent with the case, and the localStorage key is removed; nothing writes
+  localStorage any more.
+- **Deploy order:** `node scripts/sheets.ts setup` on the main Sheet first (adds the column only), then the Worker. A
+  Worker without the column refuses saves that carry ticks ("No column picked_items_json … run setup").

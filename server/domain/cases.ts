@@ -7,6 +7,7 @@ import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import { CATEGORY_FIELDS } from '../../shared/categories.ts';
 import { caseEnv, consequences, misfit } from '../../shared/rules.ts';
 import { deriveChanges } from '../../shared/derive.ts';
+import { PROCEDURE_ITEMS } from '../../shared/procedureTypes.ts';
 import {
   ID_RE,
   ageOn,
@@ -22,6 +23,7 @@ import {
   type HistoryEntry,
   type HistoryItem,
   type NaEdit,
+  type PickedItemsEdit,
   type StoredRow,
 } from '../../shared/caseTypes.ts';
 
@@ -389,7 +391,10 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
       if (!row) return;
       const p = placeOf(dict, rec, def.entity, row);
       removeRow(dict, rec, def.entity, row._id, a);
-      if (def.entity === 'EP_PROCEDURES') for (const k of Object.keys(rec.not_available ?? {})) if (k.endsWith(`@${row._id}`)) delete rec.not_available![k];
+      if (def.entity === 'EP_PROCEDURES') {
+        for (const k of Object.keys(rec.not_available ?? {})) if (k.endsWith(`@${row._id}`)) delete rec.not_available![k];
+        if (rec.picked_items) delete rec.picked_items[row._id];
+      }
       const what = def.entity === 'EP_PROCEDURES' ? `${p.proc} removed` : def.cardinality === 'single' ? `${def.label} section cleared${p.proc ? ` in ${p.proc}` : ''}` : `${p.own} removed${p.proc ? ` from ${p.proc}` : ''}`;
       addHistory(rec, { kind: 'remove', entity: def.entity, row_id: row._id, text: what }, a);
     }),
@@ -408,6 +413,7 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
   );
 
   (batch.not_available ?? []).slice(0, 50).forEach((n, i) => run('na', i, () => applyNotAvailable(dict, rec, n, a)));
+  (batch.picked_items ?? []).slice(0, 50).forEach((p, i) => run('items', i, () => applyPickedItems(rec, p)));
 
   if (results.some((r) => r.ok)) {
     applyDerived(dict, rec, a);
@@ -449,6 +455,21 @@ export function applyDerived(dict: Dictionary, rec: CaseRecord, a: Actor) {
       if (f.type !== 'fk' && JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) addHistory(rec, { kind: 'edit', entity: def.entity, row_id: row._id, field: ch.field, where: whereText(placeOf(dict, rec, def.entity, row)), old: before, new: after }, a);
     }
   }
+}
+
+const ITEM_IDS = new Set(PROCEDURE_ITEMS.map((x) => x.id));
+
+/** The ticked "What was done?" items of one procedure (operational, owner 30 Oct): known item ids only, the whole
+ *  list each time, so the last save wins. No history line: the components the items add have their own. */
+function applyPickedItems(rec: CaseRecord, p: PickedItemsEdit) {
+  const pid = String(p?.procedure_id ?? '');
+  if (!Array.isArray(p?.items) || p.items.length > PROCEDURE_ITEMS.length || p.items.some((x) => typeof x !== 'string' || !ITEM_IDS.has(x))) throw new EditError('What was done: unknown item.');
+  if (!(rec.rows.EP_PROCEDURES ?? []).some((r) => r._id === pid)) throw new EditError('What was done: unknown procedure.');
+  if (!findLive(rec, 'EP_PROCEDURES', pid)) return; // removed meanwhile: nothing to keep
+  const items = PROCEDURE_ITEMS.map((x) => x.id).filter((x) => p.items.includes(x));
+  const all = (rec.picked_items ??= {});
+  if (items.length) all[pid] = items;
+  else delete all[pid];
 }
 
 /** "Not available" + reason on an empty core field, or clear it (reason null). */
@@ -596,6 +617,7 @@ export function toDetail(dict: Dictionary, rec: CaseRecord, groupName: string, u
     not_available: rec.not_available ?? {},
     copied: rec.copied ?? {},
     ai: rec.ai ?? {},
+    picked_items: rec.picked_items ?? {},
     history_count: rec.history?.length ?? 0,
     users,
     summary: summarize(dict, rec, followup),

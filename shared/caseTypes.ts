@@ -76,6 +76,9 @@ export interface CaseRecord {
   /** AI Assistant marks (phase 11): "ENTITY|row|field" = value filled by the AI, not yet accepted;
    *  "ENTITY|row|field#ai" = conflicting values for a person to choose; "ENTITY|row|*" = a row the AI added. */
   ai?: Record<string, AiMark>;
+  /** Operational, not clinical (owner 30 Oct): procedure id → the "What was done?" item ids ticked for it
+   *  (shared/procedureTypes.ts PROCEDURE_ITEMS). Tells device items apart until the device answers exist. */
+  picked_items?: Record<string, string[]>;
 }
 
 export interface AiMark {
@@ -103,6 +106,8 @@ export interface CaseDetail {
   not_available: Record<string, NotAvailable>;
   copied: Record<string, string>;
   ai: Record<string, AiMark>;
+  /** Procedure id → ticked "What was done?" item ids (CaseRecord.picked_items). */
+  picked_items?: Record<string, string[]>;
   history_count: number;
   users: { id: string; name: string }[];
   /** The case's line in the case list, so the list follows each save without reloading. */
@@ -184,15 +189,21 @@ export interface NaEdit {
   procedure_id?: string | null;
   reason: string | null;
 }
+/** The whole list of ticked "What was done?" items of one procedure ([] clears it). */
+export interface PickedItemsEdit {
+  procedure_id: string;
+  items: string[];
+}
 export interface EditBatch {
   creates?: EditCreate[];
   changes?: EditChange[];
   removes?: EditRemove[];
   additional?: AdditionalEdit[];
   not_available?: NaEdit[];
+  picked_items?: PickedItemsEdit[];
 }
 export interface EditResult {
-  kind: 'create' | 'change' | 'remove' | 'additional' | 'na';
+  kind: 'create' | 'change' | 'remove' | 'additional' | 'na' | 'items';
   i: number;
   ok: boolean;
   message?: string;

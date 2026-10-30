@@ -51,6 +51,9 @@ before building.
   device only." under the MRN; the outbox sends `known_case_ids`, `POST /api/cases` answers `other_cases` /
   `unseen_cases`; if the Sheet had cases the device did not know, one top message "MRN … already has N other case(s)
   in the Google Sheet." with **Open patient** (`#/patients/<mrn>`). Nothing is merged.
+- The "Pacemaker / ICD / CRT" tick: **merged 30 Oct, not deployed** — saved with the case (Cases column
+  `picked_items_json`, see `docs/SCREEN_REVIEW.md` → Device ticks). Deploy needs `node scripts/sheets.ts setup` on the
+  main Sheet **before** the Worker (TEST done).
 - Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
   on close) is the likely cause; it passed 84/84 since.
 - Timing without a password: a scratch script calling the gateway (`.env` secret, target test, read ops) prints the

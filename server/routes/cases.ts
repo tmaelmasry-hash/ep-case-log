@@ -154,6 +154,7 @@ export function caseRoutes(app: Router) {
         const fields = uniq([
           ...(batch.changes ?? []).filter((_, i) => ok('change', i)).map((c) => `${c.entity}.${c.field === 'other_specify_json' ? c.key : c.field}`),
           ...(batch.not_available ?? []).filter((_, i) => ok('na', i)).map((n) => `${n.entity}.${n.field}`),
+          ...((batch.picked_items ?? []).some((_, i) => ok('items', i)) ? ['picked_items'] : []),
         ]);
         const added = uniq((batch.creates ?? []).filter((c, i) => ok('create', i) && dict.entities[c.entity]?.cardinality === 'multi').map((c) => c.entity));
         const removed = uniq((batch.removes ?? []).filter((_, i) => ok('remove', i)).map((c) => c.entity));

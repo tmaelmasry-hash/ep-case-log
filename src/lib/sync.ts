@@ -13,7 +13,8 @@ export type Op =
   | { kind: 'change'; entity: string; id: string; field: string; value: unknown; key?: string }
   | { kind: 'remove'; entity: string; id: string }
   | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null }
-  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null };
+  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null }
+  | { kind: 'items'; procedure_id: string; items: string[] };
 
 /** A case made without connection (L3): created on the server first, before its edits. */
 export interface NewCaseRequest {
@@ -56,7 +57,7 @@ export interface SyncState {
 }
 
 // Server limits per batch (server/domain/cases.ts applyEdits).
-const LIMITS: Record<Op['kind'], number> = { create: 50, change: 200, remove: 50, additional: 20, na: 50 };
+const LIMITS: Record<Op['kind'], number> = { create: 50, change: 200, remove: 50, additional: 20, na: 50, items: 50 };
 const BACKOFF = [2000, 4000, 8000, 15000, 30000];
 
 /** Splits one case's ops, in order, into batches within the server's limits. */
@@ -78,12 +79,13 @@ export function chunkOps(ops: Op[]): Op[][] {
 }
 
 export function toBatch(ops: Op[]): EditBatch {
-  const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [] };
+  const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [], picked_items: [] };
   for (const op of ops) {
     if (op.kind === 'create') batch.creates!.push({ entity: op.entity, id: op.id, parent_id: op.parent_id, values: op.values });
     else if (op.kind === 'change') batch.changes!.push({ entity: op.entity, id: op.id, field: op.field, value: op.value, key: op.key });
     else if (op.kind === 'remove') batch.removes!.push({ entity: op.entity, id: op.id });
     else if (op.kind === 'na') batch.not_available!.push({ entity: op.entity, field: op.field, procedure_id: op.procedure_id, reason: op.reason });
+    else if (op.kind === 'items') batch.picked_items!.push({ procedure_id: op.procedure_id, items: op.items });
     else batch.additional!.push({ op: op.op, id: op.id, text: op.text, fact_date: op.fact_date });
   }
   return batch;

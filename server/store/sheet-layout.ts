@@ -27,6 +27,8 @@ export const CASE_COLUMNS = [
   'created_at', 'created_by', 'updated_at', 'updated_by', 'row_version',
   'is_deleted', 'deleted_at', 'deleted_by', 'completed_at', 'completed_by', 'reopen_reason',
   'collector_user_id', 'planned_type', 'core_done', 'core_total', 'not_available_json', 'additional_json', 'copied_json', 'ai_json',
+  // Operational (owner 30 Oct): procedure id → ticked "What was done?" item ids. Last, so setup only appends it.
+  'picked_items_json',
 ];
 /** row_key = case_id/ENTITY/row_id: unique per tab. */
 export const ROW_HEAD = ['row_key', 'row_id', 'case_id', 'record_type', 'procedure_id'];

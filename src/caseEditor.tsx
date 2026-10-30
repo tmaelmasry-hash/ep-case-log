@@ -24,6 +24,9 @@ export interface CaseEditor {
   /** "Not available" + reason by naKey (server copy + local edits). */
   notAvailable: Record<string, Pick<NotAvailable, 'reason'>>;
   setNotAvailable: (entity: string, field: string, procedureId: string | null, reason: string | null) => void;
+  /** Ticked "What was done?" items by procedure id (server copy + local edits); saved with the case (owner 30 Oct). */
+  pickedItems: Record<string, string[]>;
+  setPickedItems: (procedureId: string, items: string[]) => void;
   /** Use a fresh server copy (after Complete / Reopen). */
   replace: (d: CaseDetail) => void;
   /** Rows of an entity as the screen should show them (server copy + local edits). */
@@ -50,7 +53,7 @@ function errKey(entity: string, id: string, field: string) {
 }
 
 function opKey(op: Op): string {
-  return op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : `${op.kind}|${op.entity}`;
+  return op.kind === 'change' ? errKey(op.entity, op.id, op.key ? `${op.field}:${op.key}` : op.field) : op.kind === 'additional' ? `additional|${op.id}` : op.kind === 'na' ? `na|${naKey(op.entity, op.field, op.procedure_id)}` : op.kind === 'items' ? `items|${op.procedure_id}` : `${op.kind}|${op.entity}`;
 }
 
 /** How long an Undo message stays (store.tsx toasts with undo); the held removal is sent right after. */
@@ -144,7 +147,7 @@ export function useCaseEditor(caseId: string): CaseEditor {
         if (e.kind === 'saved') {
           setDetail(e.detail);
           upsertCase(e.detail.summary);
-          const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0 };
+          const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0, items: 0 };
           const byKind = new Map(e.results.map((x) => [`${x.kind}:${x.i}`, x]));
           setErrors((prev) => {
             const next = { ...prev };
@@ -228,7 +231,9 @@ export function useCaseEditor(caseId: string): CaseEditor {
       if (op.reason) na[k] = { reason: op.reason };
       else delete na[k];
     }
-    return { rows, na };
+    const picked: Record<string, string[]> = { ...(detail?.picked_items ?? {}) };
+    for (const op of queue) if (op.kind === 'items') picked[op.procedure_id] = op.items;
+    return { rows, na, picked };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail, JSON.stringify(queue), held]);
 
@@ -239,6 +244,8 @@ export function useCaseEditor(caseId: string): CaseEditor {
     (entity, field, procedureId, reason) => push([{ kind: 'na', entity, field, procedure_id: procedureId, reason }], 50),
     [push],
   );
+
+  const setPickedItems: CaseEditor['setPickedItems'] = useCallback((procedureId, items) => push([{ kind: 'items', procedure_id: procedureId, items }], 50), [push]);
 
   const replace = useCallback(
     (d: CaseDetail) => {
@@ -320,5 +327,5 @@ export function useCaseEditor(caseId: string): CaseEditor {
   const flush = useCallback(() => sync.flush(), []);
 
   const readOnly = detail?.meta.collection_status === 'COMPLETED';
-  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, replace, rows, fieldError, setField, addRow, removeRow, removeWithUndo, isNew, keepRow, slot, additional, flush, reload };
+  return { detail, loading, notFound, error, pending: queue.length, readOnly, notAvailable: overlay.na, setNotAvailable, pickedItems: overlay.picked, setPickedItems, replace, rows, fieldError, setField, addRow, removeRow, removeWithUndo, isNew, keepRow, slot, additional, flush, reload };
 }

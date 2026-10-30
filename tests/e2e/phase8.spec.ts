@@ -51,6 +51,29 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
   await expect(page.getByTestId('cha-list-chip')).toHaveCount(0);
 });
 
+test('a device tick (ICD) is saved with the case: another user on another device sees it', async ({ page, browser }, info) => {
+  const m = mrn(info, 9942000);
+  await open(page);
+  await createCase(page, m, { group: 'Group 1' });
+  const url = page.url();
+  await page.getByRole('button', { name: 'Add Procedure' }).click();
+  await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Devices' }).getByRole('button', { name: 'ICD', exact: true }).click();
+  await page.getByTestId('addproc-next').click();
+  await saved(page);
+  await expect(page.getByTestId('procedure-sheet').locator('.done-row')).toContainText('ICD');
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('kamc-proc-items-')))).toEqual([]);
+
+  const ctx = await browser.newContext({ ...info.project.use });
+  const p = await ctx.newPage();
+  await open(p, 'sara');
+  await p.goto(url);
+  await p.getByTestId('procedure-row').first().click();
+  const done = p.getByTestId('procedure-sheet').locator('.done-row');
+  await expect(done).toContainText('ICD');
+  await expect(done).not.toContainText('Pacemaker');
+  await ctx.close();
+});
+
 test('a CIED implant opens device sections only: Device implant ticked, device + leads inside, no ablation fields', async ({ page }, info) => {
   const m = mrn(info, 9941000);
   await open(page);

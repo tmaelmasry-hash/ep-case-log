@@ -1,6 +1,6 @@
 // R3-1: procedure type → offered components, auto-ticked component, device sections.
 import { describe, expect, it } from 'vitest';
-import { PROCEDURE_ITEMS, componentToTick, itemOn, offeredComponents, showsDevice, showsLeads } from '../../src/lib/procedureTypes';
+import { PROCEDURE_ITEMS, componentToTick, itemOn, offeredComponents, showsDevice, showsLeads } from '../../shared/procedureTypes.ts';
 
 const ALL = ['DIAGNOSTIC_EPS', 'AVNRT', 'AVRT_WPW', 'AT_SVT', 'AF', 'FLUTTER', 'PVC', 'VT_VF', 'AVJ_ABLATION', 'DEVICE_IMPLANT', 'CRT_CSP', 'LEAD_MANAGEMENT', 'ILR', 'OTHER', 'LAA_CLOSURE'];
 

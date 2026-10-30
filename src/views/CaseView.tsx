@@ -21,7 +21,7 @@ import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { MoveCaseSheet } from '../components/MoveCaseSheet';
 import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
-import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../lib/procedureTypes';
+import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../../shared/procedureTypes.ts';
 import { seqText } from '../lib/offlineCase';
 import { procedureChip } from './CasesView';
 import { groupColor } from '../lib/filters';
@@ -446,25 +446,22 @@ function SectionSheet({ ed, title, entities, values, focus, cha, onClose }: { ed
 
 const MODULES = Object.values(dict.entities).filter((d) => d.module);
 
-/** Items ticked on this device for a procedure, kept until the answers that tell device items apart exist. */
-function usePickedItems(procedureId: string): [string[], (v: string[]) => void] {
-  const key = `kamc-proc-items-${procedureId}`;
-  const [v, setV] = useState<string[]>(() => {
+/** Items ticked for a procedure, kept until the answers that tell device items apart exist. Saved with the case
+ *  (owner 30 Oct); a tick older builds kept on this device only (localStorage) is read once and moved to the case. */
+function usePickedItems(ed: CaseEditor, procedureId: string): [string[], (v: string[]) => void] {
+  const saved = ed.pickedItems[procedureId];
+  useEffect(() => {
+    if (!ed.detail || ed.readOnly || saved) return;
+    const key = `kamc-proc-items-${procedureId}`;
     try {
-      return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
+      const old = (JSON.parse(localStorage.getItem(key) ?? '[]') as unknown[]).filter((x): x is string => PROCEDURE_ITEMS.some((i) => i.id === x));
+      if (old.length) ed.setPickedItems(procedureId, old);
+      localStorage.removeItem(key);
     } catch {
-      return [];
+      /* storage blocked or unreadable: nothing to move */
     }
-  });
-  const set = (next: string[]) => {
-    setV(next);
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      /* storage blocked: kept for this screen only */
-    }
-  };
-  return [v, set];
+  }, [ed, procedureId, saved]);
+  return [saved ?? [], (next) => ed.setPickedItems(procedureId, next)];
 }
 
 /** R3-1: the case device (type, manufacturer, model) and its leads, entered inside a device procedure. Same rows as Devices. */
@@ -524,11 +521,7 @@ function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (p
     const types: string[] = [];
     const items = PROCEDURE_ITEMS.filter((x) => chosen.includes(x.id));
     for (const item of items) addItem(ed, pid, item, types, null);
-    try {
-      localStorage.setItem(`kamc-proc-items-${pid}`, JSON.stringify(items.map((x) => x.id)));
-    } catch {
-      /* storage blocked: the ticks follow from the components */
-    }
+    ed.setPickedItems(pid, items.map((x) => x.id));
     onNext(pid);
   };
   return (
@@ -600,7 +593,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   const comps = ed.rows('PROCEDURE_COMPONENTS').filter((c) => c.procedure_id === id);
   const types = comps.map((c) => String(c.component_type));
   const ptype = p?.primary_procedure_type;
-  const [picked, setPicked] = usePickedItems(id);
+  const [picked, setPicked] = usePickedItems(ed, id);
   const fresh = useNewRow(ed, 'EP_PROCEDURES', id, 'procedure', onClose);
   // The ticks stay open for a procedure just added; otherwise "Edit" opens them.
   const [editTicks, setEditTicks] = useState(() => ed.isNew(id));

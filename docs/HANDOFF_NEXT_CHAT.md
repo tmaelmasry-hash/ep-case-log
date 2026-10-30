@@ -42,7 +42,9 @@ before building.
   also new EP Workspace items (M-4c…) — ask before porting (see memory "EP Workspace sync").
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
 - **Offline new case** checks the MRN only against cases on that device.
-- The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
+- The "Pacemaker / ICD / CRT" tick: **built 30 Oct, not deployed** — saved with the case (Cases column
+  `picked_items_json`, see `docs/SCREEN_REVIEW.md` → Device ticks). Deploy needs `node scripts/sheets.ts setup` on the
+  main Sheet **before** the Worker (TEST done).
 - Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
   on close) is the likely cause; it passed 84/84 since.
 - Timing without a password: a scratch script calling the gateway (`.env` secret, target test, read ops) prints the

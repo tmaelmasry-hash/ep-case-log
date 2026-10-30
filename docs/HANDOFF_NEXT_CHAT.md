@@ -10,15 +10,13 @@ step; **deploy only on his yes**; he asks before deploying every time ("Deploy n
 State: `main` = `494b9ee`, pushed. **Live Worker `b8ed14a4`** (menu items). Apps Script live = **Version 2** (speed).
 Merged into `main` but **NOT deployed**: (1) offline New case MRN note + re-check, (2) nightly backup as .xlsx
 (`apps-script/Code.js`, not published), (3) device ticks saved with the case (Cases column `picked_items_json`),
-(4) AVNRT: 5 accessory-pathway / AT questions hidden for AVNRT-only procedures (rules DR-SVT-01..05, owner approved,
+(5) Holter duration fix, (4) AVNRT: 5 accessory-pathway / AT questions hidden for AVNRT-only procedures (rules DR-SVT-01..05, owner approved,
 `docs/AVNRT_QUESTIONS_PROPOSAL.md`). Unit/server 282 pass on merged `main`; full e2e not yet run on it.
 
 **Steps left, in order (owner asks before each deploy step):**
-1. **Holter fix:** branch `refs/heads/claude/holter-e2e-18423e` (`8beccaa` + `fc12adc` merge of main). Real app bug:
-   Holter duration was sometimes never sent (lost on re-draw / close); fix keeps typed text in a ref
-   (`src/components/Fields.tsx`) and the e2e waits for the save request. Its session
-   ([holter-e2e](local_396fa710-e9ee-4d59-9a59-5912671020c3)) was running the full verification. Read its last report;
-   if green, `git merge --no-ff refs/heads/claude/holter-e2e-18423e` into `main` (owner already said merge finished work).
+1. **Holter fix: done, merged (`426325c`).** Real app bug: Holter duration was sometimes never sent (lost on re-draw /
+   close); typed text is now kept in a ref (`src/components/Fields.tsx`), the e2e waits for the save request. On its
+   branch: unit 282, e2e 88/88, e2e:worker 88/88, Holter test 30/30 (`--repeat-each=30`, worker mobile).
 2. Full run on `main`: `npm run build && npm test && npm run e2e && npm run e2e:worker` (stop leftover node on
    :8790/:8793/:8794 first). Push.
 3. Ask the owner (AskUserQuestion) "Deploy now?". On yes:

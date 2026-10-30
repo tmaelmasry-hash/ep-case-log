@@ -189,6 +189,60 @@ function fakeSheetsApi(book: FakeBook, count: () => void) {
   };
 }
 
+/** A file in the fake Drive. `created` comes from a counter, so the order of creation is exact. */
+export class FakeDriveFile {
+  trashed = false;
+  name: string;
+  mimeType: string;
+  bytes: Uint8Array;
+  created: number;
+  constructor(name: string, mimeType: string, bytes: Uint8Array, created: number) {
+    this.name = name;
+    this.mimeType = mimeType;
+    this.bytes = bytes;
+    this.created = created;
+  }
+  getName() {
+    return this.name;
+  }
+  getMimeType() {
+    return this.mimeType;
+  }
+  getDateCreated() {
+    return new Date(this.created);
+  }
+  setTrashed(t: boolean) {
+    this.trashed = t;
+  }
+}
+
+export class FakeFolder {
+  files: FakeDriveFile[] = [];
+  name: string;
+  private clock: () => number;
+  constructor(name: string, clock: () => number) {
+    this.name = name;
+    this.clock = clock;
+  }
+  getName() {
+    return this.name;
+  }
+  createFile(blob: { name: string; mimeType: string; bytes: Uint8Array }) {
+    const file = new FakeDriveFile(blob.name, blob.mimeType, blob.bytes, this.clock());
+    this.files.push(file);
+    return file;
+  }
+  /** Like DriveApp: files in the bin are not listed. */
+  getFiles() {
+    return iter(this.files.filter((x) => !x.trashed));
+  }
+}
+
+function iter<T>(items: T[]) {
+  let i = 0;
+  return { hasNext: () => i < items.length, next: () => items[i++] };
+}
+
 /** A fresh fake Google account with one registry Sheet and the real Code.js loaded as its web app. */
 export class FakeAppsScript implements Gateway {
   props = new Map<string, string>();
@@ -196,7 +250,13 @@ export class FakeAppsScript implements Gateway {
   calls = 0;
   /** Requests to the Advanced Sheets service (batchGet). */
   apiCalls = 0;
+  /** Drive folders by name (DriveApp stand-in). */
+  folders: FakeFolder[] = [];
+  /** HTTP status the fake Drive export address answers with. */
+  exportStatus = 200;
   private doPost: (e: unknown) => { content: string };
+  /** Code.js nightlyBackup(), run as the daily trigger would. */
+  nightlyBackup: () => void;
   private secret: string;
 
   /** `sheetsApi: false` = the Advanced Sheets service is not switched on (Code.js reads tab by tab). */
@@ -205,19 +265,44 @@ export class FakeAppsScript implements Gateway {
     this.props.set('MAIN_ID', this.book.id);
     const props = this.props;
     const book = this.book;
+    let tick = Date.UTC(2026, 9, 1);
+    const clock = () => (tick += 60_000);
+    const folder = (name: string) => {
+      const x = new FakeFolder(name, clock);
+      this.folders.push(x);
+      return x;
+    };
     const globals = {
       PropertiesService: { getScriptProperties: () => ({ getProperty: (k: string) => props.get(k) ?? null, setProperty: (k: string, v: string) => props.set(k, v) }) },
       SpreadsheetApp: { openById: (id: string) => (id === book.id ? book : (() => { throw new Error('no such sheet'); })()), flush: () => {}, getActiveSpreadsheet: () => book },
       LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
       ContentService: { createTextOutput: (content: string) => ({ setMimeType: () => ({ content }) }), MimeType: { JSON: 'json' } },
-      Utilities: { formatDate: (d: Date) => d.toISOString() },
-      ScriptApp: { getProjectTriggers: () => [] },
+      Utilities: {
+        formatDate: (d: Date) => d.toISOString(),
+        newBlob: (bytes: Uint8Array, mimeType: string, name: string) => ({ bytes, mimeType, name }),
+      },
+      ScriptApp: { getProjectTriggers: () => [], getOAuthToken: () => 'fake-oauth-token' },
+      DriveApp: {
+        getFoldersByName: (n: string) => iter(this.folders.filter((x) => x.name === n)),
+        createFolder: folder,
+      },
+      // The Drive export address: this fake sheet's tabs as .xlsx (written with the app's xlsx writer).
+      UrlFetchApp: {
+        fetch: (url: string, opt: { headers?: Record<string, string> }) => {
+          const m = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^/]+)\/export\?format=xlsx$/.exec(url);
+          const ok = m && m[1] === book.id && opt.headers?.Authorization === 'Bearer fake-oauth-token' && this.exportStatus === 200;
+          const bytes = ok ? buildXlsx(book.sheets.map((sh) => ({ name: sh.name, rows: sh.getDataRange().getValues() }))) : new Uint8Array();
+          return { getResponseCode: () => (ok ? 200 : this.exportStatus === 200 ? 404 : this.exportStatus), getContent: () => bytes };
+        },
+      },
       Logger: { log: () => {} },
       Sheets: opts.sheetsApi === false ? undefined : fakeSheetsApi(book, () => this.apiCalls++),
     };
     const src = readFileSync(resolve(import.meta.dirname, '../../apps-script/Code.js'), 'utf8');
-    const make = new Function(...Object.keys(globals), `${src}\nreturn doPost;`);
-    this.doPost = make(...Object.values(globals));
+    const make = new Function(...Object.keys(globals), `${src}\nreturn { doPost: doPost, nightlyBackup: nightlyBackup };`);
+    const fns = make(...Object.values(globals));
+    this.doPost = fns.doPost;
+    this.nightlyBackup = fns.nightlyBackup;
   }
 
   /** A raw web-app request body (as sent over HTTP) → the parsed answer, exactly as Code.js gives it. */

@@ -67,7 +67,7 @@ Acute AF endpoint: kept (with PV status at case end). Imaging modality: kept, re
 - **Outcome event** (10): Followup, Same day event temporal relation, Hospitalization encounter reference, Episode duration, Duration assessment, Burden source monitor, Burden source device check, Linked procedure (RC), Linked complication, Linked device infection
 
 ## Phase 2 — behaviour (owner approved the preview 24 Oct; built, not yet deployed)
-- **Procedure: "What was done"** (`src/lib/procedureTypes.ts` PROCEDURE_ITEMS, `ProcedureSheet`): 17 items in three
+- **Procedure: "What was done"** (`shared/procedureTypes.ts` since 30 Oct, PROCEDURE_ITEMS, `ProcedureSheet`): 17 items in three
   groups (Ablation: AF, Flutter, AVNRT, Accessory pathway, AT / other SVT, AV node, PVC, VT · Devices: Pacemaker,
   ICD, CRT, Conduction system pacing, Generator change / upgrade, Lead extraction / revision, ILR · Other: EP study,
   LAA closure), right under the procedure date. Each item ticks its dictionary components and opens their sections;

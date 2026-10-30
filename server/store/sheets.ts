@@ -327,6 +327,7 @@ export class SheetsStore implements RegistryStore {
         not_available: json(r.not_available_json, {}),
         copied: json(r.copied_json, {}),
         ai: json(r.ai_json, {}),
+        picked_items: json(r.picked_items_json, {}),
         history: [],
       });
     }
@@ -443,6 +444,8 @@ export class SheetsStore implements RegistryStore {
     if (cp.length) merge.copied_json = { set: Object.fromEntries(cp.filter(([, v]) => v)), unset: cp.filter(([, v]) => !v).map(([k]) => k) };
     const am = Object.entries(p.ai);
     if (am.length) merge.ai_json = { set: Object.fromEntries(am.filter(([, v]) => v)), unset: am.filter(([, v]) => !v).map(([k]) => k) };
+    const pk = Object.entries(p.picked_items);
+    if (pk.length) merge.picked_items_json = { set: Object.fromEntries(pk.filter(([, v]) => v)), unset: pk.filter(([, v]) => !v).map(([k]) => k) };
     if (Object.keys(merge).length) ops.push({ op: 'update', tab: 'Cases', key: 'case_id', id, merge });
 
     const appends = new Map<string, SheetRow[]>();

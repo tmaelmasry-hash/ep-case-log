@@ -13,7 +13,8 @@ export type Op =
   | { kind: 'change'; entity: string; id: string; field: string; value: unknown; key?: string }
   | { kind: 'remove'; entity: string; id: string }
   | { kind: 'additional'; op: 'add' | 'set' | 'remove'; id: string; text?: string; fact_date?: string | null }
-  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null };
+  | { kind: 'na'; entity: string; field: string; procedure_id: string | null; reason: string | null }
+  | { kind: 'items'; procedure_id: string; items: string[] };
 
 /** A case made without connection (L3): created on the server first, before its edits. */
 export interface NewCaseRequest {
@@ -21,6 +22,15 @@ export interface NewCaseRequest {
   group_id: string;
   episode_start_date: string;
   patient_id: string;
+  /** Cases of this MRN this device knew when the case was made (the server says if it has others). */
+  known_case_ids?: string[];
+}
+
+/** Told once when a case made offline reaches the server: its MRN already had cases this device did not know. */
+export interface MrnNotice {
+  case_id: string;
+  mrn: string;
+  other_cases: number;
 }
 
 export interface OutboxItem {
@@ -47,7 +57,7 @@ export interface SyncState {
 }
 
 // Server limits per batch (server/domain/cases.ts applyEdits).
-const LIMITS: Record<Op['kind'], number> = { create: 50, change: 200, remove: 50, additional: 20, na: 50 };
+const LIMITS: Record<Op['kind'], number> = { create: 50, change: 200, remove: 50, additional: 20, na: 50, items: 50 };
 const BACKOFF = [2000, 4000, 8000, 15000, 30000];
 
 /** Splits one case's ops, in order, into batches within the server's limits. */
@@ -69,12 +79,13 @@ export function chunkOps(ops: Op[]): Op[][] {
 }
 
 export function toBatch(ops: Op[]): EditBatch {
-  const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [] };
+  const batch: EditBatch = { creates: [], changes: [], removes: [], additional: [], not_available: [], picked_items: [] };
   for (const op of ops) {
     if (op.kind === 'create') batch.creates!.push({ entity: op.entity, id: op.id, parent_id: op.parent_id, values: op.values });
     else if (op.kind === 'change') batch.changes!.push({ entity: op.entity, id: op.id, field: op.field, value: op.value, key: op.key });
     else if (op.kind === 'remove') batch.removes!.push({ entity: op.entity, id: op.id });
     else if (op.kind === 'na') batch.not_available!.push({ entity: op.entity, field: op.field, procedure_id: op.procedure_id, reason: op.reason });
+    else if (op.kind === 'items') batch.picked_items!.push({ procedure_id: op.procedure_id, items: op.items });
     else batch.additional!.push({ op: op.op, id: op.id, text: op.text, fact_date: op.fact_date });
   }
   return batch;
@@ -92,6 +103,7 @@ class SyncEngine {
   private lastSynced: number | null = null;
   private listeners = new Set<() => void>();
   private caseListeners = new Map<string, Set<(e: CaseEvent) => void>>();
+  private noticeListeners = new Set<(n: MrnNotice) => void>();
   private snapshot: SyncState = { waiting: 0, attention: 0, sending: false, offline: false, lastSynced: null, persistent: false };
   private waiters: (() => void)[] = [];
 
@@ -131,6 +143,11 @@ class SyncEngine {
     set.add(fn);
     this.caseListeners.set(caseId, set);
     return () => void set.delete(fn);
+  }
+
+  onMrnNotice(fn: (n: MrnNotice) => void) {
+    this.noticeListeners.add(fn);
+    return () => void this.noticeListeners.delete(fn);
   }
 
   private emit() {
@@ -288,7 +305,15 @@ class SyncEngine {
   /** Creates a case made offline, under the id this device gave it; then its edits can be sent. */
   private async createCase(item: OutboxItem) {
     const c = item.create!;
-    const r = await api<{ case_id: string; group_seq: number; patient_id: string }>('POST', '/api/cases', { case_id: item.case_id, mrn: c.mrn, group_id: c.group_id, episode_start_date: c.episode_start_date, patient_id: c.patient_id, new_case: true });
+    const r = await api<{ case_id: string; group_seq: number; patient_id: string; other_cases?: number; unseen_cases?: number | null }>('POST', '/api/cases', {
+      case_id: item.case_id,
+      mrn: c.mrn,
+      group_id: c.group_id,
+      episode_start_date: c.episode_start_date,
+      patient_id: c.patient_id,
+      new_case: true,
+      known_case_ids: c.known_case_ids ?? [],
+    });
     // An earlier case of this MRN already had a patient id: the edits made here follow it.
     if (r.patient_id && r.patient_id !== c.patient_id) {
       for (const it of this.items) {
@@ -304,6 +329,8 @@ class SyncEngine {
     const detail = await api<CaseDetail>('GET', `/api/cases/${encodeURIComponent(item.case_id)}`);
     void casePut(item.case_id, detail);
     this.toCase(item.case_id, { kind: 'saved', ops: [], results: [], detail });
+    // Re-check of the MRN now that the server is reached (owner, 30 Oct): nothing is changed or merged, the user is told.
+    if (r.unseen_cases && r.other_cases) for (const fn of this.noticeListeners) fn({ case_id: item.case_id, mrn: c.mrn, other_cases: r.other_cases });
     this.emit();
   }
 

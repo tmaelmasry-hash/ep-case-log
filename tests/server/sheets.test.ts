@@ -7,6 +7,7 @@ import { ENTITY_TABS, buildLayout } from '../../server/store/sheet-layout.ts';
 import { SheetsStore } from '../../server/store/sheets.ts';
 import { StaleCaseError, type RegistryStore } from '../../server/store/types.ts';
 import { FakeAppsScript } from './fakeGoogle.ts';
+import { readXlsx } from './readXlsx.ts';
 
 const config = loadConfig();
 const { dict } = config;
@@ -152,5 +153,38 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
     };
     expect(await typedRead('en_GB')).toEqual(['2026-03-05', '2026-03-05T14:05', '2026-03-05', '2026-03-05', 'free text', '12']);
     expect((await typedRead('en_US'))[2]).toBe('2026-05-03');
+  });
+
+  it('the nightly backup saves an .xlsx export (no Sheet copy), keeps the newest 30 and leaves old Sheet copies alone', async () => {
+    const { google, store } = await sheets();
+    await store.putCase(newCase('case_1', '0990101'), null);
+    google.nightlyBackup();
+    const folder = google.folders.find((x) => x.name === 'EP Case Log Backups')!;
+    expect(google.folders.filter((x) => x.name === 'EP Case Log Backups')).toHaveLength(1);
+    const [first] = folder.files;
+    expect(first.name).toMatch(/^EP Case Log backup .+\.xlsx$/);
+    expect(first.mimeType).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const x = readXlsx(Buffer.from(first.bytes).toString('base64'));
+    expect(Object.keys(x)).toEqual(google.book.sheets.map((s) => s.name));
+    expect(x.Cases.map((r) => r.map(String)).flat()).toContain('0990101');
+
+    // A Sheet copy made by the old backup stays, and is not counted toward the 30.
+    const old = folder.createFile({ name: 'EP Case Log backup 2026-10-29 1000', mimeType: 'application/vnd.google-apps.spreadsheet', bytes: new Uint8Array() });
+    for (let i = 0; i < 31; i++) google.nightlyBackup();
+    const live = folder.files.filter((f) => !f.trashed);
+    expect(live.filter((f) => f.name.endsWith('.xlsx'))).toHaveLength(30);
+    expect(old.trashed).toBe(false);
+    // The two oldest .xlsx files went to the bin; the newest 30 are kept.
+    const xlsx = folder.files.filter((f) => f.name.endsWith('.xlsx'));
+    expect(xlsx.slice(0, 2).every((f) => f.trashed)).toBe(true);
+    expect(xlsx.slice(2).every((f) => !f.trashed)).toBe(true);
+    expect(google.folders).toHaveLength(1);
+  });
+
+  it('a failed nightly export throws and saves nothing', async () => {
+    const { google } = await sheets();
+    google.exportStatus = 500;
+    expect(() => google.nightlyBackup()).toThrow('Excel export failed (Google answered 500)');
+    expect(google.folders.flatMap((x) => x.files)).toHaveLength(0);
   });
 });

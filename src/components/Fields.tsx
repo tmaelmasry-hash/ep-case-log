@@ -117,17 +117,26 @@ function DurationInput({ id, hours, onCommit }: { id: string; hours: unknown; on
     setUnitState(u);
   };
   const [text, setText] = useState(h === null ? '' : String(h / fit));
+  // The last value sent, so a blur, Enter and closing the sheet save it once.
+  const sent = useRef(h === null ? null : h);
   // A saved value shows in its best unit; while empty, the unit the person picked stays.
   useEffect(() => {
     if (h === null) return;
     setUnit(fit);
     setText(String(h / fit));
+    sent.current = h;
   }, [h]); // eslint-disable-line react-hooks/exhaustive-deps
+  const latest = useRef({ text, unit, onCommit });
+  latest.current = { text, unit, onCommit };
   const commit = (t: string, u: number) => {
     const n = Number(t.replace(',', '.'));
-    if (t.trim() === '') onCommit(null);
-    else if (Number.isFinite(n) && n >= 0) onCommit(Math.round(n * u * 10) / 10);
+    const v = t.trim() === '' ? null : Number.isFinite(n) && n >= 0 ? Math.round(n * u * 10) / 10 : undefined;
+    if (v === undefined || v === sent.current) return;
+    sent.current = v;
+    latest.current.onCommit(v);
   };
+  // Closing the sheet unmounts the input without a blur event (as in the other fields): save what was typed.
+  useEffect(() => () => commit(latest.current.text, latest.current.unit), []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <span className="with-unit">
       <input id={id} className="ios-value" inputMode="decimal" placeholder="Enter" aria-label="Duration" value={text} onChange={(e) => setText(e.target.value)} onBlur={() => commit(text, unit)} onKeyDown={(e) => e.key === 'Enter' && commit(text, unit)} />

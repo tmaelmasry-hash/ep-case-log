@@ -64,9 +64,12 @@ Others = Tilt only (no other study in the dictionary).
   new EP Workspace items (M-4c…) — ask before porting.
 - Optional speed: a new Apps Script version reading all tabs in one call (first open of a case ~5–6 s); needs the
   owner to paste Code.js and publish a new version.
-- The New Case sheet is partly covered by the sidebar at ~800 px width.
+- DONE 30 Oct: sheets on desktop open beside the sidebar (it covered the left of New Case at ~1000 px).
+- DONE 30 Oct: the Holter duration also saves when its sheet closes without leaving the field (likely cause of the
+  intermittent fieldreview e2e failure; watch it).
 - Offline new case checks the MRN only against cases on that device.
-- `data/admin-password.txt` (git-ignored) holds an old one-time password — ask whether to delete it.
+- DONE 30 Oct (owner yes): `data/admin-password.txt` and `data/test-admin-password.txt` deleted. `scripts/measure-speed.ts`
+  reads the TEST admin password from the second file: give it a new TEST password before measuring again.
 
 ## Where things are
 - Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, all pushed (28 Oct). github.com is sometimes unreachable from this PC: if a push fails, retry later and tell the owner.

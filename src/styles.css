@@ -3395,3 +3395,9 @@ a.hc-mrn {
 :root[data-theme='dark'] .kpi {
   box-shadow: 0 0 0 1px #243140;
 }
+
+/* Desktop: sheets and dialogs open beside the sidebar, never under it (open item, 30 Oct: at ~1000 px the sidebar
+   covered the left of New Case). */
+.is-wide .overlay {
+  left: 260px;
+}

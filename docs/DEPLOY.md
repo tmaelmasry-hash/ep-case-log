@@ -99,6 +99,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `64a15d9` (screen review step 8: colors, bigger text, dark mode, Undo) | `ff9096e3-c77c-46c1-9382-8ff64c435283` | same Sheet, no Sheet change |
 | `8245ec5` (open items: desktop sheets beside the sidebar, Holter duration saves on close) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet, no Sheet change |
 | `5030dfa` (Apps Script Version 2, 30 Oct: all tabs in one Sheets API read; Worker unchanged) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet; Apps Script rollback = Manage deployments → Edit → Version 1 |
+| `5a1fa93` (menu: AF by energy, Devices › Other devices › Leadless LVEP / CCM; "Other device" tick) | `b8ed14a4-4f7f-44bf-a377-83bb2b67b409` | same Sheet, no Sheet change |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: copy the wanted Sheet backup.

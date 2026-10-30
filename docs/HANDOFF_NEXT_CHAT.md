@@ -15,8 +15,16 @@ step; **deploy only on his yes**; he asks before deploying every time ("Deploy n
   backup copies: each nightly backup copies the Sheet with its script, so there are many projects with the same name.
   The real one is in `docs/DEPLOY.md` → Updating later. Claude published Version 2 itself in the built-in browser
   (the owner signed in there; the clipboard does not reach that browser, the code was loaded from GitHub at `5030dfa`).
-- Next: ask the owner which open item to take (list below), one at a time.
-- Everything is committed and pushed. Live Worker: `8a30e0a1` (unchanged). Tests: unit/server 253 · e2e 84 · e2e:worker 84.
+- **Menu items live (`5a1fa93` → Worker `b8ed14a4`):** AF ablation › By energy (RF, Cryoballoon, PFA, Laser, Multiple
+  energies, Other; a case with several energies sits under each and under Multiple) and Devices › Other devices ›
+  Leadless LVEP / CCM (M3-H7 codes); a new "Other device" tick offers LVEP / CCM / Other. Owner: other SVTs (IST,
+  junctional) stay under Other SVT (no codes).
+- **Two side sessions (own worktrees, not deployed):** `offline-mrn-check` (offline New case: note + re-check when the
+  connection returns) and `device-tick-server` (device tick saved with the case; needs one operational column at
+  deploy: `sheets setup --test` then `sheets setup`). Merge each branch here only on the owner's yes.
+- Next: ask the owner which open item to take (list below), one at a time. Owner wants questions as multiple choice
+  (AskUserQuestion) and replies in Egyptian Arabic.
+- Everything is committed and pushed. Live Worker: `b8ed14a4`. Tests: unit/server 253 · e2e 84 · e2e:worker 84.
 
 ## Screen review build steps (27–30 Oct) — all live
 | Step | What | Commit → Worker |
@@ -38,11 +46,7 @@ His Design-canvas edits can fail to save when his connection drops: list the can
 before building.
 
 ## Open items (ask the owner, one at a time)
-- **Procedure types without a dictionary code:** AF ablation by energy, Leadless LVEP / CCM under Devices, other SVTs;
-  also new EP Workspace items (M-4c…) — ask before porting (see memory "EP Workspace sync").
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
-- **Offline new case** checks the MRN only against cases on that device.
-- The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
 - Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
   on close) is the likely cause; it passed 84/84 since.
 - Timing without a password: a scratch script calling the gateway (`.env` secret, target test, read ops) prints the

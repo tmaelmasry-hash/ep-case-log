@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type CSSProper
 import { codeLabel, displayValue, formFields, hasValue, type FormField } from '../../shared/dictionary.ts';
 import { ageOn, type CaseDetail, type DecodedRow, type HistoryItem } from '../../shared/caseTypes.ts';
 import { NA_REASONS, evaluateReadiness, isProcedureLevel, naKey, type CoreCheck, type Issue, type Readiness } from '../../shared/readiness.ts';
+import { COMPLICATION_ENTITIES, completenessBySection, type CompletenessRow } from '../../shared/completeness.ts';
 import { dict, fieldOf, label } from '../lib/dict';
 import { ageSex, fmtDate, fmtShortDate } from '../lib/util';
 import { useCaseEditor, type CaseEditor } from '../caseEditor';
@@ -560,11 +561,10 @@ function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (p
 }
 
 /** A part of the procedure sheet that opens and closes, with what is still missing in it. */
-function Part({ id, title, missing, children, testId }: { id: string; title: string; missing: number; children: React.ReactNode; testId?: string }) {
-  const [closed, setClosed] = useState(false);
+function Part({ id, title, missing, closed, onToggle, children, testId }: { id: string; title: string; missing: number; closed: boolean; onToggle: () => void; children: React.ReactNode; testId?: string }) {
   return (
     <section className="proc-part" id={id} data-testid={testId}>
-      <button type="button" className="part-head" aria-expanded={!closed} onClick={() => setClosed((x) => !x)}>
+      <button type="button" className="part-head" aria-expanded={!closed} onClick={onToggle}>
         <Icon name={closed ? 'chevron' : 'down'} size={16} className="muted" />
         <span className="grow">{title}</span>
         {missing ? <span className="missing small">{missing} missing</span> : <span className="ok-text">✓</span>}
@@ -576,7 +576,53 @@ function Part({ id, title, missing, children, testId }: { id: string; title: str
 
 /** EP_PROCEDURES questions shown in their own part, "Mapping & access" (owner approved the step 4 preview). */
 const MAPPING = ['electroanatomic_mapping_used', 'mapping_system', 'intracardiac_echo_used', 'transseptal_access', 'contrast_used', 'contrast_volume_ml'];
-const COMPLICATION_ENTITIES = ['EXT_PROCEDURE_REVIEW', 'COMPLICATIONS'];
+
+/** R4-7 "Next missing": each press goes to the next missing core item of this procedure in screen order (wraps),
+ *  opens its part and marks it for 2 s. Only moves the view; saving and statuses are unchanged. */
+function NextMissing({ items, parts, partOf, openPart }: { items: CoreCheck[]; parts: string[]; partOf: (x: CoreCheck) => string; openPart: (part: string) => void }) {
+  const [last, setLast] = useState<{ key: string; at: number } | null>(null);
+  if (!items.length) return null;
+  const elOf = (x: CoreCheck) => document.querySelector<HTMLElement>(`[data-testid="procedure-sheet"] [data-field="${x.entity}.${x.field}"]`);
+  const fieldIndex = (x: CoreCheck) => dict.entities[x.entity]?.fields.findIndex((f) => f.name === x.field) ?? 0;
+  // Screen order: by part, then by place on the page (dictionary order when a field is not on the page).
+  const list = [...items].sort((a, b) => {
+    const pa = parts.indexOf(partOf(a));
+    const pb = parts.indexOf(partOf(b));
+    if (pa !== pb) return pa - pb;
+    const ea = elOf(a);
+    const eb = elOf(b);
+    if (ea && eb && ea !== eb) return ea.compareDocumentPosition(eb) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    return a.entity === b.entity ? fieldIndex(a) - fieldIndex(b) : 0;
+  });
+  // The item after the last one visited; when that one was just filled, the list is shorter and the same place is next.
+  const k = !last ? 0 : list.findIndex((x) => x.key === last.key) >= 0 ? (list.findIndex((x) => x.key === last.key) + 1) % list.length : Math.min(last.at, list.length - 1);
+  const press = () => {
+    const target = list[k];
+    setLast({ key: target.key, at: k });
+    const part = partOf(target);
+    openPart(part);
+    window.setTimeout(() => {
+      const el = elOf(target) ?? document.getElementById(part);
+      if (!el) return;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('next-mark');
+      window.setTimeout(() => el.classList.remove('next-mark'), 2000);
+      // Keyboard focus on desktop only, so a phone keyboard does not cover the sheet.
+      if (window.matchMedia?.('(pointer: fine)').matches) el.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true });
+    }, 60);
+  };
+  return (
+    <div className="next-missing">
+      <button type="button" className="btn primary block" onClick={press} data-testid="next-missing">
+        Next missing
+        <span className="next-count">
+          {k + 1} of {list.length}
+        </span>
+        <Icon name="down" size={18} />
+      </button>
+    </div>
+  );
+}
 
 /** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications.
  *  Owner, 28 Oct (step 4): tabs General · each type · Complications that jump to their part; the "Done" row and the
@@ -598,6 +644,8 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   // The ticks stay open for a procedure just added; otherwise "Edit" opens them.
   const [editTicks, setEditTicks] = useState(() => ed.isNew(id));
   const [tab, setTab] = useState('part-general');
+  const [closedParts, setClosedParts] = useState<string[]>([]);
+  const partProps = (pid: string) => ({ closed: closedParts.includes(pid), onToggle: () => setClosedParts((x) => (x.includes(pid) ? x.filter((y) => y !== pid) : [...x, pid])) });
   // The tab follows the part being read: the last part whose top has passed under the bar.
   useEffect(() => {
     const body = document.querySelector('[data-testid="procedure-sheet"] .sheet-body');
@@ -675,6 +723,9 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
     { id: 'part-complications', label: 'Complications', missing: missComplications },
   ];
   const jump = (tid: string) => document.getElementById(tid)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  const partOf = (x: CoreCheck) =>
+    COMPLICATION_ENTITIES.includes(x.entity) ? 'part-complications' : x.entity === 'EP_PROCEDURES' && MAPPING.includes(x.field) ? 'part-mapping' : moduleSet.has(x.entity) ? `part-${x.entity}` : 'part-general';
+  const missingHere = c.readiness.checks.filter((x) => x.procedure_id === id && x.state === 'missing');
 
   return (
     <Sheet title={name} onClose={fresh.cancel} onDone={fresh.done} testId="procedure-sheet">
@@ -732,11 +783,11 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
       </div>
       )}
 
-      <Part id="part-general" title="Procedure details" missing={missDetails}>
+      <Part id="part-general" title="Procedure details" missing={missDetails} {...partProps('part-general')}>
         <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} skip={MAPPING} />
         {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} offer={deviceOffer} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
       </Part>
-      <Part id="part-mapping" title="Mapping & access" missing={missMapping}>
+      <Part id="part-mapping" title="Mapping & access" missing={missMapping} {...partProps('part-mapping')}>
         <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={MAPPING} />
       </Part>
 
@@ -744,7 +795,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         const row = moduleRow(m.entity);
         const rid = row?._id ?? ed.slot(m.entity, id);
         return (
-          <Part key={m.entity} id={`part-${m.entity}`} title={m.label} missing={missingOf((x) => x.entity === m.entity)} testId={`module-${m.entity}`}>
+          <Part key={m.entity} id={`part-${m.entity}`} title={m.label} missing={missingOf((x) => x.entity === m.entity)} testId={`module-${m.entity}`} {...partProps(`part-${m.entity}`)}>
             <RowForm ed={ed} entity={m.entity} rowId={rid} parentId={id} row={row} />
             {row && <NestedLists ed={ed} parentEntity={m.entity} parentId={rid} onOpen={(e, cid) => setOpen({ entity: e, id: cid })} />}
           </Part>
@@ -763,7 +814,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         </details>
       )}
 
-      <Part id="part-complications" title="Complications" missing={missComplications}>
+      <Part id="part-complications" title="Complications" missing={missComplications} {...partProps('part-complications')}>
       <RowForm ed={ed} entity="EXT_PROCEDURE_REVIEW" rowId={review} parentId={id} row={ed.rows('EXT_PROCEDURE_REVIEW').find((r) => r._id === review) ?? null} />
       <div className="group" style={{ marginTop: 10 }} data-field="COMPLICATIONS.category">
         {complications.map((x, k) => (
@@ -791,6 +842,15 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         >
           <Icon name="trash" size={18} /> Remove this procedure
         </button>
+      )}
+
+      {!ed.readOnly && (
+        <NextMissing
+          items={missingHere}
+          parts={['part-general', 'part-mapping', ...shown.map((m) => `part-${m.entity}`), 'part-complications']}
+          partOf={partOf}
+          openPart={(pid) => setClosedParts((x) => x.filter((y) => y !== pid))}
+        />
       )}
 
       {confirm && typeof confirm === 'object' && (
@@ -1026,6 +1086,86 @@ function ReadySheet({ ed, onGo, onComplete, busy, onClose }: { ed: CaseEditor; o
           {missing ? `Mark completed (${missing} missing)` : 'Mark completed'}
         </button>
       )}
+    </Sheet>
+  );
+}
+
+/** R4-8: core items per case-page section, from the same readiness checks (no second rules engine). */
+function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; procs: { id: string; label: string }[]; sub: string; onGo: (i: Issue) => void; onClose: () => void }) {
+  const { readiness: r } = useCase();
+  const { rows, totals: t } = completenessBySection(dict.layout.groups, r.checks, procs);
+  const fix = (x: CompletenessRow) => x.fix && onGo({ text: x.fix.label, entity: x.fix.entity, field: x.fix.field, procedure_id: x.fix.procedure_id, section: x.fix.section });
+  return (
+    <Sheet title="Completeness" closeLabel="Close" onClose={onClose} onDone={onClose} testId="completeness-sheet">
+      <div className="cmp-head">
+        <b>MRN {ed.detail?.meta.mrn}</b>
+        <span className="muted small">{sub}</span>
+      </div>
+      <div className="cmp-tiles">
+        <div className="cmp-tile" data-testid="cmp-answered">
+          <span className="muted small">Core items answered</span>
+          <span className="cmp-num">
+            {t.recorded + t.not_available} <small>of {t.total}</small>
+          </span>
+          <span className="muted small">
+            {t.recorded} recorded + {t.not_available} not available
+          </span>
+        </div>
+        <div className="cmp-tile" data-testid="cmp-recorded">
+          <span className="muted small">Values recorded</span>
+          <span className="cmp-num">
+            {t.recorded} <small>of {t.total}</small>
+          </span>
+          <span className="muted small">not available is not a value</span>
+        </div>
+      </div>
+      <div className="cmp-table" role="table" aria-label="Completeness by section">
+        <div className="cmp-row cmp-th" role="row">
+          <span role="columnheader">Section</span>
+          <span role="columnheader" title="Recorded">Rec</span>
+          <span role="columnheader" title="Not available">N/A</span>
+          <span role="columnheader" title="Missing">Miss</span>
+          <span role="columnheader" title="AI value waiting for review">AI</span>
+          <span role="columnheader" aria-label="Action" />
+        </div>
+        {rows.map((x) => (
+          <div key={x.key} className="cmp-row" role="row" data-testid={`cmp-${x.key}`}>
+            <span className="cmp-label" role="cell">
+              {x.label}
+            </span>
+            {x.total === 0 ? (
+              <span className="cmp-none muted small" role="cell">
+                No core items here
+              </span>
+            ) : (
+              <>
+                <span role="cell">{x.recorded}</span>
+                <span role="cell" className="muted">
+                  {x.not_available}
+                </span>
+                <span role="cell" className={x.missing ? 'cmp-miss' : 'muted'}>
+                  {x.missing}
+                </span>
+                <span role="cell" className={x.ai ? 'cmp-ai' : 'muted'}>
+                  {x.ai}
+                </span>
+              </>
+            )}
+            <span role="cell">
+              {x.fix ? (
+                <button type="button" className="btn small cmp-fix" onClick={() => fix(x)}>
+                  Fix
+                </button>
+              ) : x.total ? (
+                <span className="ok-text" aria-label="complete">
+                  ✓
+                </span>
+              ) : null}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="note">Same rules as "What's missing?". N/A = not available with a reason. AI = filled by the AI, not yet accepted (not counted as answered). Items a rule hides are left out.</p>
     </Sheet>
   );
 }
@@ -1299,6 +1439,7 @@ type OpenSheet =
   | { kind: 'addproc' }
   | { kind: 'additional' }
   | { kind: 'ready' }
+  | { kind: 'completeness' }
   | { kind: 'history' }
   | { kind: 'ai' }
   | { kind: 'cohorts' }
@@ -1537,6 +1678,10 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
               <span>Cohorts{(d.summary.cohorts ?? []).length ? ` (${(d.summary.cohorts ?? []).length})` : ''}</span>
             </button>
           )}
+          <button className="tool" onClick={() => setSheet({ kind: 'completeness' })} data-testid="completeness-row" aria-label="Completeness by section">
+            <Icon name="bars" size={22} />
+            <span>Completeness</span>
+          </button>
           <button className="tool" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row" title={`${d.history_count} change${d.history_count === 1 ? '' : 's'}`}>
             <Icon name="cal" size={22} />
             <span>History</span>
@@ -1726,6 +1871,15 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'report' && <ReportSheet ed={ed} readiness={readiness} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'ready' && <ReadySheet ed={ed} busy={busy} onGo={go} onComplete={complete} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'completeness' && (
+          <CompletenessSheet
+            ed={ed}
+            procs={procs.map((p, i) => ({ id: p._id, label: procs.length > 1 ? `${i + 1}. ${procName(p).text}` : procName(p).text }))}
+            sub={[`${d.meta.group_name} · ${seqText(d.meta.group_seq)}`, completed ? 'Completed' : 'In progress', ...procs.map((p) => procName(p).text)].join(' · ')}
+            onGo={go}
+            onClose={() => setSheet(null)}
+          />
+        )}
         {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'move' && (

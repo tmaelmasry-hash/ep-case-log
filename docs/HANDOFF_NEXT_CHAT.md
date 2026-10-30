@@ -16,6 +16,11 @@ artboards, re-read before judging the builds): https://claude.ai/artifact/FEQTvE
 you think fits", group matrix now too (no trial week planned). He wants a preview before anything visible and his yes
 before each merge and each deploy.
 
+**Status 30 Oct ~21:50: all four finished and committed** (each reports build + unit tests pass, its new e2e spec NOT
+run, screens not checked in a browser): dash-click-filter `ad494f6` (spec `tests/e2e/dashclick.spec.ts`),
+case-next-missing `57d531a` (`tests/e2e/round4case.spec.ts`), patient-timeline `f1c4169` (`tests/e2e/timeline.spec.ts`),
+group-matrix `d6ac2a0`. Nothing merged into `main`.
+
 Side sessions started 30 Oct ~21:10 from the previous chat (each in its own worktree, told: no e2e runs because of the
 shared ports, `npm run build && npm test` only, commit on its own branch, no push to `main`, no deploy, no Sheet change):
 

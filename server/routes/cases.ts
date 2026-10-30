@@ -81,9 +81,14 @@ export function caseRoutes(app: Router) {
     const clientId = typeof b.case_id === 'string' ? b.case_id : null;
     if (clientId !== null && !CLIENT_CASE_ID.test(clientId)) throw badRequest('Invalid case id.');
     const made = clientId ? all.find((c) => c.meta.case_id === clientId) : undefined;
+    // Offline new case (owner, 30 Oct): the device checked the MRN only against the cases it kept (known_case_ids); the
+    // answer counts the other live cases of this MRN and those the device did not know, so the app can say so once.
+    const known = Array.isArray(b.known_case_ids) ? new Set((b.known_case_ids as unknown[]).slice(0, 500).filter((x): x is string => typeof x === 'string')) : null;
+    const others = live.filter((c) => c.meta.case_id !== clientId);
+    const mrnCases = { other_cases: others.length, unseen_cases: known ? others.filter((c) => !known.has(c.meta.case_id)).length : null };
     if (made) {
       if (made.meta.is_deleted || !groups.includes(made.meta.group_id)) throw new HttpError(409, 'CASE_ID_TAKEN', 'This case id is already used.');
-      return { case_id: made.meta.case_id, group_seq: made.meta.group_seq, patient_id: made.meta.patient_id, warning: null, case_of_mrn: null, copied_from: null, copied: 0 };
+      return { case_id: made.meta.case_id, group_seq: made.meta.group_seq, patient_id: made.meta.patient_id, warning: null, case_of_mrn: null, copied_from: null, copied: 0, ...mrnCases };
     }
     if (live.length && b.new_case !== true) {
       const here = live.filter((c) => c.meta.group_id === b.group_id).map((c) => summarize(dict, c));
@@ -123,7 +128,7 @@ export function caseRoutes(app: Router) {
     const note = source ? `Copied from ${groupList.find((g) => g.group_id === source.meta.group_id)?.name ?? 'group'} No. ${source.meta.group_seq}` : null;
     const copied = source && note ? copyForward(dict, rec, source, note, { userId: u.userId, now }) : 0;
     await store.putCase(rec, null, [{ actor: u.userId, action: 'case.create', detail: { case_id: caseId, group_id: b.group_id, group_seq: seq, ...(copied ? { copied_from: source!.meta.case_id, copied_fields: copied } : {}) } }]);
-    return { case_id: caseId, group_seq: seq, patient_id: rec.meta.patient_id, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied };
+    return { case_id: caseId, group_seq: seq, patient_id: rec.meta.patient_id, warning: mrn.warning ?? null, case_of_mrn: live.length ? live.length + 1 : null, copied_from: copied ? note : null, copied, ...mrnCases };
   });
 
   app.get('/api/cases/:id', async (req) => {

@@ -124,7 +124,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
       setBusy(false);
       return;
     }
-    const d = await makeOfflineCase({ mrn: check!.value!, groupId: group, groupName: groups.find((g) => g.group_id === group)?.name ?? '', date, me: { id: me!.id, name: me!.name } });
+    const d = await makeOfflineCase({ mrn: check!.value!, groupId: group, groupName: groups.find((g) => g.group_id === group)?.name ?? '', date, me: { id: me!.id, name: me!.name }, knownCaseIds: live.map((c) => c.case_id) });
     upsertCase(d.summary);
     toast({ message: 'No connection: the case is saved on this device. Its number comes when it reaches the Google Sheet.', kind: 'info' });
     onCreated(d.meta.case_id);
@@ -188,6 +188,11 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
               {earlier.length
                 ? `This MRN has ${earlier.length} case${earlier.length === 1 ? '' : 's'}: last ${earlier[0].episode_start_date ? fmtDate(earlier[0].episode_start_date) : 'with no date'}`
                 : '✓ New patient: no earlier case with this MRN'}
+            </div>
+          )}
+          {!online && check?.ok && !existing && (
+            <div className="frow-err small muted" data-testid="mrn-offline">
+              Offline: checked against cases on this device only.
             </div>
           )}
         </div>
@@ -274,7 +279,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
         <>
           {!online && (
             <p className="warn-text small" data-testid="offline-new-case">
-              No connection: the case is saved on this device and gets its number (No.) when it reaches the Google Sheet. The MRN is checked against the cases on this device only; history from an earlier case of this MRN is copied when it reaches the Sheet.
+              No connection: the case is saved on this device and gets its number (No.) when it reaches the Google Sheet. History from an earlier case of this MRN is copied when it reaches the Sheet.
             </p>
           )}
           <button className="btn primary block wide-btn" onClick={() => submit()} disabled={busy}>

@@ -9,6 +9,8 @@ export interface Toast {
   message: string;
   kind?: 'info' | 'error' | 'success';
   undo?: () => void;
+  /** A link shown in the message, e.g. the patient page. */
+  link?: { label: string; href: string };
 }
 
 export interface GroupRow {
@@ -62,7 +64,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     (t: Omit<Toast, 'id'>) => {
       const id = ++toastSeq.current;
       setToasts((all) => [...all.slice(-2), { ...t, id }]);
-      window.setTimeout(() => dismissToast(id), t.undo ? 7000 : 4000);
+      window.setTimeout(() => dismissToast(id), t.link ? 12000 : t.undo ? 7000 : 4000);
     },
     [dismissToast],
   );
@@ -120,6 +122,19 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       return next;
     });
   }, []);
+
+  // A case made offline reached the server and its MRN already had other cases there: said once, nothing merged.
+  useEffect(
+    () =>
+      sync.onMrnNotice((n) =>
+        toast({
+          message: `MRN ${n.mrn} already has ${n.other_cases} other case${n.other_cases === 1 ? '' : 's'} in the Google Sheet.`,
+          kind: 'info',
+          link: { label: 'Open patient', href: `#/patients/${encodeURIComponent(n.mrn)}` },
+        }),
+      ),
+    [toast],
+  );
 
   // A save answered while its case is not open still updates the list line; a discarded offline case leaves it.
   useEffect(

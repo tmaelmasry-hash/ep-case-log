@@ -46,6 +46,8 @@ export interface ProcedureItem {
 const PPM = ['PPM_SINGLE', 'PPM_DUAL', 'LEADLESS_SINGLE', 'LEADLESS_DUAL'];
 const ICD = ['ICD_SINGLE', 'ICD_DUAL', 'S_ICD', 'EV_ICD'];
 const CRT = ['CRT_P', 'CRT_D'];
+/** Owner 30 Oct: Leadless LVEP and CCM (M3-H7 codes) under one "Other device" tick. */
+const OTHER_DEVICE = ['LEADLESS_LVEP', 'CCM', 'OTHER'];
 
 export const PROCEDURE_ITEMS: ProcedureItem[] = [
   { id: 'AF', label: 'AF', group: 'Ablation', components: ['AF'] },
@@ -59,6 +61,7 @@ export const PROCEDURE_ITEMS: ProcedureItem[] = [
   { id: 'PACEMAKER', label: 'Pacemaker', group: 'Devices', components: ['DEVICE_IMPLANT'], deviceTypes: PPM },
   { id: 'ICD', label: 'ICD', group: 'Devices', components: ['DEVICE_IMPLANT'], deviceTypes: ICD },
   { id: 'CRT', label: 'CRT', group: 'Devices', components: ['DEVICE_IMPLANT', 'CRT_CSP'], deviceTypes: CRT },
+  { id: 'OTHER_DEVICE', label: 'Other device', group: 'Devices', components: ['DEVICE_IMPLANT'], deviceTypes: OTHER_DEVICE },
   { id: 'CSP', label: 'Conduction system pacing', group: 'Devices', components: ['DEVICE_IMPLANT', 'CRT_CSP'] },
   { id: 'GEN', label: 'Generator change / upgrade', group: 'Devices', components: ['DEVICE_IMPLANT'], preset: { entity: 'DEVICE_IMPLANTS', field: 'device_action', value: 'GENERATOR_CHANGE' } },
   { id: 'LEAD', label: 'Lead extraction / revision', group: 'Devices', components: ['LEAD_MANAGEMENT'] },
@@ -88,6 +91,8 @@ export function itemOn(item: ProcedureItem, f: ItemFacts): boolean {
       return ICD.includes(t) || (!t && !f.components.includes('CRT_CSP') && f.picked.includes(item.id));
     case 'CRT':
       return CRT.includes(t) || ['BIV_CRT', 'HOT_CRT', 'LOT_CRT'].includes(s) || (!s && !CRT.includes(t) && f.picked.includes(item.id));
+    case 'OTHER_DEVICE':
+      return OTHER_DEVICE.includes(t) || (!t && !f.components.includes('CRT_CSP') && f.picked.includes(item.id));
     case 'CSP':
       return ['HBP', 'LBBAP'].includes(s) || (!s && f.picked.includes(item.id));
     case 'GEN':

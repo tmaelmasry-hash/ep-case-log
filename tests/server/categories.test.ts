@@ -50,7 +50,10 @@ describe('category config', () => {
   it('has the owner-approved main menus in order', () => {
     expect(m.children(null).filter((i) => i.section === 'procedures').map((i) => i.label)).toEqual(['Ablation', 'Devices', 'Structural', 'Diagnostic']);
     expect(m.children('ABLATION').map((i) => i.label)).toEqual(['AF ablation', 'Flutter ablation', 'SVT ablation', 'Accessory pathway ablation', 'AV node ablation', 'Ventricular ablation']);
-    expect(m.children('DEV').map((i) => i.label)).toEqual(['Pacemaker', 'ICD', 'CRT', 'Conduction system pacing', 'Extraction and revision', 'Generator change and upgrade']);
+    expect(m.children('DEV').map((i) => i.label)).toEqual(['Pacemaker', 'ICD', 'CRT', 'Conduction system pacing', 'Extraction and revision', 'Generator change and upgrade', 'Other devices']);
+    expect(m.children('AF').map((i) => i.label)).toEqual(['First', 'Redo', 'By energy']);
+    expect(m.children('AF_ENERGY').map((i) => i.label)).toEqual(['RF', 'Cryoballoon', 'PFA (pulsed field)', 'Laser', 'Multiple energies', 'Other']);
+    expect(m.children('DEV_OTHER').map((i) => i.label)).toEqual(['Leadless LVEP', 'CCM']);
     expect(m.children('DEV_ICD').map((i) => i.label)).toEqual(['Single chamber', 'Dual chamber', 'Subcutaneous ICD', 'EV-ICD']);
   });
 });
@@ -88,6 +91,25 @@ describe('matching', () => {
     addProcedure(rec, ['DEVICE_IMPLANT'], { primary_procedure_type: 'CIED_IMPLANT' });
     const t = tags(summarize(dict, rec));
     expect([t.has('DEV'), t.has('DEV_ICD'), t.has('DEV_ICD_DUAL'), t.has('DEV_ICD_S')]).toEqual([true, true, true, false]);
+  });
+
+  it('AF by energy (owner, 30 Oct): one energy, or Multiple and also under each energy used', () => {
+    const one = makeCase();
+    addProcedure(one, ['AF'], { primary_procedure_type: 'ABLATION' }, [{ entity: 'AF_ABLATIONS', values: { af_energy_source: 'PFA' } }]);
+    const t1 = tags(summarize(dict, one));
+    expect([t1.has('AF_ENERGY'), t1.has('AF_E_PFA'), t1.has('AF_E_RF'), t1.has('AF_E_MULTI')]).toEqual([true, true, false, false]);
+    const two = makeCase();
+    addProcedure(two, ['AF'], { primary_procedure_type: 'ABLATION' }, [{ entity: 'AF_ABLATIONS', values: { af_energy_source: 'MULTIPLE', af_energy_sources_used: ['RF', 'PFA'] } }]);
+    const t2 = tags(summarize(dict, two));
+    expect([t2.has('AF_E_MULTI'), t2.has('AF_E_RF'), t2.has('AF_E_PFA'), t2.has('AF_E_CRYO')]).toEqual([true, true, true, false]);
+  });
+
+  it('Leadless LVEP and CCM sit under Devices › Other devices (owner, 30 Oct)', () => {
+    const rec = makeCase();
+    applyEdits(dict, rec, { creates: [{ entity: 'DEVICES', id: expectedSlot(dict, 'DEVICES', rec.meta.case_id), values: { current_device_type: 'CCM' } }] }, a, new Set(['u1']));
+    addProcedure(rec, ['DEVICE_IMPLANT'], { primary_procedure_type: 'CIED_IMPLANT' });
+    const t = tags(summarize(dict, rec));
+    expect([t.has('DEV'), t.has('DEV_OTHER'), t.has('DEV_OTHER_CCM'), t.has('DEV_OTHER_LVEP'), t.has('DEV_PM')]).toEqual([true, true, true, false, false]);
   });
 
   it('SVT splits AVNRT into typical / atypical and AT into focal / macro-reentrant (owner, 23 Oct)', () => {

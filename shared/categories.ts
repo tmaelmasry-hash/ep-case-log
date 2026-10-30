@@ -6,6 +6,8 @@ import type { CaseSummary, ProcedureSummary } from './caseTypes.ts';
 /** Fields a menu item may test ("ENTITY.field"). Their codes travel with each case summary. */
 export const CATEGORY_FIELDS = [
   'EP_PROCEDURES.first_or_redo',
+  'AF_ABLATIONS.af_energy_source',
+  'AF_ABLATIONS.af_energy_sources_used',
   'FLUTTER_ABLATIONS.flutter_type',
   'SVT_ABLATIONS.svt_mechanism',
   'SVT_ABLATIONS.accessory_pathway_manifestation',

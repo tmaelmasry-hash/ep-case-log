@@ -31,12 +31,15 @@ test('Next missing walks the missing items of the procedure, opens a closed part
   const mark = ps.locator('.next-mark');
   await expect(mark).toHaveCount(1);
   await expect(mark).toBeInViewport();
-  await expect(next).toContainText(`2 of ${total}`);
+  // The count shows where you are now (owner, 30 Oct): on the first item it reads "1 of N".
+  await expect(next).toContainText(`1 of ${total}`);
   // The mark goes after about 2 seconds.
   await expect(mark).toHaveCount(0, { timeout: 4000 });
 
   // It wraps around after the last one.
   for (let k = 2; k <= total; k++) await next.click();
+  await expect(next).toContainText(`${total} of ${total}`);
+  await next.click();
   await expect(next).toContainText(`1 of ${total}`);
 
   // Nothing was saved or changed by moving around.

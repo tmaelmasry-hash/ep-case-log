@@ -595,7 +595,11 @@ function NextMissing({ items, parts, partOf, openPart }: { items: CoreCheck[]; p
     return a.entity === b.entity ? fieldIndex(a) - fieldIndex(b) : 0;
   });
   // The item after the last one visited; when that one was just filled, the list is shorter and the same place is next.
-  const k = !last ? 0 : list.findIndex((x) => x.key === last.key) >= 0 ? (list.findIndex((x) => x.key === last.key) + 1) % list.length : Math.min(last.at, list.length - 1);
+  const at = last ? list.findIndex((x) => x.key === last.key) : -1;
+  const k = !last ? 0 : at >= 0 ? (at + 1) % list.length : Math.min(last.at, list.length - 1);
+  // The count shows where you are now (owner, 30 Oct): the item last visited; before the first press, the first one.
+  // When the visited item was just filled, the place before the next one.
+  const here = !last ? 1 : at >= 0 ? at + 1 : Math.max(1, Math.min(last.at, list.length));
   const press = () => {
     const target = list[k];
     setLast({ key: target.key, at: k });
@@ -616,7 +620,7 @@ function NextMissing({ items, parts, partOf, openPart }: { items: CoreCheck[]; p
       <button type="button" className="btn primary block" onClick={press} data-testid="next-missing">
         Next missing
         <span className="next-count">
-          {k + 1} of {list.length}
+          {here} of {list.length}
         </span>
         <Icon name="down" size={18} />
       </button>

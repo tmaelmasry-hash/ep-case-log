@@ -97,7 +97,15 @@ owner's explicit yes per group** (owner: show the look and say whether it suits 
 | R4-9 | **Timeline on the patient page** (recorded events by their real date; undated ones listed apart). Saved appointments: **not now** (Follow-up tab stays). Preview first. |
 
 Preview of R4-6 … R4-9 (one Design canvas, 5 artboards, made-up data, builder's opinion on stickies; re-read it before
-building, the owner may edit it): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE — waiting for the owner's answer.
+building, the owner may edit it): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE — approved, built in 4 side sessions.
+
+Round 4 built and merged into `main` (30 Oct, late night); review page with real screenshots (made-up data):
+https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the review:
+- R4-6 Dashboard: when a type is picked, the other types in "Procedures by type and month" **stay, faded** (not hidden).
+- R4-7 Next missing: the count shows **where you are now** ("1 of N" while the first item is marked), not the next one.
+- R4-9 Timeline: **newest first**.
+- One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
+  not_available / missing / ai_pending).
 
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.

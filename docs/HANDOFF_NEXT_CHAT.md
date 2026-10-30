@@ -30,8 +30,8 @@ Lessons from this run (Windows PC):
 - The owner wants long runs visible: run tests/deploys in a Terminal panel tab, not in the background.
 - After the desktop app restarts, the built-in browser may lose the Google sign-in (owner signs in again, 2-Step code).
 
-Side sessions (all idle, branches kept, all merged and live): offline-mrn-check, device-tick-server, backup-xlsx,
-avnrt-questions, holter-e2e. Archive them only on the owner's yes.
+Side sessions offline-mrn-check, device-tick-server, backup-xlsx, avnrt-questions, holter-e2e: archived 30 Oct
+on the owner's yes (all merged and live).
 
 Earlier today (live): Apps Script Version 2 = one Sheets API read (TEST: open case ~8 s → ~2 s); the deployment had
 stayed on Version 1 because pastes went into backup copies (see `docs/DEPLOY.md` → Updating later). Menu: AF › By

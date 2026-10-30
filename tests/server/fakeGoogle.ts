@@ -21,6 +21,12 @@ class FakeRange {
     this.nr = nr;
     this.nc = nc;
   }
+  getNumRows() {
+    return this.nr;
+  }
+  getNumColumns() {
+    return this.nc;
+  }
   getValues(): V[][] {
     return Array.from({ length: this.nr }, (_, i) => Array.from({ length: this.nc }, (_, j) => this.sh.get(this.r + i, this.c + j)));
   }
@@ -87,6 +93,9 @@ export class FakeSheet {
   }
   insertRowsAfter(_after: number, n: number) {
     this.maxRows += n;
+  }
+  getDataRange() {
+    return new FakeRange(this, 1, 1, Math.max(1, this.getLastRow()), Math.max(1, this.getLastColumn()));
   }
   getRange(r: number, c: number, nr = 1, nc = 1) {
     return new FakeRange(this, r, c, nr, nc);

@@ -207,6 +207,16 @@ function authorizeExport() {
 // read in blocks, and a row update is one read + one write of that row (all under the script lock).
 
 var T_ = {};
+/** Every tab of the book by name, looked up once per call (one Sheet request instead of one per tab). */
+var BOOK_ = null;
+
+function sheet_(ss, name) {
+  if (!BOOK_) {
+    BOOK_ = {};
+    ss.getSheets().forEach(function (s) { BOOK_[s.getName()] = s; });
+  }
+  return BOOK_[name] || null;
+}
 
 function headers_(sh) {
   var n = sh.getLastColumn();
@@ -215,7 +225,7 @@ function headers_(sh) {
 
 function tab_(ss, name) {
   if (T_[name]) return T_[name];
-  var sh = ss.getSheetByName(name);
+  var sh = sheet_(ss, name);
   if (!sh) throw new Error('No tab ' + name + ' (run setup)');
   T_[name] = { sh: sh, head: headers_(sh) };
   return T_[name];
@@ -236,6 +246,26 @@ function out_(v) {
     return Utilities.formatDate(v, TZ, hm === '00:00' ? 'yyyy-MM-dd' : "yyyy-MM-dd'T'HH:mm");
   }
   return v;
+}
+
+/** read_ on a tab already held whole (`t.data`, header row first): no further Sheet request. */
+function readData_(t, o) {
+  var head = t.head;
+  var keep = null;
+  if (o.only) { keep = {}; o.only.forEach(function (h) { keep[h] = true; }); }
+  if (t.data.length < 2) return { rows: [] };
+  var width = head.length;
+  if (o.cols) width = Math.max.apply(null, o.cols.map(function (h) { var i = head.indexOf(h); return i < 0 ? 0 : i + 1; }).concat([1]));
+  var c = o.where ? head.indexOf(o.where.col) : -1;
+  if (o.where && c < 0) throw new Error('No column ' + o.where.col + ' in ' + o.tab);
+  var want = {};
+  if (o.where) o.where['in'].forEach(function (v) { want[String(v)] = true; });
+  var out = [];
+  for (var i = 1; i < t.data.length; i++) {
+    var v = t.data[i];
+    if (!o.where || want[String(v[c])]) out.push(toObj_(head, v, width, keep));
+  }
+  return { rows: out };
 }
 
 /** Re-writes a value read from the Sheet so it stays what it was (text stays text). */
@@ -266,7 +296,19 @@ function toObj_(head, v, width, keep) {
 /** Reads rows: all, or those whose column matches (small tabs are read whole in one go).
  *  o.only: answer with these columns only (the dashboard reads a few of the Cases tab's columns). */
 function read_(ss, o) {
+  // Speed (30 Oct): a tab not looked at yet in this call is read whole, header row included, in one request
+  // when it is small; the header then comes from that read instead of a request of its own.
+  if (!T_[o.tab]) {
+    var sh0 = sheet_(ss, o.tab);
+    if (!sh0) throw new Error('No tab ' + o.tab + ' (run setup)');
+    var dr = sh0.getDataRange();
+    if (dr.getNumRows() * dr.getNumColumns() <= 40000) {
+      var vals = dr.getValues();
+      T_[o.tab] = { sh: sh0, head: vals.length && vals[0].some(function (h) { return h !== ''; }) ? vals[0].map(String) : [], data: vals };
+    }
+  }
   var t = tab_(ss, o.tab);
+  if (t.data) return readData_(t, o);
   var head = t.head;
   var keep = null;
   if (o.only) { keep = {}; o.only.forEach(function (h) { keep[h] = true; }); }
@@ -428,12 +470,15 @@ function resolveObj_(o, results) {
 
 function batch_(ss, ops) {
   T_ = {};
+  BOOK_ = null;
   var results = [];
   ops.forEach(function (raw) {
     var o = resolveObj_(raw, results);
     var fn = { read: read_, append: append_, appendIfAbsent: appendIfAbsent_, update: update_, updateMatching: updateMatching_, increment: increment_, expect: expect_ }[o.op];
     if (!fn) throw new Error('unknown op ' + o.op);
     results.push(fn(ss, o));
+    // A write makes the copy held by an earlier read of that tab old: later reads go to the Sheet again.
+    if (o.op !== 'read' && o.op !== 'expect' && T_[o.tab]) delete T_[o.tab].data;
   });
   return results;
 }

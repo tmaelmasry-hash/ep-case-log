@@ -1691,6 +1691,43 @@
      "UNKNOWN"
     ]
    }
+  },
+  {
+   "id": "DR-R44-PACING",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "NCDR ICD/PPM v3.0 #14731 \"if any pacemaker, CRT-D or ICD dual\"; owner R4-4 30 Oct: leadless pacemakers too",
+   "target": "DEVICE_IMPLANTS.pacing_indication_reasons",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "PPM_SINGLE",
+     "PPM_DUAL",
+     "CRT_P",
+     "CRT_D",
+     "ICD_DUAL",
+     "LEADLESS_SINGLE",
+     "LEADLESS_DUAL"
+    ]
+   }
+  },
+  {
+   "id": "DR-R44-GENERATOR",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "NCDR ICD/PPM v3.0 #7650 \"generator change or explant\"; owner R4-4 30 Oct",
+   "target": "DEVICE_IMPLANTS.generator_replacement_reasons",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_IMPLANTS.device_action",
+    "in": [
+     "GENERATOR_CHANGE",
+     "UPGRADE",
+     "DOWNGRADE",
+     "EXPLANT"
+    ]
+   }
   }
  ]
 }

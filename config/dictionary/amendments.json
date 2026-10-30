@@ -425,6 +425,102 @@
   ],
   "DEVICE_IMPLANTS": [
    {
+    "name": "pacing_indication_reasons",
+    "label": "Reasons pacing indicated",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "R4-4A",
+    "source": "NCDR ICD v3.0 p4 / PPM v3.0 p3 #14731 (owner Q-F11 21 Oct; R4-4 30 Oct: beside implant_indication, several allowed)",
+    "after": "implant_indication",
+    "codes": [
+     {
+      "code": "AV_BLOCK_2_TO_1",
+      "label": "2:1 AV block"
+     },
+     {
+      "code": "MOBITZ_II",
+      "label": "2nd degree Mobitz II"
+     },
+     {
+      "code": "AV_NODE_ABLATION",
+      "label": "AV node ablation"
+     },
+     {
+      "code": "ANTICIPATED_RV_PACING_GT_40",
+      "label": "Anticipated >40% RV pacing"
+     },
+     {
+      "code": "CHRONOTROPIC_INCOMPETENCE",
+      "label": "Chronotropic incompetence"
+     },
+     {
+      "code": "COMPLETE_HEART_BLOCK",
+      "label": "Complete heart block"
+     },
+     {
+      "code": "HF_UNRESPONSIVE_TO_GDMT",
+      "label": "HF unresponsive to GDMT"
+     },
+     {
+      "code": "SICK_SINUS_SYNDROME",
+      "label": "Sick sinus syndrome"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ]
+   },
+   {
+    "name": "generator_replacement_reasons",
+    "label": "Reasons for generator replacement",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "R4-4B",
+    "source": "NCDR ICD v3.0 p4 / PPM v3.0 p3 #7650 (owner Q-F11 21 Oct; R4-4 30 Oct: several allowed)",
+    "after": "pacing_indication_reasons",
+    "codes": [
+     {
+      "code": "DEVICE_RELOCATION",
+      "label": "Device relocation"
+     },
+     {
+      "code": "END_OF_BATTERY_LIFE",
+      "label": "End of battery life"
+     },
+     {
+      "code": "FAULTY_CONNECTOR_HEADER",
+      "label": "Faulty connector / header"
+     },
+     {
+      "code": "INFECTION",
+      "label": "Infection"
+     },
+     {
+      "code": "MALFUNCTION",
+      "label": "Malfunction"
+     },
+     {
+      "code": "REPLACED_AT_LEAD_REVISION",
+      "label": "Replaced at lead revision"
+     },
+     {
+      "code": "MANUFACTURER_ADVISORY_RECALL",
+      "label": "Manufacturer advisory / recall"
+     },
+     {
+      "code": "UPGRADE",
+      "label": "Upgrade"
+     },
+     {
+      "code": "OTHER",
+      "label": "Other"
+     }
+    ]
+   },
+   {
     "name": "preimplant_nyha_class",
     "label": "NYHA class before implant",
     "type": "enum",

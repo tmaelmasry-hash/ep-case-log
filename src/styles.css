@@ -1984,6 +1984,78 @@ body:has(.overlay) {
 .summary b.bad {
   color: var(--danger);
 }
+/* R4-8 Completeness sheet: two tiles, then one row per case-page section. */
+.cmp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+.cmp-head b {
+  font-size: 1.15rem;
+}
+.cmp-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.cmp-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+}
+.cmp-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.cmp-num small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.cmp-table {
+  border-radius: 12px;
+  background: var(--card);
+  padding: 0 12px;
+}
+.cmp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px 34px 34px 34px 50px;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cmp-row:last-child {
+  border-bottom: 0;
+}
+.cmp-th {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.cmp-row > :first-child {
+  text-align: start;
+}
+.cmp-none {
+  grid-column: span 4;
+}
+.cmp-miss {
+  color: var(--warn);
+  font-weight: 700;
+}
+.cmp-ai {
+  color: var(--accent);
+  font-weight: 700;
+}
+.cmp-fix {
+  padding: 4px 0;
+  width: 100%;
+}
 .check-item {
   align-items: flex-start;
 }
@@ -3214,6 +3286,34 @@ a.hc-mrn {
 .part-body > .group:first-child {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+/* R4-7 "Next missing": stays at the bottom of the procedure sheet; the item it goes to gets a soft blue outline. */
+.next-missing {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  margin-top: 16px;
+}
+.next-missing .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgb(21 80 138 / 0.28);
+}
+.next-count {
+  background: rgb(255 255 255 / 0.2);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.next-mark {
+  outline: 2px solid #1592ce;
+  outline-offset: -2px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  transition: background 0.3s;
 }
 /* "Not available": a small icon beside the question. */
 .na-icon {

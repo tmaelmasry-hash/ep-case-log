@@ -12,6 +12,7 @@ import { getDefaultGroup, setDefaultGroup, setTextSize, setTheme, usePrefs, type
 /** Admin rows (approved phase 3 preview): groups, recycle bin, activity log — each opens in a sheet. */
 function AdminSection() {
   const { groups } = useStore();
+  const { can } = useAuth();
   const bin = useRecycleBin(true);
   const [open, setOpen] = useState<'groups' | 'bin' | 'activity' | null>(null);
   const row = (key: typeof open, icon: string, text: string, count?: number) => (
@@ -31,6 +32,15 @@ function AdminSection() {
         {row('groups', 'list', 'Groups', groups.length)}
         {row('bin', 'trash', 'Recycle bin', bin.rows?.length)}
         {row('activity', 'doc', 'Activity log')}
+        {can('dashboard.view') && (
+          <a className="grow-row" href="#/completeness" data-testid="admin-completeness">
+            <span className="row-ic">
+              <Icon name="clipboard" size={22} />
+            </span>
+            <span className="grow">Data completeness</span>
+            <Icon name="chevron" size={16} className="muted" />
+          </a>
+        )}
       </div>
       {open === 'groups' && <GroupsSheet onClose={() => setOpen(null)} />}
       {open === 'bin' && <RecycleBinSheet onClose={() => setOpen(null)} onChanged={bin.load} />}

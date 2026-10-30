@@ -2241,6 +2241,72 @@ table.dt .n {
 table.dt .bar {
   min-width: 90px;
 }
+/* Data completeness (R4-8, Admin): one row per case, a chip per section. */
+.cm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+.cm-tools .excel-btn {
+  margin-inline-start: auto;
+}
+table.dt.cm-table .c {
+  text-align: center;
+}
+table.dt.cm-table .cm-mrn {
+  color: var(--accent);
+  font-weight: 700;
+}
+table.dt.cm-table .cm-proc {
+  white-space: normal;
+  min-width: 140px;
+}
+table.dt.cm-table .cm-core {
+  font-weight: 600;
+}
+.cm-chip {
+  display: inline-block;
+  min-width: 26px;
+  margin: 0 1px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-align: center;
+}
+.cm-chip.ok {
+  background: color-mix(in srgb, var(--ok-fill) 16%, transparent);
+  color: var(--ok);
+}
+.cm-chip.miss {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.cm-chip.ai {
+  background: var(--accent-soft);
+  color: var(--info);
+}
+.cm-none {
+  color: var(--muted);
+}
+.cm-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.cm-legend .cm-chip {
+  margin-inline-start: 8px;
+}
+.cm-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
 .sbar {
   display: flex;
   height: 8px;

@@ -2615,6 +2615,61 @@ button.cbar:hover {
 .patient-hits {
   margin: 8px 0 4px;
 }
+.patient-switch {
+  margin: 14px 0 4px;
+}
+.tl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tl-item {
+  display: flex;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.tl-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 14px;
+  flex: none;
+}
+.tl-rail::after {
+  content: '';
+  flex: 1;
+  width: 2px;
+  background: var(--line);
+}
+.tl-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--line);
+  margin-top: 2px;
+  flex: none;
+}
+.tl-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+}
+.tl-undated {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.tl-undated a {
+  text-decoration: none;
+}
+.tl-foot {
+  margin-top: 8px;
+}
 a.hc-mrn {
   color: inherit;
   text-decoration: underline;

@@ -613,6 +613,129 @@
    }
   },
   {
+   "id": "DR-SVT-01",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary SVT_ABLATIONS.accessory_pathway_manifestation \"C for AVRT/WPW\"; AVNRT questions proposal 30 Oct 2026 (docs/AVNRT_QUESTIONS_PROPOSAL.md), waits for the owner",
+   "target": "SVT_ABLATIONS.accessory_pathway_manifestation",
+   "effect": "show_when",
+   "when": {
+    "any": [
+     {
+      "component": [
+       "AVRT_WPW"
+      ]
+     },
+     {
+      "field": "SVT_ABLATIONS.svt_mechanism",
+      "in": [
+       "ORTHODROMIC_AVRT",
+       "ANTIDROMIC_AVRT",
+       "PREEXCITED_AF"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-SVT-02",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary SVT_ABLATIONS.accessory_pathway_location \"C for AVRT/WPW\"; AVNRT questions proposal 30 Oct 2026 (docs/AVNRT_QUESTIONS_PROPOSAL.md), waits for the owner",
+   "target": "SVT_ABLATIONS.accessory_pathway_location",
+   "effect": "show_when",
+   "when": {
+    "any": [
+     {
+      "component": [
+       "AVRT_WPW"
+      ]
+     },
+     {
+      "field": "SVT_ABLATIONS.svt_mechanism",
+      "in": [
+       "ORTHODROMIC_AVRT",
+       "ANTIDROMIC_AVRT",
+       "PREEXCITED_AF"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-SVT-03",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary SVT_ABLATIONS.ap_conduction_direction_assessed \"C for AVRT/WPW\"; AVNRT questions proposal 30 Oct 2026 (docs/AVNRT_QUESTIONS_PROPOSAL.md), waits for the owner",
+   "target": "SVT_ABLATIONS.ap_conduction_direction_assessed",
+   "effect": "show_when",
+   "when": {
+    "any": [
+     {
+      "component": [
+       "AVRT_WPW"
+      ]
+     },
+     {
+      "field": "SVT_ABLATIONS.svt_mechanism",
+      "in": [
+       "ORTHODROMIC_AVRT",
+       "ANTIDROMIC_AVRT",
+       "PREEXCITED_AF"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-SVT-04",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary SVT_ABLATIONS.at_chamber \"C for AT\"; AVNRT questions proposal 30 Oct 2026 (docs/AVNRT_QUESTIONS_PROPOSAL.md), waits for the owner",
+   "target": "SVT_ABLATIONS.at_chamber",
+   "effect": "show_when",
+   "when": {
+    "any": [
+     {
+      "component": [
+       "AT_SVT"
+      ]
+     },
+     {
+      "field": "SVT_ABLATIONS.svt_mechanism",
+      "in": [
+       "FOCAL_AT",
+       "MACROREENTRANT_AT"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-SVT-05",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "dictionary SVT_ABLATIONS.at_site_or_circuit \"C for AT\"; AVNRT questions proposal 30 Oct 2026 (docs/AVNRT_QUESTIONS_PROPOSAL.md), waits for the owner",
+   "target": "SVT_ABLATIONS.at_site_or_circuit",
+   "effect": "show_when",
+   "when": {
+    "any": [
+     {
+      "component": [
+       "AT_SVT"
+      ]
+     },
+     {
+      "field": "SVT_ABLATIONS.svt_mechanism",
+      "in": [
+       "FOCAL_AT",
+       "MACROREENTRANT_AT"
+      ]
+     }
+    ]
+   }
+  },
+  {
    "id": "DR-DV-01",
    "version": 1,
    "status": "SOURCE_EXPLICIT",

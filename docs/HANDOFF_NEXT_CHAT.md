@@ -62,8 +62,13 @@ Others = Tilt only (no other study in the dictionary).
 - The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
 - AF ablation by energy submenu; Leadless LVEP / CCM under Devices (no dictionary code); other SVTs without a code;
   new EP Workspace items (M-4c…) — ask before porting.
-- Optional speed: a new Apps Script version reading all tabs in one call (first open of a case ~5–6 s); needs the
-  owner to paste Code.js and publish a new version.
+- Speed (30 Oct): `apps-script/Code.js` b9aadd6 (tabs listed once per call, a small tab read whole with its header
+  in one request) is pasted and published by the owner (new version, same deployment). Measured on the TEST Sheet
+  (`scratchpad` probe, gateway's own `ms`): no clear gain — list 6.4–7.7 s before vs 6.9–9.5 s after, one case 6.4–7.4
+  vs 5.7–9.0 s; inside Apps Script the 15-tab read is 3.3–6.0 s, plus ~2 s per call of network (a bare ping costs
+  2.6 s). Next possible step: the Advanced Sheets service (`Sheets.Spreadsheets.Values.batchGet`, all tabs in one
+  request); owner must paste code and enable the service; dates typed by hand into the Sheet would read differently.
+  Not started; ask the owner.
 - DONE 30 Oct (live, Worker 8a30e0a1): sheets on desktop open beside the sidebar (it covered the left of New Case at ~1000 px).
 - DONE 30 Oct: the Holter duration also saves when its sheet closes without leaving the field (likely cause of the
   intermittent fieldreview e2e failure; watch it).

@@ -2297,6 +2297,45 @@ table.dt .bar {
   text-align: right;
   color: var(--muted);
 }
+/* R4-6: a type row is a button that filters the Dashboard; the chosen one is marked, the others dimmed. */
+button.cbar {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 5px 6px;
+  cursor: pointer;
+}
+button.cbar:hover {
+  background: var(--fill);
+}
+.cbar.picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.cbar.dim,
+.dt tr.dim {
+  opacity: 0.45;
+}
+.dt tr.picked th,
+.dt tr.picked td {
+  background: var(--accent-soft);
+}
+.row-pick {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
 .dash-sec {
   margin-top: 8px;
 }
@@ -3345,6 +3384,18 @@ a.hc-mrn {
 .month-chart .bar-open {
   fill: var(--highlight);
 }
+.month-chart .bar-hit {
+  fill: transparent;
+}
+.month-chart g {
+  cursor: pointer;
+}
+.month-chart g.dim {
+  opacity: 0.35;
+}
+.month-chart g.on .bar-hit {
+  fill: var(--accent-soft);
+}
 .month-axis {
   display: grid;
   gap: 2px;
@@ -3352,6 +3403,41 @@ a.hc-mrn {
   color: var(--muted);
   text-align: center;
   margin-top: 4px;
+}
+.month-axis button {
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 4px 0;
+  min-height: 28px;
+  cursor: pointer;
+}
+.month-axis button.on {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--accent-soft);
+}
+.month-axis button.dim {
+  opacity: 0.6;
+}
+/* R4-6: "Filtered: Oct 2026 · AF Ablation   Clear" above the cards. */
+.dash-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+}
+.dash-pick b {
+  color: var(--accent);
+}
+.dash-pick button {
+  margin-left: auto;
 }
 .legend i.open {
   background: var(--highlight);

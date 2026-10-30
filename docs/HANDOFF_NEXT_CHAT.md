@@ -6,37 +6,32 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct, night) — finish, test, deploy
-State: `main` = `494b9ee`, pushed. **Live Worker `b8ed14a4`** (menu items). Apps Script live = **Version 2** (speed).
-Merged into `main` but **NOT deployed**: (1) offline New case MRN note + re-check, (2) nightly backup as .xlsx
-(`apps-script/Code.js`, not published), (3) device ticks saved with the case (Cases column `picked_items_json`),
-(5) Holter duration fix, (4) AVNRT: 5 accessory-pathway / AT questions hidden for AVNRT-only procedures (rules DR-SVT-01..05, owner approved,
-`docs/AVNRT_QUESTIONS_PROPOSAL.md`). Unit/server 282 pass on merged `main`; full e2e not yet run on it.
+## START HERE (30 Oct, night) — everything merged is now live
+State: `main` = docs commit after `58b8349`, pushed. **Live Worker `c98e3ff1`** (30 Oct ~20:30). Apps Script live =
+**Version 3** (.xlsx nightly backup; gateway checked `read: api`, 730 ms). Main Sheet got the Cases column
+`picked_items_json` (TEST already had it).
+Live since this deploy: (1) offline New case MRN note + re-check, (2) nightly backup as .xlsx (run once: `EP Case Log
+backup 2026-10-30 2034.xlsx`, opens with all 23 tabs), (3) device ticks saved with the case, (4) AVNRT: 5
+accessory-pathway / AT questions hidden for AVNRT-only procedures (DR-SVT-01..05, `docs/AVNRT_QUESTIONS_PROPOSAL.md`),
+(5) Holter duration fix (`426325c`: typed text kept in a ref in `src/components/Fields.tsx`; e2e waits for the save).
+Tests on `main` before deploy: unit 49 files pass, e2e 88/88, e2e:worker 88/88.
+Rollback: Worker `node scripts/wrangler.ts rollback b8ed14a4-4f7f-44bf-a377-83bb2b67b409`; Apps Script → Manage
+deployments → Edit the **active** deployment ("Untitled", id `…YxGBJY`; "EP Case Log v1" is archived) → Version 2.
 
-**Steps left, in order (owner asks before each deploy step):**
-1. **Holter fix: done, merged (`426325c`).** Real app bug: Holter duration was sometimes never sent (lost on re-draw /
-   close); typed text is now kept in a ref (`src/components/Fields.tsx`), the e2e waits for the save request. On its
-   branch: unit 282, e2e 88/88, e2e:worker 88/88, Holter test 30/30 (`--repeat-each=30`, worker mobile).
-2. Full run on `main`: `npm run build && npm test && npm run e2e && npm run e2e:worker` (stop leftover node on
-   :8790/:8793/:8794 first). Push.
-3. Ask the owner (AskUserQuestion) "Deploy now?". On yes:
-   a. `node scripts/sheets.ts setup --test`, then `node scripts/sheets.ts setup` (main Sheet; only adds the Cases column
-      `picked_items_json`) — **before** the Worker.
-   b. `node scripts/wrangler.ts whoami` (account Tarek.kamc), `npm run deploy`; check the live JS; add the restore point
-      to `docs/DEPLOY.md` (version from `node scripts/wrangler.ts deployments list`).
-   c. Apps Script backup (.xlsx): publish in the **original** project only:
-      `https://script.google.com/home/projects/1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC/edit`
-      (deployment "EP Case Log v1", id ends `…YxGBJY`). In the built-in browser (owner signs in to Google there): the
-      clipboard does not reach it; load the code into Monaco from GitHub raw at the pushed commit
-      (`monaco.editor.getEditors()` → `executeEdits` with the fetched text, then Ctrl+S, reload and check line count).
-      Screenshots of the editor can lag: read the DOM. Dialogs open reliably at viewport 1400×900. Deploy → Manage
-      deployments → Edit → Version: **New version** → Deploy (never New deployment). Then run `nightlyBackup` once
-      from the editor (may ask for permission → the owner approves) and check a `.xlsx` appears in "EP Case Log Backups"
-      and opens. Check the gateway still answers `read: api` (scratch script, see Open items). Rollback = Version 2.
-4. Update this file and `docs/DEPLOY.md`; tell the owner in Egyptian Arabic what changed on his screen.
+**Next:** nothing pending from the deploy. Ask the owner what is next (open items below), one at a time.
 
-Side sessions (all idle, branches kept): offline-mrn-check, device-tick-server, backup-xlsx, avnrt-questions (all
-merged), holter-e2e (step 1). Archive them only on the owner's yes.
+Lessons from this run (Windows PC):
+- Playwright's `headless_shell.exe` vanished from `%LOCALAPPDATA%\ms-playwright\chromium_headless_shell-1194` (folder
+  left, exe gone) → every e2e "fails" with "Executable doesn't exist". Fix: `npx playwright install chromium-headless-shell`.
+- A Ctrl-C'd / stopped e2e:worker leaves `wrangler dev` (node) alive, and it keeps restarting `workerd` on :8793, so the
+  next run hangs or the runtime "crashes". Stop the leftover `wrangler dev` / playwright / fakeAppsScriptServer node
+  processes by PID (ask the owner: the auto-mode classifier blocks killing processes), or quit the app. Do not run
+  `e2e` and `e2e:worker` at the same time: `e2e:worker` rebuilds `dist/`.
+- The owner wants long runs visible: run tests/deploys in a Terminal panel tab, not in the background.
+- After the desktop app restarts, the built-in browser may lose the Google sign-in (owner signs in again, 2-Step code).
+
+Side sessions (all idle, branches kept, all merged and live): offline-mrn-check, device-tick-server, backup-xlsx,
+avnrt-questions, holter-e2e. Archive them only on the owner's yes.
 
 Earlier today (live): Apps Script Version 2 = one Sheets API read (TEST: open case ~8 s → ~2 s); the deployment had
 stayed on Version 1 because pastes went into backup copies (see `docs/DEPLOY.md` → Updating later). Menu: AF › By
@@ -63,21 +58,17 @@ before building.
 
 ## Open items (ask the owner, one at a time)
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
-- **Offline new case MRN (merged 30 Oct, not deployed yet):** New Case shows "Offline: checked against cases on this
+- **Offline new case MRN (live 30 Oct, Worker `c98e3ff1`):** New Case shows "Offline: checked against cases on this
   device only." under the MRN; the outbox sends `known_case_ids`, `POST /api/cases` answers `other_cases` /
   `unseen_cases`; if the Sheet had cases the device did not know, one top message "MRN … already has N other case(s)
   in the Google Sheet." with **Open patient** (`#/patients/<mrn>`). Nothing is merged.
-- The "Pacemaker / ICD / CRT" tick: **merged 30 Oct, not deployed** — saved with the case (Cases column
-  `picked_items_json`, see `docs/SCREEN_REVIEW.md` → Device ticks). Deploy needs `node scripts/sheets.ts setup` on the
-  main Sheet **before** the Worker (TEST done).
-- Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
-  on close) is the likely cause; it passed 84/84 since.
+- The "Pacemaker / ICD / CRT" tick: **live 30 Oct** — saved with the case (Cases column `picked_items_json`, TEST and
+  main, see `docs/SCREEN_REVIEW.md` → Device ticks).
 - Timing without a password: a scratch script calling the gateway (`.env` secret, target test, read ops) prints the
   gateway `ms` and `read`. `scripts/measure-speed.ts` needs a TEST admin password: `data/test-admin-password.txt` was deleted on the owner's
   yes (30 Oct, with `data/admin-password.txt`).
 
-Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
-"Others" = Tilt only (no other study in the dictionary).
+Known, told to the owner: "Others" = Tilt only (no other study in the dictionary).
 
 ## How things work now (for changes)
 - Tabs (`src/App.tsx`): My work (`#/mywork`, default) · Cases · Follow-up (`features.followups`) · Dashboard (Admin,

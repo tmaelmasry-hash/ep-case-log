@@ -64,17 +64,19 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 - App: `npm run deploy` (tests first: `npm run build && npm test && npm run e2e && npm run e2e:worker`).
 - New dictionary fields: `npm run sheets -- setup` adds the missing columns (never removes or reorders).
 - Apps Script changes: paste the new `Code.js`, then Deploy → Manage deployments → Edit → **New version**.
-- **Which Apps Script project:** until the .xlsx backup (below) is published, the nightly backup copies the Sheet *with*
-  its script, so script.google.com lists one "EP Case Log — Registry" project per backup day. Only the original serves
-  the app: project
-  `1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC` (created 23 Oct, deployment "EP Case Log v1", id ending
-  `…YxGBJY`); open it at `https://script.google.com/home/projects/<that id>/edit`. A paste into a backup copy changes
-  nothing. Check after publishing: the answer to a batch read carries `read: api` (scratch timing script, gateway `ms`).
-- **.xlsx backup (prepared 30 Oct, not yet published):** `nightlyBackup` saves an .xlsx export of the Sheet
+- **Which Apps Script project:** backups made up to 30 Oct (10:27) were Sheet copies *with* the script, so
+  script.google.com lists one "EP Case Log — Registry" project per backup day. Only the original serves the app:
+  project `1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC` (created 23 Oct); open it at
+  `https://script.google.com/home/projects/<that id>/edit`. In Manage deployments the **active** deployment is shown as
+  "Untitled" (id ending `…YxGBJY`, the one in `.env`); "EP Case Log v1" is listed under Archived — always edit the
+  active one and check the id ends `…YxGBJY`. A paste into a backup copy changes nothing. Check after publishing: the
+  answer to a batch read carries `read: api` (scratch timing script, gateway `ms`).
+- **.xlsx backup (published 30 Oct, Apps Script Version 3):** `nightlyBackup` saves an .xlsx export of the Sheet
   (`EP Case Log backup yyyy-MM-dd HHmm.xlsx`, same folder, newest 30 .xlsx kept) instead of a Sheet copy, so no new
   script projects appear. Older Sheet-copy backups in the folder are not touched or counted. It uses the export address
-  the Excel export already uses (scope `script.external_request`, already granted). After publishing, run
-  `nightlyBackup` once from the editor and check the folder for the new .xlsx. Restore: Google Sheets → File → Import
+  the Excel export already uses (scope `script.external_request`, already granted). Checked 30 Oct: run once from the
+  editor (no permission prompt, 3 s) → `EP Case Log backup 2026-10-30 2034.xlsx` in the folder, opens in Google Sheets
+  with all 23 tabs. Restore: Google Sheets → File → Import
   → Upload the .xlsx → **Create new spreadsheet**.
 - Faster reads (30 Oct): in the Apps Script editor, **Services (+) → Google Sheets API → Add** (keep the name
   `Sheets`). Code.js then reads every tab a request needs in one Sheets API request; without the service it reads tab
@@ -107,6 +109,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `8245ec5` (open items: desktop sheets beside the sidebar, Holter duration saves on close) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet, no Sheet change |
 | `5030dfa` (Apps Script Version 2, 30 Oct: all tabs in one Sheets API read; Worker unchanged) | `8a30e0a1-e205-4734-85b3-da99a01ee4a3` | same Sheet; Apps Script rollback = Manage deployments → Edit → Version 1 |
 | `5a1fa93` (menu: AF by energy, Devices › Other devices › Leadless LVEP / CCM; "Other device" tick) | `b8ed14a4-4f7f-44bf-a377-83bb2b67b409` | same Sheet, no Sheet change |
+| `58b8349` (offline New case MRN note; device ticks saved with the case; AVNRT hides accessory-pathway / AT questions; Holter duration fix) | `c98e3ff1-6518-4cab-947a-6f4b61a232f5` | main Sheet + Cases column `picked_items_json` (30 Oct; TEST already had it). Apps Script **Version 3** (.xlsx nightly backup); Apps Script rollback = Version 2 |
 
 To go back: code `git checkout <tag>` (or `git reset --hard <tag>` on a branch);
 live app `node scripts/wrangler.ts rollback <Worker version>`; data: import the wanted .xlsx backup into a new Sheet

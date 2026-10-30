@@ -104,6 +104,13 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
 - R4-6 Dashboard: when a type is picked, the other types in "Procedures by type and month" **stay, faded** (not hidden).
 - R4-7 Next missing: the count shows **where you are now** ("1 of N" while the first item is marked), not the next one.
 - R4-9 Timeline: **newest first**.
+- R4-4 (preview https://claude.ai/artifact/WjPxfEUaGMD3JQNxo1X8V1 , answered 30 Oct late night): **Option A**: two new
+  optional multi-choice fields in `DEVICE_IMPLANTS` beside the unchanged `implant_indication` (still the required main
+  indication): "Reasons pacing indicated" (NCDR ICD/PPM v3.0 #14731, 9 printed codes) shown for PPM_SINGLE / PPM_DUAL /
+  CRT_P / CRT_D / ICD_DUAL **and leadless single / dual**; "Reasons for generator replacement" (#7650, 9 printed codes)
+  shown when device_action is GENERATOR_CHANGE / UPGRADE / DOWNGRADE / EXPLANT. "Other" asks for text. Old cases:
+  **copy exact matches only** (REPLACEMENT_ERI_EOL → End of battery life; POST_AVJ_ABLATION → AV node ablation;
+  SND → Sick sinus syndrome; everything else stays empty), dry run on TEST first, real Sheet on the owner's separate yes.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

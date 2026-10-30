@@ -3,9 +3,11 @@ import { expect, type Page } from '@playwright/test';
 import { signIn } from './helpers';
 
 let seq = 0;
+// A random start per worker, so a restarted worker or a repeated run does not reuse an MRN already in the store.
+const salt = Math.floor(Math.random() * 900);
 /** A synthetic MRN unique to this run and project. */
 export function mrn(info: { project: { name: string } }, base: number) {
-  return String(base + (info.project.name === 'desktop' ? 0 : 5_000) + ++seq * 11 + Math.floor(Math.random() * 9));
+  return String(base + (info.project.name === 'desktop' ? 0 : 5_000) + salt + ++seq);
 }
 
 export async function open(page: Page, user = 'admin', hash = '#/cases') {

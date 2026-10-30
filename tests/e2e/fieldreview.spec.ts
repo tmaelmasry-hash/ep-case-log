@@ -41,8 +41,11 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await is.getByRole('button', { name: 'Add holter / rhythm monitoring' }).click();
   const hs = page.getByTestId('row-sheet');
   await hs.getByLabel('Duration unit').selectOption('days');
+  // Wait for the request that carries the duration (the indicator can still read "Synced" from the save before it).
+  const sentDuration = page.waitForRequest((r) => r.method() === 'PATCH' && (r.postData() ?? '').includes('analyzable_duration_hours'));
   await hs.getByLabel('Duration', { exact: true }).fill('7');
   await hs.getByLabel('Duration', { exact: true }).press('Enter');
+  await sentDuration;
   await saved(page);
   await hs.getByRole('button', { name: 'Done' }).click();
   await is.getByTestId('list-row').filter({ hasText: 'Holter' }).first().click();

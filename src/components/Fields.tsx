@@ -64,6 +64,7 @@ function TypedInput({ id, value, onCommit, kind, f }: { id: string; value: unkno
     last.current = t;
     commitRef.current(t.trim() === '' ? null : t);
   };
+  // `latest.text` is set on every keystroke (not only on render), so a sheet that re-draws or closes right after typing still saves it.
   // Closing the sheet unmounts the input without a blur event: save what was typed.
   useEffect(() => () => commit(pending.current), []);
   const common = {
@@ -139,7 +140,7 @@ function DurationInput({ id, hours, onCommit }: { id: string; hours: unknown; on
   useEffect(() => () => commit(latest.current.text, latest.current.unit), []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <span className="with-unit">
-      <input id={id} className="ios-value" inputMode="decimal" placeholder="Enter" aria-label="Duration" value={text} onChange={(e) => setText(e.target.value)} onBlur={() => commit(text, unit)} onKeyDown={(e) => e.key === 'Enter' && commit(text, unit)} />
+      <input id={id} className="ios-value" inputMode="decimal" placeholder="Enter" aria-label="Duration" value={text} onChange={(e) => { latest.current.text = e.target.value; setText(e.target.value); }} onBlur={() => commit(latest.current.text, unit)} onKeyDown={(e) => e.key === 'Enter' && commit(latest.current.text, unit)} />
       <select
         className="ios-select"
         aria-label="Duration unit"

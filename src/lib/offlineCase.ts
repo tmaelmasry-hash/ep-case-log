@@ -9,7 +9,7 @@ import { caseAll, casePut } from './localdb';
 import { sync } from './sync';
 import { todayISO } from './util';
 
-export async function makeOfflineCase(input: { mrn: string; groupId: string; groupName: string; date: string; me: { id: string; name: string } }): Promise<CaseDetail> {
+export async function makeOfflineCase(input: { mrn: string; groupId: string; groupName: string; date: string; me: { id: string; name: string }; knownCaseIds: string[] }): Promise<CaseDetail> {
   const caseId = `case_${crypto.randomUUID()}`;
   // One patient id per MRN: reuse the one of a case of this MRN kept on this device (the server corrects it if needed).
   const known = ((await caseAll<CaseDetail>()) ?? []).find((d) => d.meta.mrn === input.mrn)?.meta.patient_id;
@@ -21,7 +21,7 @@ export async function makeOfflineCase(input: { mrn: string; groupId: string; gro
   );
   const detail = toDetail(dict, rec, input.groupName, [{ id: input.me.id, name: input.me.name }], (id) => (id === input.me.id ? input.me.name : 'Unknown'));
   await casePut(caseId, detail);
-  sync.enqueueCreate(caseId, `New case · ${input.mrn}`, { mrn: input.mrn, group_id: input.groupId, episode_start_date: input.date, patient_id: patientId });
+  sync.enqueueCreate(caseId, `New case · ${input.mrn}`, { mrn: input.mrn, group_id: input.groupId, episode_start_date: input.date, patient_id: patientId, known_case_ids: input.knownCaseIds });
   return detail;
 }
 

@@ -41,7 +41,10 @@ before building.
 - **Procedure types without a dictionary code:** AF ablation by energy, Leadless LVEP / CCM under Devices, other SVTs;
   also new EP Workspace items (M-4c…) — ask before porting (see memory "EP Workspace sync").
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
-- **Offline new case** checks the MRN only against cases on that device.
+- **Offline new case** checks the MRN only against cases on that device. **Built 30 Oct (owner: note + re-check), not deployed:**
+  New Case shows "Offline: checked against cases on this device only." under the MRN; the outbox sends `known_case_ids`,
+  `POST /api/cases` answers `other_cases` / `unseen_cases`; if the Sheet had cases the device did not know, one top message
+  "MRN … already has N other case(s) in the Google Sheet." with **Open patient** (`#/patients/<mrn>`). Nothing is merged.
 - The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
 - Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
   on close) is the likely cause; it passed 84/84 since.

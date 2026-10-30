@@ -119,6 +119,11 @@ export function Toasts() {
         <div key={t.id} className={`toast ${t.kind ?? 'info'}`}>
           <Icon name={t.kind === 'error' ? 'alert' : t.kind === 'success' ? 'check' : 'info'} size={18} />
           <span>{t.message}</span>
+          {t.link && (
+            <a className="link strong" href={t.link.href} onClick={() => dismissToast(t.id)} data-testid="toast-link">
+              {t.link.label}
+            </a>
+          )}
           {t.undo && (
             <button
               className="link strong"

@@ -97,3 +97,41 @@ test('an edit made without connection waits on the device, survives a reload, an
   await page.getByTestId('section-patient').click();
   await expect(page.getByTestId('section-sheet').getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' })).toHaveAttribute('aria-checked', 'true');
 });
+
+test('offline new case: the MRN note says "this device only"; back online, other cases of the MRN on the server are told once', async ({ page, context, browser }, info) => {
+  const m = mrn(info, 9944000);
+  await open(page);
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+  await page.reload();
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByTestId('offline-bar')).toBeVisible();
+
+  // Meanwhile another device adds a case of this MRN to the Sheet; this device does not know it.
+  const other = await browser.newContext({ ...info.project.use });
+  const p2 = await other.newPage();
+  await open(p2);
+  await createCase(p2, m, { date: '2026-03-01' });
+  await other.close();
+
+  await page.getByTestId('add-menu').click();
+  await page.getByTestId('new-case').click();
+  const sheet = page.getByTestId('new-case-sheet');
+  await sheet.locator('#new-mrn').fill(m);
+  await expect(sheet.getByTestId('mrn-live')).toContainText('New patient');
+  await expect(sheet.getByTestId('mrn-offline')).toHaveText('Offline: checked against cases on this device only.');
+  await sheet.locator('#new-date').fill('2026-03-12');
+  await sheet.getByRole('button', { name: 'Create case' }).click();
+  await expect(page.getByTestId('case-head')).toContainText('No. pending');
+
+  // Back online: the case is created as it is (nothing merged) and the user is told, with a link to the patient page.
+  await context.setOffline(false);
+  await expect(page.getByTestId('case-head')).toContainText(/No\. \d+/, { timeout: 30_000 });
+  const toast = page.locator('.toast').filter({ hasText: `MRN ${m} already has 1 other case in the Google Sheet.` });
+  await expect(toast).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('offline-mrn-recheck.png') });
+  await toast.getByTestId('toast-link').click();
+  await expect(page).toHaveURL(new RegExp(`#/patients/${m}$`));
+  await expect(page.locator('.toast').filter({ hasText: `MRN ${m} already has` })).toHaveCount(0);
+});

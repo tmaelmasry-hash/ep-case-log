@@ -96,6 +96,9 @@ owner's explicit yes per group** (owner: show the look and say whether it suits 
 | R4-8 | Completeness matrix **inside the case** (section × recorded / not available / missing / AI pending, Fix) **and for a whole group (Admin)** with a new paged server endpoint, no Sheet change. Preview first. |
 | R4-9 | **Timeline on the patient page** (recorded events by their real date; undated ones listed apart). Saved appointments: **not now** (Follow-up tab stays). Preview first. |
 
+Preview of R4-6 … R4-9 (one Design canvas, 5 artboards, made-up data, builder's opinion on stickies; re-read it before
+building, the owner may edit it): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE — waiting for the owner's answer.
+
 ## Working rules
 - Stop after each step; previews (screenshots) before building anything visible; multiple-choice questions.
 - Fake data only in tests; never copy secrets; ask before anything that could change or lose real data.

@@ -1,4 +1,4 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026 (night)
 
 Read this first, then `docs/SCREEN_REVIEW.md` (every screen decision and what each build step did),
 `docs/MERGE_PLAN.md` (owner decisions R2-* / R3-*) and `AGENTS.md`.
@@ -6,25 +6,43 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct, evening)
-- **Speed done (Apps Script Version 2, live 30 Oct 16:10).** `apps-script/Code.js` reads every tab a batch needs in one
-  Sheets API request (Advanced Sheets service `Sheets`, added in the editor); without the service it falls back to tab
-  by tab. Answers carry `read: api`. Measured on TEST: list 6.4–8.4 s → 1.9–3.4 s, one case 7.6–9.0 s → 1.7–2.2 s,
-  all 23 tabs inside Apps Script 8.1–8.7 s → 0.45–1.8 s; main Sheet 0.5–0.8 s inside (2887 rows).
-- **Why earlier speed work showed no gain:** the deployment had stayed on Version 1 (23 Oct). The owner's pastes went into
-  backup copies: each nightly backup copies the Sheet with its script, so there are many projects with the same name.
-  The real one is in `docs/DEPLOY.md` → Updating later. Claude published Version 2 itself in the built-in browser
-  (the owner signed in there; the clipboard does not reach that browser, the code was loaded from GitHub at `5030dfa`).
-- **Menu items live (`5a1fa93` → Worker `b8ed14a4`):** AF ablation › By energy (RF, Cryoballoon, PFA, Laser, Multiple
-  energies, Other; a case with several energies sits under each and under Multiple) and Devices › Other devices ›
-  Leadless LVEP / CCM (M3-H7 codes); a new "Other device" tick offers LVEP / CCM / Other. Owner: other SVTs (IST,
-  junctional) stay under Other SVT (no codes).
-- **Two side sessions (own worktrees, not deployed):** `offline-mrn-check` (offline New case: note + re-check when the
-  connection returns) and `device-tick-server` (device tick saved with the case; needs one operational column at
-  deploy: `sheets setup --test` then `sheets setup`). Merge each branch here only on the owner's yes.
-- Next: ask the owner which open item to take (list below), one at a time. Owner wants questions as multiple choice
-  (AskUserQuestion) and replies in Egyptian Arabic.
-- Everything is committed and pushed. Live Worker: `b8ed14a4`. Tests: unit/server 253 · e2e 84 · e2e:worker 84.
+## START HERE (30 Oct, night) — finish, test, deploy
+State: `main` = `494b9ee`, pushed. **Live Worker `b8ed14a4`** (menu items). Apps Script live = **Version 2** (speed).
+Merged into `main` but **NOT deployed**: (1) offline New case MRN note + re-check, (2) nightly backup as .xlsx
+(`apps-script/Code.js`, not published), (3) device ticks saved with the case (Cases column `picked_items_json`),
+(4) AVNRT: 5 accessory-pathway / AT questions hidden for AVNRT-only procedures (rules DR-SVT-01..05, owner approved,
+`docs/AVNRT_QUESTIONS_PROPOSAL.md`). Unit/server 282 pass on merged `main`; full e2e not yet run on it.
+
+**Steps left, in order (owner asks before each deploy step):**
+1. **Holter fix:** branch `refs/heads/claude/holter-e2e-18423e` (`8beccaa` + `fc12adc` merge of main). Real app bug:
+   Holter duration was sometimes never sent (lost on re-draw / close); fix keeps typed text in a ref
+   (`src/components/Fields.tsx`) and the e2e waits for the save request. Its session
+   ([holter-e2e](local_396fa710-e9ee-4d59-9a59-5912671020c3)) was running the full verification. Read its last report;
+   if green, `git merge --no-ff refs/heads/claude/holter-e2e-18423e` into `main` (owner already said merge finished work).
+2. Full run on `main`: `npm run build && npm test && npm run e2e && npm run e2e:worker` (stop leftover node on
+   :8790/:8793/:8794 first). Push.
+3. Ask the owner (AskUserQuestion) "Deploy now?". On yes:
+   a. `node scripts/sheets.ts setup --test`, then `node scripts/sheets.ts setup` (main Sheet; only adds the Cases column
+      `picked_items_json`) — **before** the Worker.
+   b. `node scripts/wrangler.ts whoami` (account Tarek.kamc), `npm run deploy`; check the live JS; add the restore point
+      to `docs/DEPLOY.md` (version from `node scripts/wrangler.ts deployments list`).
+   c. Apps Script backup (.xlsx): publish in the **original** project only:
+      `https://script.google.com/home/projects/1vJeEc6AWFMunPvx7WZcQzcrhqLEwlSFDRHjcpdft7EBDLptgxw_qHYdC/edit`
+      (deployment "EP Case Log v1", id ends `…YxGBJY`). In the built-in browser (owner signs in to Google there): the
+      clipboard does not reach it; load the code into Monaco from GitHub raw at the pushed commit
+      (`monaco.editor.getEditors()` → `executeEdits` with the fetched text, then Ctrl+S, reload and check line count).
+      Screenshots of the editor can lag: read the DOM. Dialogs open reliably at viewport 1400×900. Deploy → Manage
+      deployments → Edit → Version: **New version** → Deploy (never New deployment). Then run `nightlyBackup` once
+      from the editor (may ask for permission → the owner approves) and check a `.xlsx` appears in "EP Case Log Backups"
+      and opens. Check the gateway still answers `read: api` (scratch script, see Open items). Rollback = Version 2.
+4. Update this file and `docs/DEPLOY.md`; tell the owner in Egyptian Arabic what changed on his screen.
+
+Side sessions (all idle, branches kept): offline-mrn-check, device-tick-server, backup-xlsx, avnrt-questions (all
+merged), holter-e2e (step 1). Archive them only on the owner's yes.
+
+Earlier today (live): Apps Script Version 2 = one Sheets API read (TEST: open case ~8 s → ~2 s); the deployment had
+stayed on Version 1 because pastes went into backup copies (see `docs/DEPLOY.md` → Updating later). Menu: AF › By
+energy; Devices › Other devices › Leadless LVEP / CCM; "Other device" tick. Other SVTs stay under Other SVT.
 
 ## Screen review build steps (27–30 Oct) — all live
 | Step | What | Commit → Worker |

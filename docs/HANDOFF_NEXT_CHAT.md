@@ -6,10 +6,30 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
 step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct, late night) — round 4: four UI ideas, built in 4 side sessions, not merged
+## START HERE (30 Oct, late night) — round 4 is merged and LIVE
+State: `main` = round 4 merged (`ceb6347` + this handoff), **not pushed** (ask the owner before pushing).
+**Live Worker `7ccc5cc3-76bc-4d20-aa7c-d998f475989a`** (30 Oct ~23:00). No Sheet change, Apps Script still Version 3.
+Live JS checked: `assets/index-E0lxtg7u.js` has Data completeness and Next missing; `/api/completeness` answers 401
+signed out. Rollback: `node scripts/wrangler.ts rollback c98e3ff1-6518-4cab-947a-6f4b61a232f5` (restore point tag
+`checkpoint-2026-10-30-before-round4`; see `docs/DEPLOY.md`).
+Tests on `main` before deploy: build ✓, unit 311 pass, e2e 100/100, e2e:worker 100/100.
+What was done in this chat:
+- The 4 branches below merged `--no-ff` one by one; the two section-grouping files became one `shared/completeness.ts`
+  (case sheet `completenessBySection`, group matrix `completenessOf`, one counter `countCheck`, count names
+  applicable / recorded / not_available / missing / ai_pending).
+- Two new e2e specs fixed (Member refusal fetched from the page so the cookie goes; Next missing closes parts one by one).
+- Look fixes from the screenshots: long section names wrap in the Completeness sheet; `#/completeness` uses 1200 px.
+- Owner's answers after the review page https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB (real screenshots, made-up
+  data): Dashboard other types stay faded; Next missing count = where you are now ("1 of N"); Timeline newest first.
+  Logged in `docs/MERGE_PLAN.md`.
+- Owner asked for a preview page of what will change before each deploy (a review artifact with real screenshots and
+  his open choices) — keep doing this.
+**Next:** ask the owner (one at a time) about the open items below: R4-4, R4-5. The 4 side sessions can be archived
+on his yes.
+
+### Round 4 history (kept for reference)
 **Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same
-code as live Worker `c98e3ff1`, Apps Script Version 3). If the owner does not want round 4: see `docs/DEPLOY.md` →
-"To go back to before round 4". `main` has **no** round 4 code yet.
+code as Worker `c98e3ff1`, Apps Script Version 3).
 
 Decisions: `docs/MERGE_PLAN.md` → "Round 4 decisions" (R4-1 … R4-9). Preview the owner approved (Design canvas, 5
 artboards, re-read before judging the builds): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE . Owner: "build what

@@ -1,100 +1,100 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 28 Oct 2026
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026
 
-Read this first, then `docs/MERGE_PLAN.md` (all owner decisions; R2-* round 2, R3-* round 3) and `AGENTS.md`.
+Read this first, then `docs/SCREEN_REVIEW.md` (every screen decision and what each build step did),
+`docs/MERGE_PLAN.md` (owner decisions R2-* / R3-*) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
-Work in steps, preview before building anything visible (an HTML preview or an artifact), multiple-choice questions,
-stop after each step, deploy only on his yes.
+Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
+step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE — the screen review's 8 build steps are all live (29 Oct). Next: the Open items below, one at a time
-The owner reviewed every screen (rounds 1 and 2, 28 Oct); all answers and the 8-step build plan are in
-**`docs/SCREEN_REVIEW.md`** (read it whole). Steps 1–8 are live. **Step 5 (navigation)** was previewed
-(https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP), approved, built and deployed on 29 Oct (Worker `496eaa5c`): My work
-first, Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin only),
-menu order Ablation · Devices · Structural · Diagnostic, name → account, desktop empty pane. Details in SCREEN_REVIEW.md
-→ "Step 5". Next: step 6 preview, then steps 6 (Settings and Admin), 7 (Dashboard and export), 8 (look) — see SCREEN_REVIEW.md.
+## START HERE (30 Oct)
+- The screen review is finished: **all 8 build steps are live** (table below). Two open-item fixes are live too.
+- Last thing done: the Apps Script speed change (`b9aadd6`), pasted and published by the owner (new version, same
+  deployment). It made **no clear difference** (numbers under Open items). The owner was offered the next step (Google
+  Sheets API, all tabs in one request) and had not answered; he asked for this handoff instead.
+- Next: ask the owner which open item to take (list below), one at a time.
+- Everything is committed and pushed; nothing waits to be deployed. Live Worker: `8a30e0a1`.
+- Tests at the last run: unit/server 251 · e2e 84 · e2e:worker 84.
 
-How previews were done: a Design canvas artifact per step (phone screens 390 wide, the app's own colors, yellow notes
-in Arabic). Step 3: https://claude.ai/artifact/Ld4BVxmXShvzcdqvg9G7uU · step 4:
-https://claude.ai/artifact/RpV8FfXyD57sArrPvCyuL5. The owner edits labels directly on the canvas: re-read its files
-before changing it and treat his edits as decisions. After building, check the look in the local preview
-(`.claude/launch.json` "registry-synthetic", admin / synthetic-e2e-pass, fake MRNs 999xxxx; seed cases through
-/api with the CSRF token from /api/auth/login) and clear the service worker after each build.
-
-## Done on 24 Oct (all live, all pushed)
-1. **Field review** (R2-9 / R3-5; full record `docs/FIELD_REVIEW.md`; review page
-   https://claude.ai/artifact/Vxm8gc69gr5J3fuQgphLYr with `decisions` + `advice`). 363 keep · 164 hidden · 0 later.
-   - Phase 1 (Worker `18778f9e`): `config/case_layout.json` → `form` (hidden, not_core, labels, code_order, offer,
-     date_only, hajj_season), applied by `shared/dictionary.ts` `applyForm`. The dictionary is never edited; hidden
-     fields keep their Sheet columns and values. 51 hidden fields are core or R/RC — owner confirmed.
-   - Phase 2 (`2589911c`): procedure sheet "What was done" (17 items, `src/lib/procedureTypes.ts` PROCEDURE_ITEMS; the
-     primary procedure type follows the ticks); `shared/derive.ts` = values the app fills (server `applyDerived` after
-     every save, the browser overlays the same in `caseEditor.tsx`): procedure date from the episode date, type, Hajj
-     timing (season 1 Dhu al-Qa'dah → 15 Muharram, rites 8–13 Dhu al-Hijjah), diagnosis + subtype (only into empty
-     answers), eGFR (CKD-EPI 2021), CSP target, implant date precision, hidden links. Tilt and CMR / CT / TEE start with
-     Done / Not done; Holter duration with a unit; "Device interrogation" row only when it applies; height / weight /
-     BMI in Patient.
-   - Phase 3 (`71edff53`): `config/local_amendments.json` (FR3-1…6: nationality list, residence category, PAC burden,
-     Inpatient monitor, multi-choice valve lesion(s) and scar location(s)). Main and TEST Sheets got the 5 columns.
-2. **Colors** (R3-6): palette derived from the Makkah Health Cluster identity, colors only (no logo / name / text).
-   Navy `#15508A` accent, sky `#1592CE` highlight, `#1278B0` info / EPS; dark accent `#6FB6E6`. **Approximation** from
-   the cluster's public website and emblem (no published codes found). Tokens in `src/styles.css`
-   (`--accent`, `--highlight`, `--brand`, `--brand-deep`). Preview: https://claude.ai/artifact/YAAESity3hAwXZH687hbFj.
-Colors deployed 24 Oct: commit `4655a38` → Worker `59a60ab8`. Cancel on a new procedure / row discards it, page behind a sheet stays still: `17f02af` → Worker `67011dd4` (27 Oct).
-Tests now: unit/server 235 · e2e 72 · e2e:worker 72 (all passing at `aad8aea`).
-
-## Screen review (27–29 Oct) — steps 1–5 live
+## Screen review build steps (27–30 Oct) — all live
 | Step | What | Commit → Worker |
 |---|---|---|
 | 1 | Quick fixes: Pilgrims count, follow-ups 90 days, search MRN or procedure, title "Registry Cases", month counts | `26f6647` → `fbaf4dc7` |
-| 2 | Case card (MRN big, age/sex, Hajj, N missing), quick periods, status filter, order, group colors, floating + (New case / Bulk add); **only the Admin adds cases** (untouched cases are My work of the group's Members) | `a57688c` → `bfad336f` |
-| 3 | New Case (live MRN check, Procedure date + Hijri), MRN prompt, Add procedure = type first, case screen (header card, AI/Cohorts/History/Report icons, procedures with own dates), sections Patient & episode (sheet "Patient Demographics"), Medical History, Investigations & Medications (TEE/CT/CMR via layout row `values`), Follow-up, Notes; Save draft; ≤5 choices = buttons | `f451fc5` → `bb82cd72` |
-| 4 | Procedure sheet: fixed DONE row + tabs (General / each type / Complications) that jump and follow the scroll, parts that open and close, Mapping & access part, Not available icon | `dfe5f02` → `9d50f4e9` |
-| 5 | Navigation: My work first (done this week, fewest missing first), Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin), menu order, name → account, desktop empty pane | `14e943b` → `496eaa5c` |
-| 6 | Settings (theme, text size, default group), Admin page (reset password + share, supervisor, AI show/hide), Move case, Bulk add planned type (Cases column `planned_type`), sign-in look | `bc3d7e1` → `1b6a1fa5` |
-| 7 | Dashboard: period chips, No change 14+ days, cases by month chart, Hajj season vs rest, Excel per table; statistics file (/api/exports/stats) | `e10e374` → `cc82b727` |
-| 8 | Look: procedure colors (Devices teal, Pilgrims brown-gold), base text 17 px, dark mode edges, Undo instead of delete questions (deleter may restore a case within 60 s), messages at the top | `64a15d9` → `ff9096e3` |
+| 2 | Case card (MRN big, age/sex, Hajj, N missing), quick periods, status filter, order, group colors, floating + (New case / Bulk add); **only the Admin adds cases** | `a57688c` → `bfad336f` |
+| 3 | New Case (live MRN check, procedure date + Hijri), MRN prompt, type first, case screen, sections, Save draft, ≤5 choices = buttons | `f451fc5` → `bb82cd72` |
+| 4 | Procedure sheet: fixed DONE row + tabs, parts that open and close, Mapping & access, Not available icon | `dfe5f02` → `9d50f4e9` |
+| 5 | Navigation: My work first (done this week, fewest missing first), Follow-up tab (switched on), no Patients tab (patient page from the MRN), cohorts on the Dashboard (Admin only), menu order Ablation · Devices · Structural · Diagnostic, name → account, desktop empty pane | `14e943b` → `496eaa5c` |
+| 6 | Settings (theme, text size, default group), Admin page `#/admin` (reset password + share, supervisor, AI show/hide), Move case (new number, old one in History), Bulk add planned type (Cases column `planned_type`, TEST + main), sign-in look | `bc3d7e1` → `1b6a1fa5` |
+| 7 | Dashboard: period chips, "No change 14+ days", cases by month chart, Hajj season vs rest, Excel per table; statistics file (`POST /api/exports/stats`, values in words) | `e10e374` → `cc82b727` |
+| 8 | Look: procedure colors (Devices teal, Pilgrims brown-gold), base text 17 px, dark mode edges, **Undo** instead of delete questions (deleter may restore a case within 60 s), messages at the top | `64a15d9` → `ff9096e3` |
+| — | Open items: desktop sheets open beside the sidebar; Holter duration saves on close | `8245ec5` → `8a30e0a1` |
+
+Previews (Design canvases, owner edits labels on them — re-read before changing and treat his edits as decisions):
+step 5 https://claude.ai/artifact/3qxYL1dxu64Xy9xQB1j9jP · step 6 https://claude.ai/artifact/95pdJVfnbSoYqjHougXeT8 ·
+step 7 https://claude.ai/artifact/7M5BGbQ3rqjwRqyf1T2xCM · step 8 https://claude.ai/artifact/SZf3eNGTkH25cZdDvGGdYA.
+His Design-canvas edits can fail to save when his connection drops: list the canvas files and compare the version
+before building.
+
+## Open items (ask the owner, one at a time)
+- **Speed.** `apps-script/Code.js` (`b9aadd6`): the book's tabs listed once per call, a small tab read whole with its
+  header in one request; live. Measured on the TEST Sheet with scratch scripts (gateway `ms`): list 6.4–7.7 s before
+  vs 6.9–9.5 s after, one case 6.4–7.4 s vs 5.7–9.0 s; inside Apps Script the 15-tab read is 3.3–6.0 s, plus ~2 s of
+  network per call (a bare ping 2.6 s). Possible next step: Advanced Sheets service
+  (`Sheets.Spreadsheets.Values.batchGet`, all tabs in one request) — owner pastes code and enables the service; dates
+  typed by hand into the Sheet would read differently; try on the TEST Sheet first. Not started. Note: the app shows
+  the device copy at once, so the wait is mostly the first open of a case on a device.
+- **Procedure types without a dictionary code:** AF ablation by energy, Leadless LVEP / CCM under Devices, other SVTs;
+  also new EP Workspace items (M-4c…) — ask before porting (see memory "EP Workspace sync").
+- **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
+- **Offline new case** checks the MRN only against cases on that device.
+- The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
+- Watch: the fieldreview e2e (Holter duration) failed now and then on e2e:worker mobile; the fix in `8245ec5` (saves
+  on close) is the likely cause; it passed 84/84 since.
+- `scripts/measure-speed.ts` needs a TEST admin password: `data/test-admin-password.txt` was deleted on the owner's
+  yes (30 Oct, with `data/admin-password.txt`).
 
 Known, told to the owner: accessory-pathway / AT questions still show under SVT ablation for AVNRT (existing rules);
-Others = Tilt only (no other study in the dictionary).
+"Others" = Tilt only (no other study in the dictionary).
 
-## Open items (ask the owner, one at a time; none started)
-- Labs cannot be tied to one procedure: the dictionary gives LAB_RESULTS only an episode link (owner had asked).
-- The "Pacemaker / ICD / CRT" tick is remembered on the device (localStorage) until the device type is chosen.
-- AF ablation by energy submenu; Leadless LVEP / CCM under Devices (no dictionary code); other SVTs without a code;
-  new EP Workspace items (M-4c…) — ask before porting.
-- Speed (30 Oct): `apps-script/Code.js` b9aadd6 (tabs listed once per call, a small tab read whole with its header
-  in one request) is pasted and published by the owner (new version, same deployment). Measured on the TEST Sheet
-  (`scratchpad` probe, gateway's own `ms`): no clear gain — list 6.4–7.7 s before vs 6.9–9.5 s after, one case 6.4–7.4
-  vs 5.7–9.0 s; inside Apps Script the 15-tab read is 3.3–6.0 s, plus ~2 s per call of network (a bare ping costs
-  2.6 s). Next possible step: the Advanced Sheets service (`Sheets.Spreadsheets.Values.batchGet`, all tabs in one
-  request); owner must paste code and enable the service; dates typed by hand into the Sheet would read differently.
-  Not started; ask the owner.
-- DONE 30 Oct (live, Worker 8a30e0a1): sheets on desktop open beside the sidebar (it covered the left of New Case at ~1000 px).
-- DONE 30 Oct: the Holter duration also saves when its sheet closes without leaving the field (likely cause of the
-  intermittent fieldreview e2e failure; watch it).
-- Offline new case checks the MRN only against cases on that device.
-- DONE 30 Oct (owner yes): `data/admin-password.txt` and `data/test-admin-password.txt` deleted. `scripts/measure-speed.ts`
-  reads the TEST admin password from the second file: give it a new TEST password before measuring again.
+## How things work now (for changes)
+- Tabs (`src/App.tsx`): My work (`#/mywork`, default) · Cases · Follow-up (`features.followups`) · Dashboard (Admin,
+  `dashboard.view`) · Settings; `#/admin` and `#/patients/<mrn>` have no tab.
+- Device preferences: `src/lib/prefs.ts` (theme, text size 16/17/19/21 px, default group per user).
+- Undo: `ed.removeWithUndo(rows, message)` in `src/caseEditor.tsx` hides rows at once and sends the removal after 7 s
+  (at once when the case is left). Case delete: `POST /api/cases/:id/delete`, Undo = `/restore` (deleter within 60 s).
+- AI switch: setting `ui.ai_visible` (`POST /api/settings/ui`) → `features.ai` in `/api/auth/me`.
+- Statistics file: `server/domain/statsExport.ts`; real Excel dates via `{ date }` cells in `shared/xlsx.ts`.
+- Cohorts: `CategoryTree show="cohorts"` on the Dashboard; the phone/desktop menu has no cohorts.
 
 ## Where things are
-- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, all pushed (28 Oct). github.com is sometimes unreachable from this PC: if a push fails, retry later and tell the owner.
+- Code: `E:\EP_REGISTRY_REBUILD\EP LOG` = GitHub `tmaelmasry-hash/ep-case-log` (public). Branch `main`, all pushed.
+  github.com is sometimes unreachable from this PC: if a push fails, retry later and tell the owner.
 - Restore points (commit → Worker version): `docs/DEPLOY.md` → Restore points. Rollback:
-  `node scripts/wrangler.ts rollback <version>`.
+  `node scripts/wrangler.ts rollback <version>`. Apps Script rollback: Manage deployments → choose the older version.
 - Old app (read only): `E:\EP_REGISTRY_REBUILD\ep-workspace` (EP Workspace, `ep-workspace.pages.dev`).
 
 ## Live deployment
 - App: https://ep-case-log.ep-registry-tarek.workers.dev — Worker `ep-case-log`, account **Tarek.kamc** (`cfcaa4…`).
 - **Wrangler: always `node scripts/wrangler.ts <cmd>`** (`whoami` first; own sign-in in `~/.ep-registry-wrangler`).
   Plain `npx wrangler` is the EP Workspace account (kamc.ep2026). Deploy: `npm run deploy` after
-  `npm run build && npm test && npm run e2e && npm run e2e:worker`.
-- Google Sheet "EP Case Log — Registry" (main) + TEST Sheet; `.env` holds the secrets (never print them). New fields
-  need `node scripts/sheets.ts setup --test`, then `node scripts/sheets.ts setup` (only adds columns).
+  `npm run build && npm test && npm run e2e && npm run e2e:worker`. Then add the restore point to `docs/DEPLOY.md`.
+- Google Sheet "EP Case Log — Registry" (main) + TEST Sheet, one Apps Script serves both; `.env` holds the secrets
+  (never print them). New columns: `node scripts/sheets.ts setup --test`, then `node scripts/sheets.ts setup` (only
+  adds columns). Apps Script changes: the owner pastes `apps-script/Code.js` and publishes a **new version** of the same
+  deployment (copy it to his clipboard with PowerShell `Get-Content -Raw -Encoding UTF8 … | Set-Clipboard`).
 
 ## Working notes
-- Local preview: `.claude/launch.json` → `registry-synthetic` (in-memory store, synthetic accounts, :8791; test
-  password from `tests/e2e/helpers.ts`), `registry-test-sheet` (TEST Sheet, :8787), `previews` (:8799, mockups in
-  `.claude/previews`). After `npm run build` clear the service worker in the page.
-- Windows: call `node scripts/….ts --flag` (npm loses `--`); commit messages with quotes via `git commit -F <file>`;
-  git needs `-c user.name=Claude -c user.email=noreply@anthropic.com`. Files have CRLF: prefer the Edit tool.
+- Local preview: `.claude/launch.json` → `registry-synthetic` (in-memory store, synthetic accounts, :8791; admin /
+  synthetic-e2e-pass), `registry-test-sheet` (TEST Sheet, :8787). Seed cases through /api with the CSRF token from
+  /api/auth/login (`component_` / `procedure_` id prefixes). After `npm run build` clear the service worker in the page.
+- e2e:worker can leave `wrangler dev` (:8793) and the fake Apps Script (:8794) running after an interrupted run:
+  stop those node processes before the next run. A slow first run can time out on desktop; rerun before judging.
+- Windows: call `node scripts/….ts --flag` (npm loses `--`); commit messages via `git commit -F <file>`; git needs
+  `-c user.name=Claude -c user.email=noreply@anthropic.com`. Files have CRLF: edit with a script that keeps CRLF, or
+  the Edit tool. Long bash heredocs with quotes can fail in Git Bash: write the Python to a scratch file instead.
 - Never edit `config/dictionary/*`. KAMC additions go in `config/local_amendments.json`; form changes in
   `config/case_layout.json` → `form`. Fake data only in tests (MRNs 999xxxx); never print secrets.
+
+## Earlier work (all live)
+- 24 Oct: field review (`docs/FIELD_REVIEW.md`; 363 keep · 164 hidden), `shared/derive.ts` app-filled values,
+  `config/local_amendments.json` (FR3-1…6), Makkah Health Cluster colors (approximation, colors only).
+- 27 Oct: Cancel discards a new procedure / row; page behind a sheet stays still.

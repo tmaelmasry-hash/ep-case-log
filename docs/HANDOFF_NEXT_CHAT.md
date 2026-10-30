@@ -64,7 +64,7 @@ Others = Tilt only (no other study in the dictionary).
   new EP Workspace items (M-4c…) — ask before porting.
 - Optional speed: a new Apps Script version reading all tabs in one call (first open of a case ~5–6 s); needs the
   owner to paste Code.js and publish a new version.
-- DONE 30 Oct: sheets on desktop open beside the sidebar (it covered the left of New Case at ~1000 px).
+- DONE 30 Oct (live, Worker 8a30e0a1): sheets on desktop open beside the sidebar (it covered the left of New Case at ~1000 px).
 - DONE 30 Oct: the Holter duration also saves when its sheet closes without leaving the field (likely cause of the
   intermittent fieldreview e2e failure; watch it).
 - Offline new case checks the MRN only against cases on that device.

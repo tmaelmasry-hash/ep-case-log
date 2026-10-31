@@ -114,7 +114,16 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
 - R4-4 **live 31 Oct** (Worker `d11bb402`; main + TEST Sheet +2 columns; copy dry run 0 cases).
 - R4-5 / Q-P3 (31 Oct): CSP measurements (final paced QRS, V1 morphology, R-wave peak time) **keep the dictionary
   rule** (strategy_implant_success YES / PARTIAL; DR-CSP-02a, DR-M3-E1/E2). The NCDR "Left Bundle Lead" trigger is not
-  used (its values are not printed; it would drop His pacing). Nothing to build. Next: Q-P4 capability table.
+  used (its values are not printed; it would drop His pacing). Nothing to build.
+- R4-5 / Q-P4 (31 Oct, table https://claude.ai/artifact/QUxAQrbuNBGckDnVGqEqXW , all as proposed):
+  - Programmed mode + lower rate (DR-DV-03): PPM, CRT-P, ICD single/dual, CRT-D, leadless single/dual, Other; **not**
+    S-ICD, EV-ICD, Leadless LVEP, CCM, ILR; and not when device_action is EXPLANT.
+  - Tachytherapy (DR-DV-04) and defibrillation testing (DR-DV-05): ICD single/dual, CRT-D, S-ICD, EV-ICD, Other.
+  - Lead capture threshold + pacing impedance (DR-DV-07): Pace sense, LV, CSP, Epicardial, Transvenous
+    defibrillation, Other; **not** Extravascular defibrillation. Shock impedance: the two defibrillation types + Other.
+    Sensing stays for all; pulse width only when a threshold is recorded.
+  - CSP target + capture documented (DR-CSP-01): HBP, LBBAP, HOT-CRT, LOT-CRT; not BIV CRT.
+  - No value is deleted; before deploy, count real cases where a filled answer would be hidden (read only).
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

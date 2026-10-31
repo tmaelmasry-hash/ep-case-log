@@ -1945,6 +1945,81 @@
      "LOT_CRT"
     ]
    }
+  },
+  {
+   "id": "DR-FL-03",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-R2 31 Oct; dictionary \"C\" (no text): atypical flutter only, as DR-FL-01",
+   "target": "FLUTTER_ABLATIONS.atypical_flutter_target",
+   "effect": "show_when",
+   "when": {
+    "field": "FLUTTER_ABLATIONS.flutter_type",
+    "in": [
+     "ATYPICAL_RA",
+     "ATYPICAL_LA"
+    ]
+   }
+  },
+  {
+   "id": "DR-LD-01a",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-R2 31 Oct; dictionary \"C\": extraction and complete system explant",
+   "target": "LEAD_PROCEDURES.extraction_approach",
+   "effect": "show_when",
+   "when": {
+    "field": "LEAD_PROCEDURES.lead_management_type",
+    "in": [
+     "EXTRACT",
+     "COMPLETE_SYSTEM_EXPLANT"
+    ]
+   }
+  },
+  {
+   "id": "DR-LD-01b",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-R2 31 Oct; dictionary \"C\": extraction and complete system explant",
+   "target": "LEAD_PROCEDURES.extraction_result",
+   "effect": "show_when",
+   "when": {
+    "field": "LEAD_PROCEDURES.lead_management_type",
+    "in": [
+     "EXTRACT",
+     "COMPLETE_SYSTEM_EXPLANT"
+    ]
+   }
+  },
+  {
+   "id": "DR-LD-01c",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-R2 31 Oct; dictionary \"C\": extraction and complete system explant",
+   "target": "LEAD_PROCEDURES.retained_fragment",
+   "effect": "show_when",
+   "when": {
+    "field": "LEAD_PROCEDURES.lead_management_type",
+    "in": [
+     "EXTRACT",
+     "COMPLETE_SYSTEM_EXPLANT"
+    ]
+   }
+  },
+  {
+   "id": "DR-LD-01d",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-R2 31 Oct; dictionary \"C for extraction\" (complete system explant included)",
+   "target": "LEAD_PROCEDURES.surgical_rescue_required",
+   "effect": "show_when",
+   "when": {
+    "field": "LEAD_PROCEDURES.lead_management_type",
+    "in": [
+     "EXTRACT",
+     "COMPLETE_SYSTEM_EXPLANT"
+    ]
+   }
   }
  ]
 }

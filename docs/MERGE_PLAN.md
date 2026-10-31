@@ -130,6 +130,10 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
   lead locations (NCDR ICD v3.0 #7735) in the same `DEVICE_LEADS.lead_location`: 8 codes added (amendments R4-3-1..8),
   RA / RV / HIS / LBB_AREA / CS_LV shown by their NCDR names (labels.json; stored codes unchanged), coarse
   EPICARDIAL / SUBCUTANEOUS kept for old rows but not offered (case_layout `offer`). Live 31 Oct (Worker `ee730343`).
+- Q-R2 (31 Oct, both as recommended): DR-FL-03 atypical flutter target shown for ATYPICAL_RA / ATYPICAL_LA only
+  (one real In progress typical-CTI case keeps its saved RA_FREE_WALL_LINE, now hidden); DR-LD-01a–d extraction
+  approach / result / retained fragment / surgical rescue for EXTRACT and COMPLETE_SYSTEM_EXPLANT only (no real lead
+  procedures saved). Still open from EP Workspace: Q-P1 pathway badge, Q-R1 spec rules I3B / E5, Q-S1 NCDR lists.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

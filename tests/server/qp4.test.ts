@@ -99,3 +99,14 @@ describe('Q-P4 CSP strategies', () => {
     }
   });
 });
+
+describe('DR-DV-06 leadless channel measurements (owner 31 Oct)', () => {
+  it('a channel row can be added for a leadless single / dual device only', () => {
+    for (const [t, want] of [['LEADLESS_SINGLE', true], ['LEADLESS_DUAL', true], ['PPM_DUAL', false], ['ICD_DUAL', false]] as const) {
+      const { rec, di } = device(t, 'NEW_IMPLANT');
+      const r = applyEdits(dict, rec, { creates: [{ entity: 'DEVICE_IMPLANT_CHANNEL_MEASUREMENTS', id: rid('DEVICE_IMPLANT_CHANNEL_MEASUREMENTS'), parent_id: di }] }, a, users)[0];
+      expect(r.ok, `${t} ${r.message ?? ''}`).toBe(want);
+      if (!want) expect(r.message).toMatch(/does not apply to this device type/);
+    }
+  });
+});

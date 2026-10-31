@@ -138,6 +138,13 @@
    "nest_under": {
     "entity": "DEVICE_IMPLANTS",
     "fk": "device_implant_id"
+   },
+   "show_when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "LEADLESS_SINGLE",
+     "LEADLESS_DUAL"
+    ]
    }
   },
   "CRT_CSP_PROCEDURES": {

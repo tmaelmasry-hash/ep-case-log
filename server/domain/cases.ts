@@ -5,7 +5,7 @@ import { FieldError, decodeValue, encodeValue, mergeOtherSpecify } from '../../s
 import { evaluateReadiness, isProcedureLevel, naKey, type Readiness } from '../../shared/readiness.ts';
 import { cha2ds2vasc, chaRelevant } from '../../shared/cha.ts';
 import { CATEGORY_FIELDS } from '../../shared/categories.ts';
-import { caseEnv, consequences, misfit } from '../../shared/rules.ts';
+import { caseEnv, consequences, evaluate, misfit } from '../../shared/rules.ts';
 import { deriveChanges } from '../../shared/derive.ts';
 import { PROCEDURE_ITEMS } from '../../shared/procedureTypes.ts';
 import {
@@ -322,6 +322,11 @@ export function applyEdits(dict: Dictionary, rec: CaseRecord, batch: EditBatch, 
         throw new EditError(`${def.label}: this row was removed.`);
       }
       try {
+        // Layout show_when (leadless channel measurements, owner 31 Oct): a new row only when it applies.
+        if (def.show_when) {
+          const decoded = decodeRows(dict, rec);
+          if (evaluate(def.show_when, caseEnv(dict.entities, (e) => decoded[e] ?? [], null)) !== true) throw new EditError(`${def.label}: does not apply to this device type.`);
+        }
         const values = placeRow(dict, rec, def, c.id, c.parent_id, a);
         const row = { ...values } as Record<string, unknown>;
         for (const [k, v] of Object.entries(c.values ?? {}).slice(0, 20)) row[k] = encodeFor(dict, rec, def, row, k, v, userIds, true);

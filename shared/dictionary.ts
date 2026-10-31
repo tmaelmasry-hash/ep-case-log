@@ -59,6 +59,9 @@ export interface LayoutEntity {
   primary_fields?: string[];
   /** These event types as Yes + date inside each row of `under` (phase 7). */
   quick_events?: { under: string; fk: string; type_field: string; date_field: string; codes: string[] };
+  /** Nested rows offered only when this rules predicate (shared/rules.ts) is true; rows already saved stay listed
+   *  (owner, 31 Oct: leadless channel measurements for leadless devices only, DR-DV-06). */
+  show_when?: Record<string, unknown>;
 }
 
 export interface LayoutRow {

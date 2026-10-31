@@ -20,7 +20,7 @@ import { CaseReport, PrintPortal } from './CaseReport';
 import { AiSheet, aiPending } from './AiAssistant';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { MoveCaseSheet } from '../components/MoveCaseSheet';
-import { caseEnv, consequences, fieldRules, type Consequence } from '../../shared/rules.ts';
+import { caseEnv, consequences, evaluate, fieldRules, type Consequence } from '../../shared/rules.ts';
 import { useCohorts } from '../lib/cohorts';
 import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../../shared/procedureTypes.ts';
 import { seqText } from '../lib/offlineCase';
@@ -253,10 +253,13 @@ function CoreWithoutRows({ entity }: { entity: string }) {
 function NestedLists({ ed, parentEntity, parentId, onOpen }: { ed: CaseEditor; parentEntity: string; parentId: string; onOpen: (entity: string, id: string) => void }) {
   const children = Object.values(dict.entities).filter((d) => d.nest_under?.entity === parentEntity);
   if (!children.length) return null;
+  const env = caseEnv(dict.entities, ed.rows, null, { entity: parentEntity, row: ed.rows(parentEntity).find((r) => r._id === parentId) ?? null });
   return (
     <>
       {children.map((child) => {
         const kids = ed.rows(child.entity).filter((k) => k[child.nest_under!.fk] === parentId);
+        // A section shown only for some answers (layout show_when) stays listed while it holds saved rows.
+        if (child.show_when && !kids.length && evaluate(child.show_when, env) !== true) return null;
         return (
           <div key={child.entity}>
             <h3 className="sechead">{child.label}</h3>

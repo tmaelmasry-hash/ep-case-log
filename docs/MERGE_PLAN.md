@@ -111,6 +111,10 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
   shown when device_action is GENERATOR_CHANGE / UPGRADE / DOWNGRADE / EXPLANT. "Other" asks for text. Old cases:
   **copy exact matches only** (REPLACEMENT_ERI_EOL → End of battery life; POST_AVJ_ABLATION → AV node ablation;
   SND → Sick sinus syndrome; everything else stays empty), dry run on TEST first, real Sheet on the owner's separate yes.
+- R4-4 **live 31 Oct** (Worker `d11bb402`; main + TEST Sheet +2 columns; copy dry run 0 cases).
+- R4-5 / Q-P3 (31 Oct): CSP measurements (final paced QRS, V1 morphology, R-wave peak time) **keep the dictionary
+  rule** (strategy_implant_success YES / PARTIAL; DR-CSP-02a, DR-M3-E1/E2). The NCDR "Left Bundle Lead" trigger is not
+  used (its values are not printed; it would drop His pacing). Nothing to build. Next: Q-P4 capability table.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

@@ -1728,6 +1728,223 @@
      "EXPLANT"
     ]
    }
+  },
+  {
+   "id": "DR-DV-03a",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC for a pacing-capable implant/generator/upgrade; not required for pure EXPLANT or defibrillation-only systems\"",
+   "target": "DEVICE_IMPLANTS.final_programmed_mode",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "PPM_SINGLE",
+       "PPM_DUAL",
+       "CRT_P",
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "LEADLESS_SINGLE",
+       "LEADLESS_DUAL",
+       "OTHER"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.device_action",
+      "in": [
+       "NEW_IMPLANT",
+       "GENERATOR_CHANGE",
+       "UPGRADE",
+       "DOWNGRADE",
+       "REPOSITION"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-03b",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC when a pacing mode is applicable\"",
+   "target": "DEVICE_IMPLANTS.lower_rate_bpm",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "DEVICES.current_device_type",
+      "in": [
+       "PPM_SINGLE",
+       "PPM_DUAL",
+       "CRT_P",
+       "ICD_SINGLE",
+       "ICD_DUAL",
+       "CRT_D",
+       "LEADLESS_SINGLE",
+       "LEADLESS_DUAL",
+       "OTHER"
+      ]
+     },
+     {
+      "field": "DEVICE_IMPLANTS.device_action",
+      "in": [
+       "NEW_IMPLANT",
+       "GENERATOR_CHANGE",
+       "UPGRADE",
+       "DOWNGRADE",
+       "REPOSITION"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-04",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC for ICD-capable systems\"",
+   "target": "DEVICE_IMPLANTS.tachytherapy_status",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-05",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"C for defibrillator systems\"",
+   "target": "DEVICE_IMPLANTS.defibrillation_testing",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICES.current_device_type",
+    "in": [
+     "ICD_SINGLE",
+     "ICD_DUAL",
+     "CRT_D",
+     "S_ICD",
+     "EV_ICD",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-07a",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC only for pacing-capable leads\"",
+   "target": "DEVICE_LEADS.acute_capture_threshold_v",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_LEADS.lead_type",
+    "in": [
+     "PACE_SENSE",
+     "LV",
+     "CSP",
+     "EPICARDIAL",
+     "TRANSVENOUS_DEFIBRILLATION",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-07b",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC only for pacing-capable leads\"",
+   "target": "DEVICE_LEADS.acute_impedance_ohm",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_LEADS.lead_type",
+    "in": [
+     "PACE_SENSE",
+     "LV",
+     "CSP",
+     "EPICARDIAL",
+     "TRANSVENOUS_DEFIBRILLATION",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-07c",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC only when capture threshold is recorded\" (shown with the threshold)",
+   "target": "DEVICE_LEADS.pulse_width_ms",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_LEADS.lead_type",
+    "in": [
+     "PACE_SENSE",
+     "LV",
+     "CSP",
+     "EPICARDIAL",
+     "TRANSVENOUS_DEFIBRILLATION",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-DV-08",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"RC for transvenous or extravascular defibrillation electrodes when tested\"",
+   "target": "DEVICE_LEADS.shock_impedance_ohm",
+   "effect": "show_when",
+   "when": {
+    "field": "DEVICE_LEADS.lead_type",
+    "in": [
+     "TRANSVENOUS_DEFIBRILLATION",
+     "EXTRAVASCULAR_DEFIBRILLATION",
+     "OTHER"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-01a",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"C for CSP\" (HOT-CRT and LOT-CRT count as CSP)",
+   "target": "CRT_CSP_PROCEDURES.csp_target",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.cpp_strategy",
+    "in": [
+     "HBP",
+     "LBBAP",
+     "HOT_CRT",
+     "LOT_CRT"
+    ]
+   }
+  },
+  {
+   "id": "DR-CSP-01b",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner Q-P4 31 Oct (capability table, docs/MERGE_PLAN.md R4-5); dictionary \"C for CSP\" (HOT-CRT and LOT-CRT count as CSP)",
+   "target": "CRT_CSP_PROCEDURES.conduction_system_capture_documented",
+   "effect": "show_when",
+   "when": {
+    "field": "CRT_CSP_PROCEDURES.cpp_strategy",
+    "in": [
+     "HBP",
+     "LBBAP",
+     "HOT_CRT",
+     "LOT_CRT"
+    ]
+   }
   }
  ]
 }

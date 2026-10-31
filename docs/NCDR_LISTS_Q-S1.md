@@ -68,7 +68,7 @@ RA not enlarged / mild / moderate / severe.
 | LA enlargement | `ECHO_STUDIES.la_size_category` (already) |
 | Atrial thrombus | `AF_ABLATIONS.la_laa_thrombus_status` (already, TEE / CT) |
 | LV hypertrophy | **new `ECHO_STUDIES.lv_hypertrophy`**: None / Mild / Moderate / Severe |
-| RA enlargement | **new `ECHO_STUDIES.ra_size_category`**: Normal / Mild / Moderate / Severe / Unknown |
+| RA enlargement | **new `ECHO_STUDIES.ra_size_category`**: Normal (NCDR "not enlarged", same label as LA) / Mild / Moderate / Severe / Unknown |
 
 Two new ECHO_STUDIES columns.
 

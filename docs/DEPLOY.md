@@ -112,6 +112,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `58b8349` (offline New case MRN note; device ticks saved with the case; AVNRT hides accessory-pathway / AT questions; Holter duration fix) | `c98e3ff1-6518-4cab-947a-6f4b61a232f5` | main Sheet + Cases column `picked_items_json` (30 Oct; TEST already had it). Apps Script **Version 3** (.xlsx nightly backup); Apps Script rollback = Version 2 |
 | **`checkpoint-2026-10-30-before-round4`** (= `97c77fe`, same code as `58b8349`; set on the owner's request before the round 4 ideas are merged) | `c98e3ff1-6518-4cab-947a-6f4b61a232f5` | same Sheet (with `picked_items_json`); Apps Script Version 3. **Go back here if round 4 is not wanted** |
 | `ceb6347` (round 4: Dashboard click filter, Next missing, Completeness sheet, Admin Data completeness `#/completeness`, patient Timeline; 30 Oct late night) | `7ccc5cc3-76bc-4d20-aa7c-d998f475989a` | same Sheet, no Sheet change; Apps Script Version 3 unchanged |
+| `d36f7dc` (R4-4: several NCDR pacing reasons and generator-replacement reasons; 31 Oct) | `d11bb402-ebd1-469b-9b70-614aeade36a1` | main + TEST Sheet `sheets setup`: Device_Procedures +2 columns (`pacing_indication_reasons`, `generator_replacement_reasons`); old code still runs. R4-4 copy dry run: 0 cases to fill (TEST and main) |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

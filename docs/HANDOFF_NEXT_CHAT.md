@@ -24,8 +24,13 @@ What was done in this chat:
   Logged in `docs/MERGE_PLAN.md`.
 - Owner asked for a preview page of what will change before each deploy (a review artifact with real screenshots and
   his open choices) — keep doing this.
-**Next:** ask the owner (one at a time) about the open items below: R4-4, R4-5. The 4 side sessions can be archived
-on his yes.
+**31 Oct, after midnight — R4-4 live:** Worker `d11bb402-ebd1-469b-9b70-614aeade36a1` (commit `d36f7dc`). Two
+optional multi-choice DEVICE_IMPLANTS fields beside the unchanged `implant_indication`: "Reasons pacing indicated"
+(NCDR #14731, shown for PPM / CRT / ICD dual / leadless) and "Reasons for generator replacement" (#7650, shown for
+generator change / upgrade / downgrade / explant). Main + TEST Sheet got the 2 columns (Device_Procedures).
+`scripts/migrate-r44.ts` (exact matches only) dry run found 0 cases on both Sheets, so nothing was written. Preview and
+screenshots: https://claude.ai/artifact/WjPxfEUaGMD3JQNxo1X8V1 . main pushed; the 4 round 4 side sessions archived.
+**Next:** R4-5 (Q-P3 CSP trigger, Q-P4 device / lead capability table), one at a time with its source, preview first.
 
 ### Round 4 history (kept for reference)
 **Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same

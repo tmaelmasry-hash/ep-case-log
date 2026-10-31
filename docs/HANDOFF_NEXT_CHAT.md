@@ -1,100 +1,65 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 30 Oct 2026 (late night)
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 31 Oct 2026
 
-Read this first, then `docs/SCREEN_REVIEW.md` (every screen decision and what each build step did),
-`docs/MERGE_PLAN.md` (owner decisions R2-* / R3-*) and `AGENTS.md`.
+Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / R4-* and the 31 Oct answers),
+`docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
-Work in steps; show a preview before building anything visible; ask with multiple-choice questions; stop after each
-step; **deploy only on his yes**; he asks before deploying every time ("Deploy now").
 
-## START HERE (30 Oct, late night) — round 4 is merged and LIVE
-State: `main` = round 4 merged (`ceb6347` + this handoff), **not pushed** (ask the owner before pushing).
-**Live Worker `7ccc5cc3-76bc-4d20-aa7c-d998f475989a`** (30 Oct ~23:00). No Sheet change, Apps Script still Version 3.
-Live JS checked: `assets/index-E0lxtg7u.js` has Data completeness and Next missing; `/api/completeness` answers 401
-signed out. Rollback: `node scripts/wrangler.ts rollback c98e3ff1-6518-4cab-947a-6f4b61a232f5` (restore point tag
-`checkpoint-2026-10-30-before-round4`; see `docs/DEPLOY.md`).
-Tests on `main` before deploy: build ✓, unit 311 pass, e2e 100/100, e2e:worker 100/100.
-What was done in this chat:
-- The 4 branches below merged `--no-ff` one by one; the two section-grouping files became one `shared/completeness.ts`
-  (case sheet `completenessBySection`, group matrix `completenessOf`, one counter `countCheck`, count names
-  applicable / recorded / not_available / missing / ai_pending).
-- Two new e2e specs fixed (Member refusal fetched from the page so the cookie goes; Next missing closes parts one by one).
-- Look fixes from the screenshots: long section names wrap in the Completeness sheet; `#/completeness` uses 1200 px.
-- Owner's answers after the review page https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB (real screenshots, made-up
-  data): Dashboard other types stay faded; Next missing count = where you are now ("1 of N"); Timeline newest first.
-  Logged in `docs/MERGE_PLAN.md`.
-- Owner asked for a preview page of what will change before each deploy (a review artifact with real screenshots and
-  his open choices) — keep doing this.
-**31 Oct, after midnight — R4-4 live:** Worker `d11bb402-ebd1-469b-9b70-614aeade36a1` (commit `d36f7dc`). Two
-optional multi-choice DEVICE_IMPLANTS fields beside the unchanged `implant_indication`: "Reasons pacing indicated"
-(NCDR #14731, shown for PPM / CRT / ICD dual / leadless) and "Reasons for generator replacement" (#7650, shown for
-generator change / upgrade / downgrade / explant). Main + TEST Sheet got the 2 columns (Device_Procedures).
-`scripts/migrate-r44.ts` (exact matches only) dry run found 0 cases on both Sheets, so nothing was written. Preview and
-screenshots: https://claude.ai/artifact/WjPxfEUaGMD3JQNxo1X8V1 . main pushed; the 4 round 4 side sessions archived.
-**31 Oct — R4-5 done.** Q-P3: keep the dictionary CSP rule (nothing built). Q-P4: capability show rules live, Worker
-`904954b6-4fba-4fc2-ba5c-0c5ce4fd8188` (commit `d08c2d9`; table and screenshots
-https://claude.ai/artifact/QUxAQrbuNBGckDnVGqEqXW ; rules DR-DV-03a/b, 04, 05, 07a/b/c, 08, DR-CSP-01a/b in
-`config/rules.json`, tests `tests/server/qp4.test.ts`). Lower rate, tachytherapy, pulse width and CSP target stay hidden
-by the field review. One real saved answer is now hidden (PPM dual, defibrillation testing "Not done"; kept).
-**31 Oct — DR-DV-06 live** (Worker `7120cbb6-0bd3-47bb-9294-d3926dd2f8cd`, commit `8c8239e`): "Leadless channel
-measurements" offered for leadless single / dual only (layout `show_when` on DEVICE_IMPLANT_CHANNEL_MEASUREMENTS; a
-section with saved rows stays; the server refuses new rows for other types). Real Sheet had no channel rows.
-**31 Oct — 15 NCDR lead locations live** (Worker `ee730343-e51e-4f91-b8fa-581a60b2baac`, commit `bd315a8`; see
-MERGE_PLAN R4-3 / Q-F12). No Sheet change.
-**31 Oct — Q-R2 live** (Worker `90c04ea3-c2c0-4ed0-a2a4-e4bdb6a8d75c`, commit `929e584`): DR-FL-03 atypical flutter
-target for atypical RA / LA only; DR-LD-01a–d extraction details for EXTRACT / COMPLETE_SYSTEM_EXPLANT only
-(`tests/server/qr2.test.ts`). One real typical-CTI case keeps a hidden RA_FREE_WALL_LINE target.
-Q-R1 closed 31 Oct: I3B and E5 stay yellow warnings (DR-AF-I3B, DR-AF-09-E5, live since 21 Oct).
-**31 Oct — Q-P1 live** (Worker `ffc4fd45-4092-47d5-ba56-0fb7731a140b`, commit `5014eae`): ICD / Pacemaker / Leads
-only tag on case cards, My work and the case header (`shared/pathway.ts`, `tests/unit/pathway.test.ts`).
-**Next:** the only open item is Q-S1 (NCDR dynamic lists, only from the official NCDR lists the owner may obtain).
-Ask the owner what is next.
-Lesson: a laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; rerun that spec alone.
+## How the owner wants to work
+- Work in steps and stop after each one. Ask with multiple-choice questions (AskUserQuestion), recommendation first.
+- **Preview before building anything visible**, and **a review page before every deploy**: an HTML artifact in
+  Egyptian Arabic, RTL, with real screenshots from the local synthetic preview (made-up MRNs 9990xxx), what changed,
+  fixes found from the screenshots, and the open choices (then ask them). Examples:
+  https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB (round 4) · https://claude.ai/artifact/QUxAQrbuNBGckDnVGqEqXW (Q-P4).
+- **Deploy only on his "Deploy now"**; Sheet changes (`npm run sheets -- setup`) and data copies only on his separate yes.
+- Before deploy: full run `build → test → e2e → e2e:worker` in a Terminal panel tab he can watch (the scratchpad
+  script `full-run.ps1` of the last chat did this; recreate it if needed). After deploy: check the live JS, add a row to
+  `docs/DEPLOY.md` → Restore points, update this file, push `main` (he agreed to pushes after deploys).
+- Never delete a saved value: when a show rule hides a question, first count real answers it would hide (read only,
+  codes and counts only, no MRN) and tell him; the value stays in the Sheet and Excel.
 
-### Round 4 history (kept for reference)
-**Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same
-code as Worker `c98e3ff1`, Apps Script Version 3).
+## START HERE — state on 31 Oct 2026: everything is live, nothing half-done
+- `main` = `c47f1dd` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
+- **Live Worker `ffc4fd45-4092-47d5-ba56-0fb7731a140b`**. Apps Script live = **Version 3** (unchanged since 30 Oct).
+- Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
+  `generator_replacement_reasons`). No other Sheet change since 30 Oct.
+- Last full test run (31 Oct): build ✓, unit 339+ pass, e2e 102/102, e2e:worker 101/102 → the one failure was a test
+  timing slip (Completeness after reload), fixed in `5014eae` and that spec re-run green on both setups.
+- Side sessions: none running (the 4 round 4 sessions are archived).
+- Rollback to before round 4: `node scripts/wrangler.ts rollback c98e3ff1-6518-4cab-947a-6f4b61a232f5` (tag
+  `checkpoint-2026-10-30-before-round4`). Every later Worker version is listed in `docs/DEPLOY.md`.
 
-Decisions: `docs/MERGE_PLAN.md` → "Round 4 decisions" (R4-1 … R4-9). Preview the owner approved (Design canvas, 5
-artboards, re-read before judging the builds): https://claude.ai/artifact/FEQTvEQdfT7s2qLWWtk5uE . Owner: "build what
-you think fits", group matrix now too (no trial week planned). He wants a preview before anything visible and his yes
-before each merge and each deploy.
+### Live since 30 Oct (in order; details in MERGE_PLAN / DEPLOY)
+| What | Commit → Worker |
+|---|---|
+| Round 4: Dashboard click filter, Next missing ("1 of N" = where you are), Completeness sheet in the case, Admin `#/completeness` matrix + Excel, patient Timeline (newest first). One `shared/completeness.ts` for case sheet and matrix | `ceb6347` → `7ccc5cc3` |
+| R4-4: several NCDR pacing reasons (#14731) and generator-replacement reasons (#7650) beside the unchanged `implant_indication`; `scripts/migrate-r44.ts` (exact matches only) found 0 cases to copy | `d36f7dc` → `d11bb402` |
+| Q-P3 (keep dictionary CSP rule, nothing built) + Q-P4 capability show rules (programmed mode, defibrillation testing, lead threshold / impedance, shock impedance, CSP capture) | `d08c2d9` → `904954b6` |
+| DR-DV-06: leadless channel measurements for leadless single / dual only (layout `show_when`) | `8c8239e` → `7120cbb6` |
+| R4-3 / Q-F12: the 15 NCDR lead locations (8 new codes, NCDR names, coarse Epicardial / Subcutaneous not offered) | `bd315a8` → `ee730343` |
+| Q-R2: atypical flutter target for atypical only; extraction details for extract / complete explant | `929e584` → `90c04ea3` |
+| Q-R1 closed: spec rules I3B and E5 stay yellow warnings (live since 21 Oct) | — |
+| Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header (`shared/pathway.ts`) | `5014eae` → `ffc4fd45` |
 
-**Status 30 Oct ~21:50: all four finished and committed** (each reports build + unit tests pass, its new e2e spec NOT
-run, screens not checked in a browser): dash-click-filter `ad494f6` (spec `tests/e2e/dashclick.spec.ts`),
-case-next-missing `57d531a` (`tests/e2e/round4case.spec.ts`), patient-timeline `f1c4169` (`tests/e2e/timeline.spec.ts`),
-group-matrix `d6ac2a0`. Nothing merged into `main`.
+Real data hidden by the new rules (values kept in the Sheet): 1 PPM dual with defibrillation testing "Not done";
+1 typical CTI flutter with atypical target "RA free wall line" (both In progress cases).
 
-Side sessions started 30 Oct ~21:10 from the previous chat (each in its own worktree, told: no e2e runs because of the
-shared ports, `npm run build && npm test` only, commit on its own branch, no push to `main`, no deploy, no Sheet change):
+### Still open (only these)
+1. **Q-S1 — NCDR dynamic lists** (symptoms, energy sources, prior strategies, device / catheter product lists): stay
+   empty until the owner brings the official NCDR lists. Never invent them.
+2. Nothing else is open from round 4, the EP Workspace question ledger (its file in `ep-workspace/docs/merge/` is out
+   of date: Q-P1…P4, Q-R1, Q-R2, Q-F12, Q-C4, Q-M3-3 are all answered — see MERGE_PLAN), or the postponed items.
+   Ask the owner what is next.
 
-| Session (open from the sidebar) | Session id | Branch (full ref) | Builds | Main files |
-|---|---|---|---|---|
-| Dashboard: click a month or type to filter | `local_f9412fb7-325c-435e-b20c-1969091a9870` | `refs/heads/claude/dash-click-filter-1f4ca2` | R4-6: click a month / type filters the Dashboard (via `case_ids` to `POST /api/dashboard`), Filtered bar + Clear, "a case can count in several types" note | `src/views/StatsView.tsx` |
-| Case: Next missing button + Completeness sheet | `local_39d89cb7-52d2-4942-9c86-b759e1b725c4` | `refs/heads/claude/case-next-missing-05e3e1` | R4-7 "Next missing · 1 of 3" in the procedure sheet; R4-8 Completeness sheet from the case header (sections × recorded / N/A / missing / AI, Fix) | `src/views/CaseView.tsx`, a section-grouping function in `shared/` |
-| Patient page: Timeline of recorded events | `local_efaa60df-9d91-446a-a08e-6e890170b9a4` | `refs/heads/claude/patient-timeline-9851b8` | R4-9 Cases / Timeline switch, events by their own dictionary date, "Without a date" box, no planned follow-ups | `src/views/PatientsView.tsx`, `shared/timeline.ts` |
-| Admin: data completeness matrix for a group | `local_6dff1c52-1b74-4b8b-800a-3ef07ffc80c9` | `refs/heads/claude/group-matrix-8ad333` | R4-8 group part: paged Admin-only endpoint (e.g. `GET /api/completeness`), `#/completeness` screen linked from `#/admin`, Excel | `server/routes/*`, `shared/completeness.ts`, `src/views/CompletenessView.tsx`, `src/App.tsx` |
+### Lessons (Windows PC)
+- A laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; re-run that spec alone.
+- After a reload the app shows the device copy first, then the server copy: e2e checks of counts must wait
+  (`expect.poll`), not read once.
+- In bash scripts never start with a bare `cat > file` without input (it waits forever); write files with the Write tool.
+- Local preview with data: start `registry-synthetic` (:8791, in-memory), sign in admin / `synthetic-e2e-pass`, and seed
+  made-up cases through the API (the last chat's scratchpad seed scripts are gone with that chat; rewrite: login →
+  `POST /api/cases` with `new_case: true` → `PATCH /api/cases/:id` with `creates` / `changes`).
 
-**Steps for the new chat (in order):**
-1. For each session: read its last report (`mcp__ccd_session_mgmt__list_events` with the id above; they are not
-   linked to the new chat, so no automatic note arrives). If one is still running, wait; if one stopped half-way, read
-   its branch and finish it. A report is not proof: read each branch's diff (`git diff main...<ref>`).
-2. Check overlaps before merging: the two "section grouping" functions (case-next-missing and group-matrix) should
-   become one shared function; CSS added to `src/styles.css` by several branches; `src/App.tsx` routes.
-3. Ask the owner (AskUserQuestion) to merge the four branches into `main` (name each by its full ref). Merge
-   `--no-ff` one by one, resolve conflicts, unify the grouping function.
-4. Full run on `main`: `npm run build && npm test && npm run e2e && npm run e2e:worker` (one at a time, in a Terminal
-   panel tab so the owner sees it; stop leftover node / workerd on :8790 / :8793 / :8794 first; if Playwright says
-   "Executable doesn't exist", `npx playwright install chromium-headless-shell`). Fix the new e2e specs the sessions
-   wrote but did not run.
-5. Show the owner the finished screens (local preview `registry-synthetic`, screenshots) against the canvas.
-6. Ask "Deploy now?". On yes: `node scripts/wrangler.ts whoami`, `npm run deploy`, check live JS, add the restore point
-   to `docs/DEPLOY.md`. Round 4 needs no `sheets setup` and no Apps Script change (check the diffs confirm this).
-7. Update this file; tell the owner in Egyptian Arabic what changed on his screen; offer to archive the 4 sessions.
-
-Still open (separate from the four ideas, each needs a preview / the owner's answer): R4-4 several pacing reasons and
-generator-replacement reasons (show what it does first); R4-5 clinical rules Q-P3 (CSP section trigger) and Q-P4
-(device / lead capability table), one at a time with their source. Postponed: 15 NCDR lead locations. NCDR dynamic
-lists stay empty.
+---
 
 ## Earlier (30 Oct, night) — everything merged before round 4 is live
 State: `main` = `dd9e835`, pushed. **Live Worker `c98e3ff1`** (30 Oct ~20:30). Apps Script live =
@@ -146,7 +111,7 @@ step 7 https://claude.ai/artifact/7M5BGbQ3rqjwRqyf1T2xCM · step 8 https://claud
 His Design-canvas edits can fail to save when his connection drops: list the canvas files and compare the version
 before building.
 
-## Open items (ask the owner, one at a time)
+## Notes from 30 Oct (all closed or for information; nothing to do)
 - **Labs tied to one procedure:** not possible, the dictionary links LAB_RESULTS to the episode only (owner had asked).
 - **Offline new case MRN (live 30 Oct, Worker `c98e3ff1`):** New Case shows "Offline: checked against cases on this
   device only." under the MRN; the outbox sends `known_case_ids`, `POST /api/cases` answers `other_cases` /

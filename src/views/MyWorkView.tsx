@@ -7,7 +7,7 @@ import { groupColor } from '../lib/filters';
 import { useStore } from '../store';
 import { Icon } from '../components/Icon';
 import { Empty, SaveIndicator } from '../components/ui';
-import { pilgrimMark, procedureChip } from './CasesView';
+import { PathwayTag, pathwayOf, pilgrimMark, procedureChip } from './CasesView';
 
 export interface MyWork {
   stale_days: number;
@@ -63,6 +63,7 @@ export function MyWorkRow({ x, staleDays, compact }: { x: Item; staleDays: numbe
               {hajj}
             </span>
           )}
+          {c && <PathwayTag pathway={pathwayOf(c)} />}
           <span className="mw-badge">{badge}</span>
         </span>
         <span className="sub">

@@ -24,7 +24,8 @@ import { caseEnv, consequences, evaluate, fieldRules, type Consequence } from '.
 import { useCohorts } from '../lib/cohorts';
 import { PROCEDURE_ITEMS, componentsToDrop, itemOn, showsDevice, showsLeads, type ItemFacts, type ProcedureItem } from '../../shared/procedureTypes.ts';
 import { seqText } from '../lib/offlineCase';
-import { procedureChip } from './CasesView';
+import { PathwayTag, procedureChip } from './CasesView';
+import { devicePathway } from '../../shared/pathway.ts';
 import { groupColor } from '../lib/filters';
 import { hijriLabel } from '../lib/hijri';
 import { rowInSection, type LayoutRow } from '../../shared/dictionary.ts';
@@ -1555,6 +1556,10 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
     const text = type !== 'ABLATION' && codes.length ? codes.map((c) => label('PROCEDURE_COMPONENTS', 'component_type', c)).join(' + ') : ch.text;
     return { ...ch, text };
   };
+  const pathway = devicePathway(
+    String(ed.rows('DEVICES')[0]?.current_device_type ?? ''),
+    procs.map((p) => ({ type: (p.primary_procedure_type as string) ?? null, components: comps.filter((c) => c.procedure_id === p._id).map((c) => String(c.component_type)) })),
+  );
   // Save draft (owner, 28 Oct): sends what is waiting and goes back to the list; the case stays In progress.
   const saveDraft = async () => {
     await ed.flush();
@@ -1647,6 +1652,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
                   </span>
                 );
               })}
+              <PathwayTag pathway={pathway} />
             </div>
           )}
           <div className="hc-meta small">

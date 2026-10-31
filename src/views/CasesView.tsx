@@ -3,6 +3,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { CaseSummary, ProcedureSummary } from '../../shared/caseTypes.ts';
 import { checkMrn } from '../../shared/mrn.ts';
+import { devicePathway, deviceTypeOf, type Pathway } from '../../shared/pathway.ts';
 import { label, mrnRules } from '../lib/dict';
 import { api, ApiError } from '../lib/api';
 import { ageSex, fmtDate, fmtMonthKey, monthKey, todayISO } from '../lib/util';
@@ -39,6 +40,16 @@ export function matchesSearch(c: CaseSummary, term: string, tags: Set<string>): 
   const words = [...c.procedures.map((p) => procedureChip(p).text), ...[...tags].map(itemLabel)].join(' ').toLowerCase();
   return term.split(/\s+/).every((w) => words.includes(w));
 }
+
+/** ICD / Pacemaker / Leads only (owner Q-P1, 31 Oct): shown next to a device case's procedure; nothing stored. */
+export function PathwayTag({ pathway }: { pathway: Pathway | null }) {
+  return pathway ? (
+    <span className="chip pw-tag" data-testid="pathway-tag">
+      {pathway}
+    </span>
+  ) : null;
+}
+export const pathwayOf = (c: CaseSummary) => devicePathway(deviceTypeOf(c.codes), c.procedures);
 
 /** Core fields still empty (and not marked Not available). */
 export const missingOf = (c: CaseSummary) => (c.core?.total ? c.core.total - c.core.done : 0);
@@ -79,6 +90,7 @@ export function CaseRow({ c, selected, showGroup, groupDot }: { c: CaseSummary; 
           ) : (
             <span className="chip c-neutral">MRN only</span>
           )}
+          <PathwayTag pathway={pathwayOf(c)} />
         </span>
         <span className="sub">
           {groupDot && <span className="gdot" style={{ background: `var(--${groupDot})` }} aria-hidden />}

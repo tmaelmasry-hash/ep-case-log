@@ -3715,3 +3715,11 @@ a.hc-mrn {
 .is-wide .overlay {
   left: 260px;
 }
+
+/* Device pathway tag (owner Q-P1, 31 Oct): ICD / Pacemaker / Leads only, outlined so it does not read as a procedure. */
+.pw-tag {
+  background: transparent;
+  color: var(--cat-dev);
+  border: 1px solid var(--cat-dev);
+  font-weight: 700;
+}

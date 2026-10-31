@@ -73,9 +73,10 @@ test('Completeness sheet: tiles, a row per section, Fix goes to the field', asyn
   await expect(sheet).toBeVisible();
   const answered = sheet.getByTestId('cmp-answered');
   const recorded = sheet.getByTestId('cmp-recorded');
-  const n = await answered.locator('.cmp-num').textContent();
-  const [done, all] = n!.match(/\d+/g)!.map(Number);
-  expect(done).toBe(all - 1);
+  // After the reload the device copy shows first; wait for the server copy (one item left).
+  const counts = async () => (await answered.locator('.cmp-num').textContent())!.match(/\d+/g)!.map(Number);
+  await expect.poll(async () => { const [d, t] = await counts(); return t - d; }).toBe(1);
+  const [, all] = await counts();
   await expect(recorded.locator('.cmp-num')).toContainText(`of ${all}`);
 
   // Sections without core items say so; the patient section is complete.

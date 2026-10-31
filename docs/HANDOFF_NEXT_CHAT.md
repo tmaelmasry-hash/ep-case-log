@@ -40,8 +40,12 @@ measurements" offered for leadless single / dual only (layout `show_when` on DEV
 section with saved rows stays; the server refuses new rows for other types). Real Sheet had no channel rows.
 **31 Oct — 15 NCDR lead locations live** (Worker `ee730343-e51e-4f91-b8fa-581a60b2baac`, commit `bd315a8`; see
 MERGE_PLAN R4-3 / Q-F12). No Sheet change.
-**Next:** nothing open from round 4 or earlier postponed items. NCDR dynamic lists stay empty (Q-S1, needs the
-official lists). Ask the owner what is next.
+**31 Oct — Q-R2 live** (Worker `90c04ea3-c2c0-4ed0-a2a4-e4bdb6a8d75c`, commit `929e584`): DR-FL-03 atypical flutter
+target for atypical RA / LA only; DR-LD-01a–d extraction details for EXTRACT / COMPLETE_SYSTEM_EXPLANT only
+(`tests/server/qr2.test.ts`). One real typical-CTI case keeps a hidden RA_FREE_WALL_LINE target.
+**Next — the only open items (ask the owner, one at a time):** Q-P1 device pathway badge (ICD / Pacemaker / Leads
+only, derived display, optional); Q-R1 spec rules I3B and E5 ("clinical approval OUTSTANDING" in the frozen spec:
+read them and show the owner with the source); Q-S1 NCDR dynamic lists (only from the official NCDR lists).
 Lesson: a laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; rerun that spec alone.
 
 ### Round 4 history (kept for reference)

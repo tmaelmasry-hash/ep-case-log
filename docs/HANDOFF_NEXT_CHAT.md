@@ -38,7 +38,11 @@ by the field review. One real saved answer is now hidden (PPM dual, defibrillati
 **31 Oct — DR-DV-06 live** (Worker `7120cbb6-0bd3-47bb-9294-d3926dd2f8cd`, commit `8c8239e`): "Leadless channel
 measurements" offered for leadless single / dual only (layout `show_when` on DEVICE_IMPLANT_CHANNEL_MEASUREMENTS; a
 section with saved rows stays; the server refuses new rows for other types). Real Sheet had no channel rows.
-**Next:** nothing open from round 4. Ask the owner what is next (postponed: 15 NCDR lead locations).
+**31 Oct — 15 NCDR lead locations live** (Worker `ee730343-e51e-4f91-b8fa-581a60b2baac`, commit `bd315a8`; see
+MERGE_PLAN R4-3 / Q-F12). No Sheet change.
+**Next:** nothing open from round 4 or earlier postponed items. NCDR dynamic lists stay empty (Q-S1, needs the
+official lists). Ask the owner what is next.
+Lesson: a laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; rerun that spec alone.
 
 ### Round 4 history (kept for reference)
 **Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same

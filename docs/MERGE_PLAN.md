@@ -124,6 +124,12 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
     Sensing stays for all; pulse width only when a threshold is recorded.
   - CSP target + capture documented (DR-CSP-01): HBP, LBBAP, HOT-CRT, LOT-CRT; not BIV CRT.
   - No value is deleted; before deploy, count real cases where a filled answer would be hidden (read only).
+  - Live 31 Oct (Worker `904954b6`). DR-DV-06 (leadless channel measurements for leadless only) live 31 Oct
+    (Worker `7120cbb6`).
+- R4-3 / Q-F12 (31 Oct, preview https://claude.ai/artifact/CDB7wBZxYvhds5bgCqHZzB , approved as shown): the 15 NCDR
+  lead locations (NCDR ICD v3.0 #7735) in the same `DEVICE_LEADS.lead_location`: 8 codes added (amendments R4-3-1..8),
+  RA / RV / HIS / LBB_AREA / CS_LV shown by their NCDR names (labels.json; stored codes unchanged), coarse
+  EPICARDIAL / SUBCUTANEOUS kept for old rows but not offered (case_layout `offer`). Live 31 Oct (Worker `ee730343`).
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

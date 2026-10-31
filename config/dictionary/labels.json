@@ -29,6 +29,13 @@
     "CLINICAL_PROFILE_SNAPSHOTS.cardiomyopathy_type": "Cardiomyopathy type (old single-choice item)"
   },
   "codes": {
+    "DEVICE_LEADS.lead_location.RA": "RA endocardial",
+    "DEVICE_LEADS.lead_location.RV": "RV endocardial",
+    "DEVICE_LEADS.lead_location.HIS": "His bundle",
+    "DEVICE_LEADS.lead_location.LBB_AREA": "Left bundle",
+    "DEVICE_LEADS.lead_location.CS_LV": "LV epicardial (CVS)",
+    "DEVICE_LEADS.lead_location.EPICARDIAL": "Epicardial (old, not split)",
+    "DEVICE_LEADS.lead_location.SUBCUTANEOUS": "Subcutaneous (old, not split)",
     "PFA": "PFA (pulsed field)",
     "RF": "RF",
     "CRYOBALLOON": "Cryoballoon",

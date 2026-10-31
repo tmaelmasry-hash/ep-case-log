@@ -1113,6 +1113,56 @@
   ]
  },
  "codes": {
+  "DEVICE_LEADS.lead_location": [
+   {
+    "code": "RA_EPICARDIAL",
+    "label": "RA epicardial",
+    "amendment": "R4-3-1",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "RV_EPICARDIAL",
+    "label": "RV epicardial",
+    "amendment": "R4-3-2",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "LV_ENDOCARDIAL",
+    "label": "LV endocardial",
+    "amendment": "R4-3-3",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "LV_EPICARDIAL_SURGICAL",
+    "label": "LV epicardial (surgical)",
+    "amendment": "R4-3-4",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "AZYGOS_VEIN",
+    "label": "Azygos vein",
+    "amendment": "R4-3-5",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "SVC_SUBCLAVIAN",
+    "label": "SVC / subclavian",
+    "amendment": "R4-3-6",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "SUBCUTANEOUS_ARRAY",
+    "label": "Subcutaneous array",
+    "amendment": "R4-3-7",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   },
+   {
+    "code": "SUBCUTANEOUS_S_ICD",
+    "label": "Subcutaneous (S-ICD)",
+    "amendment": "R4-3-8",
+    "source": "NCDR ICD v3.0 p5 #7735 (also #9265); owner Q-F12 21 Oct, R4-3 31 Oct"
+   }
+  ],
   "COMPLICATIONS.category": [
    {
     "code": "DEEP_VEIN_THROMBOSIS",

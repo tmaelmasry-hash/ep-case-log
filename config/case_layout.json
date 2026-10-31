@@ -701,6 +701,25 @@
    "RHYTHM_MONITORING.nsvt_or_vt_detected": "NSVT / VT detected"
   },
   "code_order": {
+   "DEVICE_LEADS.lead_location": [
+    "RA",
+    "RA_EPICARDIAL",
+    "RV",
+    "RV_EPICARDIAL",
+    "HIS",
+    "LBB_AREA",
+    "LV_ENDOCARDIAL",
+    "CS_LV",
+    "LV_EPICARDIAL_SURGICAL",
+    "AZYGOS_VEIN",
+    "SVC_SUBCLAVIAN",
+    "SUBCUTANEOUS_ARRAY",
+    "SUBCUTANEOUS_S_ICD",
+    "SUBSTERNAL",
+    "OTHER",
+    "EPICARDIAL",
+    "SUBCUTANEOUS"
+   ],
    "PATIENTS.sex_at_birth": [
     "MALE",
     "FEMALE"
@@ -725,6 +744,23 @@
    ]
   },
   "offer": {
+   "DEVICE_LEADS.lead_location": [
+    "RA",
+    "RA_EPICARDIAL",
+    "RV",
+    "RV_EPICARDIAL",
+    "HIS",
+    "LBB_AREA",
+    "LV_ENDOCARDIAL",
+    "CS_LV",
+    "LV_EPICARDIAL_SURGICAL",
+    "AZYGOS_VEIN",
+    "SVC_SUBCLAVIAN",
+    "SUBCUTANEOUS_ARRAY",
+    "SUBCUTANEOUS_S_ICD",
+    "SUBSTERNAL",
+    "OTHER"
+   ],
    "EP_PROCEDURES.procedure_status": [
     "COMPLETED",
     "PARTIAL",

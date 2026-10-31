@@ -2020,6 +2020,20 @@
      "COMPLETE_SYSTEM_EXPLANT"
     ]
    }
+  },
+  {
+   "id": "DR-NCDR-3",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "NCDR AFib Ablation Coder's Data Dictionary v2.0 #4435 \"if prior catheter ablation\"; Q-S1 31 Oct (owner: builder decides); same trigger as DR-M3-B7",
+   "target": "AF_ABLATIONS.prior_af_ablation_strategies",
+   "effect": "show_when",
+   "when": {
+    "field": "EP_PROCEDURES.first_or_redo",
+    "in": [
+     "REDO"
+    ]
+   }
   }
  ]
 }

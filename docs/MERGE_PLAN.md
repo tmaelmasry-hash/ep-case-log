@@ -138,7 +138,11 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
   (`shared/pathway.ts`): ICD (ICD single / dual, CRT-D, S-ICD, EV-ICD), Pacemaker (PPM, CRT-P, leadless, LVEP, CCM),
   Leads only (lead procedure without device implant / generator change); none for ILR / Other / no type. Shown on
   case cards, My work and the case header; display only. Live 31 Oct (Worker `ffc4fd45`).
-- Only Q-S1 (NCDR dynamic lists, needs the official lists) is still open from EP Workspace.
+- Q-S1 (31 Oct, owner: "do everything yourself"): the printed values were taken from the public NCDR Coder's Data
+  Dictionaries (AF v2.0, EP Device v3.0) — see `docs/NCDR_LISTS_Q-S1.md`. Product lists (catheter / device / lead)
+  are NCDR Master files, not public → model stays text. Built (not yet live): 3 codes (Anxiety, Irregular heartbeat;
+  Ethanol among energies used) + 3 optional fields (prior AF ablation strategies for a redo; echo LV hypertrophy and
+  RA size). Nothing is open from EP Workspace after this.
 - Q-R1 closed (31 Oct): spec rules I3B (DR-AF-I3B) and E5 (DR-AF-09-E5) **stay warnings** (live since 21 Oct; saving
   is never blocked). Owner confirmed; nothing to build.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /

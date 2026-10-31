@@ -73,7 +73,7 @@ describe('dictionary', () => {
     expect(dict.entities.AF_ABLATIONS.module).toEqual(['AF']);
     const fieldCount = Object.values(dict.entities).reduce((n, e) => n + e.fields.length, 0);
     // 545 dictionary fields + complications_reviewed (extension) + 48 amendment fields (M-3, M-4a, M-4b) + the 6 of LAA closure
-    expect(fieldCount).toBe(607); // + 5 KAMC field-review amendments (config/local_amendments.json) + 2 R4-4 reason fields
+    expect(fieldCount).toBe(610); // + 5 KAMC field-review amendments (config/local_amendments.json) + 2 R4-4 reason fields + 3 Q-S1 NCDR fields
   });
   it('never shows link, polymorphic or json fields on a form', () => {
     for (const e of Object.values(dict.entities)) {

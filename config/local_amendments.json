@@ -1,6 +1,6 @@
 {
- "_note": "KAMC local amendments from the owner's field review (24 Oct 2026, docs/FIELD_REVIEW.md phase 3). Laid on top of the dictionary and its EP Workspace amendments (config/dictionary/amendments.json, which stays a copy). Same rules: new fields and codes only, never a change to what the dictionary says; the replaced dictionary fields are hidden by case_layout.json form.hidden and keep their columns.",
- "version": "kamc/fr3-2026-10-24",
+ "_note": "KAMC local amendments from the owner's field review (24 Oct 2026, docs/FIELD_REVIEW.md phase 3). Laid on top of the dictionary and its EP Workspace amendments (config/dictionary/amendments.json, which stays a copy). Same rules: new fields and codes only, never a change to what the dictionary says; the replaced dictionary fields are hidden by case_layout.json form.hidden and keep their columns. NCDR-1 … NCDR-4 (31 Oct 2026, Q-S1): printed NCDR dynamic-list values, docs/NCDR_LISTS_Q-S1.md.",
+ "version": "kamc/ncdr-2026-10-31",
  "fields": {
   "PATIENTS": [
    {
@@ -230,6 +230,70 @@
     "exclusive": [
      "NONE"
     ]
+   },
+   {
+    "name": "lv_hypertrophy",
+    "label": "LV hypertrophy",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "NCDR-4A",
+    "source": "NCDR AFib Ablation Coder's Data Dictionary v2.0 #15707 Echocardiogram Results (1.3.6.1.4.1.19376.1.4.1.6.5.946): LV hypertrophy none / mild / moderate / severe; Q-S1",
+    "after": "rv_function",
+    "codes": [
+     {
+      "code": "NONE",
+      "label": "None"
+     },
+     {
+      "code": "MILD",
+      "label": "Mild"
+     },
+     {
+      "code": "MODERATE",
+      "label": "Moderate"
+     },
+     {
+      "code": "SEVERE",
+      "label": "Severe"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
+   },
+   {
+    "name": "ra_size_category",
+    "label": "RA size category",
+    "type": "enum",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "NCDR-4B",
+    "source": "NCDR AFib Ablation Coder's Data Dictionary v2.0 #15707 Echocardiogram Results (1.3.6.1.4.1.19376.1.4.1.6.5.946): RA not enlarged / mild / moderate / severe; same codes as la_size_category; Q-S1",
+    "after": "la_volume_index_ml_m2",
+    "codes": [
+     {
+      "code": "NORMAL",
+      "label": "Not enlarged"
+     },
+     {
+      "code": "MILD",
+      "label": "Mild"
+     },
+     {
+      "code": "MODERATE",
+      "label": "Moderate"
+     },
+     {
+      "code": "SEVERE",
+      "label": "Severe"
+     },
+     {
+      "code": "UNKNOWN",
+      "label": "Unknown"
+     }
+    ]
    }
   ],
   "ADVANCED_IMAGING": [
@@ -285,6 +349,64 @@
      }
     ]
    }
+  ],
+  "AF_ABLATIONS": [
+   {
+    "name": "prior_af_ablation_strategies",
+    "label": "Prior AF ablation strategy",
+    "type": "lookup_array",
+    "req": "O",
+    "role": "CLINICAL_FIELD",
+    "amendment": "NCDR-3",
+    "source": "NCDR AFib Ablation Coder's Data Dictionary v2.0 #4435 Prior Catheter Ablation Strategy (Ablation Strategy 1.3.6.1.4.1.19376.1.4.1.6.5.211); Q-S1, owner 31 Oct: builder decides; shown for redo",
+    "after": "last_prior_af_catheter_ablation_date",
+    "codes": [
+     {
+      "code": "CFAE",
+      "label": "Complex fractionated atrial electrogram"
+     },
+     {
+      "code": "CONVERGENT",
+      "label": "Convergent procedure"
+     },
+     {
+      "code": "CRYOABLATION",
+      "label": "Cryoablation"
+     },
+     {
+      "code": "EMPIRIC_LA_LINES",
+      "label": "Empiric LA linear lesions"
+     },
+     {
+      "code": "FOCAL",
+      "label": "Focal ablation"
+     },
+     {
+      "code": "GANGLIONATED_PLEXUS",
+      "label": "Ganglion plexus ablation"
+     },
+     {
+      "code": "PVI",
+      "label": "Pulmonary vein isolation"
+     },
+     {
+      "code": "PFA",
+      "label": "Pulsed field ablation"
+     },
+     {
+      "code": "ROTOR_MAPPING",
+      "label": "Rotor based mapping"
+     },
+     {
+      "code": "SEGMENTAL_PV",
+      "label": "Segmental PV ablation"
+     },
+     {
+      "code": "WACA",
+      "label": "Wide area circumferential ablation"
+     }
+    ]
+   }
   ]
  },
  "codes": {
@@ -293,6 +415,25 @@
     "code": "INPATIENT_MONITOR",
     "label": "Inpatient monitor",
     "amendment": "FR3-4"
+   }
+  ],
+  "ARRHYTHMIA_INDICATIONS.presentation": [
+   {
+    "code": "ANXIETY",
+    "label": "Anxiety",
+    "amendment": "NCDR-1"
+   },
+   {
+    "code": "IRREGULAR_HEARTBEAT",
+    "label": "Irregular heartbeat",
+    "amendment": "NCDR-1"
+   }
+  ],
+  "AF_ABLATIONS.af_energy_sources_used": [
+   {
+    "code": "ETHANOL",
+    "label": "Ethanol",
+    "amendment": "NCDR-2"
    }
   ]
  },

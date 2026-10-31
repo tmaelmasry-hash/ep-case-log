@@ -140,9 +140,9 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
   case cards, My work and the case header; display only. Live 31 Oct (Worker `ffc4fd45`).
 - Q-S1 (31 Oct, owner: "do everything yourself"): the printed values were taken from the public NCDR Coder's Data
   Dictionaries (AF v2.0, EP Device v3.0) — see `docs/NCDR_LISTS_Q-S1.md`. Product lists (catheter / device / lead)
-  are NCDR Master files, not public → model stays text. Built (not yet live): 3 codes (Anxiety, Irregular heartbeat;
+  are NCDR Master files, not public → model stays text. Live 31 Oct (Worker `4787751b`; main + TEST Sheet +3 columns): 3 codes (Anxiety, Irregular heartbeat;
   Ethanol among energies used) + 3 optional fields (prior AF ablation strategies for a redo; echo LV hypertrophy and
-  RA size). Nothing is open from EP Workspace after this.
+  RA size; RA "Normal" like LA). Nothing is open from EP Workspace after this.
 - Q-R1 closed (31 Oct): spec rules I3B (DR-AF-I3B) and E5 (DR-AF-09-E5) **stay warnings** (live since 21 Oct; saving
   is never blocked). Owner confirmed; nothing to build.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /

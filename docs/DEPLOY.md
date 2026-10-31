@@ -118,6 +118,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `bd315a8` (R4-3 / Q-F12: the 15 NCDR lead locations; 31 Oct) | `ee730343-e51e-4f91-b8fa-581a60b2baac` | same Sheet, no Sheet change (same column, new codes); real Sheet had no saved lead location |
 | `929e584` (Q-R2: atypical flutter target for atypical only; extraction details for extraction / complete explant; 31 Oct) | `90c04ea3-c2c0-4ed0-a2a4-e4bdb6a8d75c` | same Sheet, no Sheet change; 1 saved answer now hidden (typical CTI flutter, atypical_flutter_target RA_FREE_WALL_LINE; kept) |
 | `5014eae` (Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header; 31 Oct) | `ffc4fd45-4092-47d5-ba56-0fb7731a140b` | same Sheet, no Sheet change (display only) |
+| `fa9e60b` (Q-S1: NCDR printed list values: Anxiety, Irregular heartbeat, Ethanol; prior AF ablation strategies for redo; echo LV hypertrophy, RA size; 31 Oct) | `4787751b-c9b8-44ec-9b25-1ae70cab8587` | main + TEST Sheet `sheets setup`: Ablation_EPS +1 column (`prior_af_ablation_strategies`), Imaging +2 columns (`lv_hypertrophy`, `ra_size_category`); old code still runs. New fields optional, no saved value hidden |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

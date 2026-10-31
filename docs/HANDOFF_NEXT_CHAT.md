@@ -18,12 +18,13 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
   codes and counts only, no MRN) and tell him; the value stays in the Sheet and Excel.
 
 ## START HERE — state on 31 Oct 2026: everything is live, nothing half-done
-- `main` = `c47f1dd` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
-- **Live Worker `ffc4fd45-4092-47d5-ba56-0fb7731a140b`**. Apps Script live = **Version 3** (unchanged since 30 Oct).
+- `main` = `fa9e60b` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
+- **Live Worker `4787751b-c9b8-44ec-9b25-1ae70cab8587`** (Q-S1). Apps Script live = **Version 3** (unchanged since 30 Oct).
 - Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
-  `generator_replacement_reasons`). No other Sheet change since 30 Oct.
-- Last full test run (31 Oct): build ✓, unit 339+ pass, e2e 102/102, e2e:worker 101/102 → the one failure was a test
-  timing slip (Completeness after reload), fixed in `5014eae` and that spec re-run green on both setups.
+  `generator_replacement_reasons`); later on 31 Oct Ablation_EPS +1 (`prior_af_ablation_strategies`) and Imaging +2
+  (`lv_hypertrophy`, `ra_size_category`) for Q-S1.
+- Last full test run (31 Oct, Q-S1): build ✓, unit 357 pass, e2e 102/102, e2e:worker 104/104; the new
+  `tests/e2e/ncdrLists.spec.ts` passes on both setups.
 - Side sessions: none running (the 4 round 4 sessions are archived).
 - Rollback to before round 4: `node scripts/wrangler.ts rollback c98e3ff1-6518-4cab-947a-6f4b61a232f5` (tag
   `checkpoint-2026-10-30-before-round4`). Every later Worker version is listed in `docs/DEPLOY.md`.
@@ -39,14 +40,13 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 | Q-R2: atypical flutter target for atypical only; extraction details for extract / complete explant | `929e584` → `90c04ea3` |
 | Q-R1 closed: spec rules I3B and E5 stay yellow warnings (live since 21 Oct) | — |
 | Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header (`shared/pathway.ts`) | `5014eae` → `ffc4fd45` |
+| Q-S1: NCDR printed list values (`docs/NCDR_LISTS_Q-S1.md`): Anxiety + Irregular heartbeat (symptoms), Ethanol (energies used), prior AF ablation strategies (11 values, redo only, rule DR-NCDR-3), echo LV hypertrophy + RA size. Product lists are NCDR Master files, not public → model stays text | `ebc281b`, `fa9e60b` → `4787751b` |
 
 Real data hidden by the new rules (values kept in the Sheet): 1 PPM dual with defibrillation testing "Not done";
 1 typical CTI flutter with atypical target "RA free wall line" (both In progress cases).
 
 ### Still open (only these)
-1. **Q-S1 — NCDR dynamic lists** (symptoms, energy sources, prior strategies, device / catheter product lists): stay
-   empty until the owner brings the official NCDR lists. Never invent them.
-2. Nothing else is open from round 4, the EP Workspace question ledger (its file in `ep-workspace/docs/merge/` is out
+1. Nothing is open from round 4, the EP Workspace question ledger (its file in `ep-workspace/docs/merge/` is out
    of date: Q-P1…P4, Q-R1, Q-R2, Q-F12, Q-C4, Q-M3-3 are all answered — see MERGE_PLAN), or the postponed items.
    Ask the owner what is next.
 

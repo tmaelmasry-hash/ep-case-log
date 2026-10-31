@@ -43,9 +43,11 @@ MERGE_PLAN R4-3 / Q-F12). No Sheet change.
 **31 Oct — Q-R2 live** (Worker `90c04ea3-c2c0-4ed0-a2a4-e4bdb6a8d75c`, commit `929e584`): DR-FL-03 atypical flutter
 target for atypical RA / LA only; DR-LD-01a–d extraction details for EXTRACT / COMPLETE_SYSTEM_EXPLANT only
 (`tests/server/qr2.test.ts`). One real typical-CTI case keeps a hidden RA_FREE_WALL_LINE target.
-**Next — the only open items (ask the owner, one at a time):** Q-P1 device pathway badge (ICD / Pacemaker / Leads
-only, derived display, optional); Q-S1 NCDR dynamic lists (only from the official NCDR lists). Q-R1 closed 31 Oct:
-I3B and E5 stay yellow warnings (DR-AF-I3B, DR-AF-09-E5, live since 21 Oct).
+Q-R1 closed 31 Oct: I3B and E5 stay yellow warnings (DR-AF-I3B, DR-AF-09-E5, live since 21 Oct).
+**31 Oct — Q-P1 live** (Worker `ffc4fd45-4092-47d5-ba56-0fb7731a140b`, commit `5014eae`): ICD / Pacemaker / Leads
+only tag on case cards, My work and the case header (`shared/pathway.ts`, `tests/unit/pathway.test.ts`).
+**Next:** the only open item is Q-S1 (NCDR dynamic lists, only from the official NCDR lists the owner may obtain).
+Ask the owner what is next.
 Lesson: a laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; rerun that spec alone.
 
 ### Round 4 history (kept for reference)

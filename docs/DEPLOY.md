@@ -117,6 +117,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `8c8239e` (DR-DV-06: leadless channel measurements for leadless single / dual only; 31 Oct) | `7120cbb6-0bd3-47bb-9294-d3926dd2f8cd` | same Sheet, no Sheet change; real Sheet had no saved channel rows |
 | `bd315a8` (R4-3 / Q-F12: the 15 NCDR lead locations; 31 Oct) | `ee730343-e51e-4f91-b8fa-581a60b2baac` | same Sheet, no Sheet change (same column, new codes); real Sheet had no saved lead location |
 | `929e584` (Q-R2: atypical flutter target for atypical only; extraction details for extraction / complete explant; 31 Oct) | `90c04ea3-c2c0-4ed0-a2a4-e4bdb6a8d75c` | same Sheet, no Sheet change; 1 saved answer now hidden (typical CTI flutter, atypical_flutter_target RA_FREE_WALL_LINE; kept) |
+| `5014eae` (Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header; 31 Oct) | `ffc4fd45-4092-47d5-ba56-0fb7731a140b` | same Sheet, no Sheet change (display only) |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

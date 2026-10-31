@@ -44,8 +44,8 @@ MERGE_PLAN R4-3 / Q-F12). No Sheet change.
 target for atypical RA / LA only; DR-LD-01a–d extraction details for EXTRACT / COMPLETE_SYSTEM_EXPLANT only
 (`tests/server/qr2.test.ts`). One real typical-CTI case keeps a hidden RA_FREE_WALL_LINE target.
 **Next — the only open items (ask the owner, one at a time):** Q-P1 device pathway badge (ICD / Pacemaker / Leads
-only, derived display, optional); Q-R1 spec rules I3B and E5 ("clinical approval OUTSTANDING" in the frozen spec:
-read them and show the owner with the source); Q-S1 NCDR dynamic lists (only from the official NCDR lists).
+only, derived display, optional); Q-S1 NCDR dynamic lists (only from the official NCDR lists). Q-R1 closed 31 Oct:
+I3B and E5 stay yellow warnings (DR-AF-I3B, DR-AF-09-E5, live since 21 Oct).
 Lesson: a laptop that sleeps during `npm run e2e` makes one test hang ~30 min and fail; rerun that spec alone.
 
 ### Round 4 history (kept for reference)

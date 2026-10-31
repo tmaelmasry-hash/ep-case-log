@@ -133,7 +133,9 @@ https://claude.ai/artifact/EfWtzD5iYUBMWup5qbJ3EB . Owner's answers after the re
 - Q-R2 (31 Oct, both as recommended): DR-FL-03 atypical flutter target shown for ATYPICAL_RA / ATYPICAL_LA only
   (one real In progress typical-CTI case keeps its saved RA_FREE_WALL_LINE, now hidden); DR-LD-01a–d extraction
   approach / result / retained fragment / surgical rescue for EXTRACT and COMPLETE_SYSTEM_EXPLANT only (no real lead
-  procedures saved). Still open from EP Workspace: Q-P1 pathway badge, Q-R1 spec rules I3B / E5, Q-S1 NCDR lists.
+  procedures saved). Still open from EP Workspace: Q-P1 pathway badge, Q-S1 NCDR lists.
+- Q-R1 closed (31 Oct): spec rules I3B (DR-AF-I3B) and E5 (DR-AF-09-E5) **stay warnings** (live since 21 Oct; saving
+  is never blocked). Owner confirmed; nothing to build.
 - One `shared/completeness.ts` for the case sheet and the group matrix (count names applicable / recorded /
   not_available / missing / ai_pending).
 

@@ -30,7 +30,13 @@ optional multi-choice DEVICE_IMPLANTS fields beside the unchanged `implant_indic
 generator change / upgrade / downgrade / explant). Main + TEST Sheet got the 2 columns (Device_Procedures).
 `scripts/migrate-r44.ts` (exact matches only) dry run found 0 cases on both Sheets, so nothing was written. Preview and
 screenshots: https://claude.ai/artifact/WjPxfEUaGMD3JQNxo1X8V1 . main pushed; the 4 round 4 side sessions archived.
-**Next:** R4-5 (Q-P3 CSP trigger, Q-P4 device / lead capability table), one at a time with its source, preview first.
+**31 Oct — R4-5 done.** Q-P3: keep the dictionary CSP rule (nothing built). Q-P4: capability show rules live, Worker
+`904954b6-4fba-4fc2-ba5c-0c5ce4fd8188` (commit `d08c2d9`; table and screenshots
+https://claude.ai/artifact/QUxAQrbuNBGckDnVGqEqXW ; rules DR-DV-03a/b, 04, 05, 07a/b/c, 08, DR-CSP-01a/b in
+`config/rules.json`, tests `tests/server/qp4.test.ts`). Lower rate, tachytherapy, pulse width and CSP target stay hidden
+by the field review. One real saved answer is now hidden (PPM dual, defibrillation testing "Not done"; kept).
+**Next (ask the owner):** "Leadless channel measurements" shows for every CIED implant, though the dictionary (DR-DV-06)
+says leadless single / dual only — pre-existing, found 31 Oct, not changed yet.
 
 ### Round 4 history (kept for reference)
 **Restore point (owner asked for it before any merge):** tag `checkpoint-2026-10-30-before-round4` (= `97c77fe`, same

@@ -114,6 +114,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `ceb6347` (round 4: Dashboard click filter, Next missing, Completeness sheet, Admin Data completeness `#/completeness`, patient Timeline; 30 Oct late night) | `7ccc5cc3-76bc-4d20-aa7c-d998f475989a` | same Sheet, no Sheet change; Apps Script Version 3 unchanged |
 | `d36f7dc` (R4-4: several NCDR pacing reasons and generator-replacement reasons; 31 Oct) | `d11bb402-ebd1-469b-9b70-614aeade36a1` | main + TEST Sheet `sheets setup`: Device_Procedures +2 columns (`pacing_indication_reasons`, `generator_replacement_reasons`); old code still runs. R4-4 copy dry run: 0 cases to fill (TEST and main) |
 | `d08c2d9` (R4-5 / Q-P4: device, lead and CSP capability show rules; 31 Oct) | `904954b6-4fba-4fc2-ba5c-0c5ce4fd8188` | same Sheet, no Sheet change. Read-only count before deploy: 1 saved answer now hidden (PPM dual, defibrillation_testing NOT_DONE; value kept) |
+| `8c8239e` (DR-DV-06: leadless channel measurements for leadless single / dual only; 31 Oct) | `7120cbb6-0bd3-47bb-9294-d3926dd2f8cd` | same Sheet, no Sheet change; real Sheet had no saved channel rows |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

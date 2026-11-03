@@ -36,7 +36,11 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
   calls refused (dashboard, users, activity, recycle bin, bulk add, add group, completeness, add case); sees only
   Group 1; edit, delete and Undo within a minute work on test case 9990001; no Dashboard tab, no Export all, Export
   group shown. The main Sheet now also holds 2 real cases the owner entered (Group 1): never touch them.
-  Still to do: delete test case 9990001 (its rows only) from the main Sheet, on the owner's yes.
+  Test case 9990001 deleted from the main Sheet (3 Nov, owner's yes): .xlsx backup first, then only rows whose
+  case_id was that case (Cases 1, Patient 2, Episode 2, Procedures 1, Components 1, Medications 1, Imaging 4,
+  History 46), by a temporary editor function that was removed again (editor = Version 4 code, sha1 42b8633e).
+  Activity lines kept (audit). Group numbering not reset (numbers are never reused). Main Sheet now = the owner's
+  2 real cases only. Nothing open from the 3 Nov test round.
 - Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
   `generator_replacement_reasons`); later on 31 Oct Ablation_EPS +1 (`prior_af_ablation_strategies`) and Imaging +2
   (`lv_hypertrophy`, `ra_size_category`) for Q-S1.

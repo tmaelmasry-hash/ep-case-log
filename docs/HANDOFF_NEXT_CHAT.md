@@ -32,8 +32,11 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
   wins); codes to `labels.json` codes (per-field key); sections to `case_layout.json` entities.label.
   App's own names (menu, case groups, procedure parts, picker) are Title Case too (`7673ffb`, live); collection
   status stays exactly "In progress / Completed" (hard rule).
-  Still to do: (2) Member test on the live site with his Member account (he signs
-  in himself); (3) delete test case 9990001 from the main Sheet at the end.
+  Member test on the live site (3 Nov, owner's own Member account in Group 1, he signed in himself): 8/8 Admin-only
+  calls refused (dashboard, users, activity, recycle bin, bulk add, add group, completeness, add case); sees only
+  Group 1; edit, delete and Undo within a minute work on test case 9990001; no Dashboard tab, no Export all, Export
+  group shown. The main Sheet now also holds 2 real cases the owner entered (Group 1): never touch them.
+  Still to do: delete test case 9990001 (its rows only) from the main Sheet, on the owner's yes.
 - Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
   `generator_replacement_reasons`); later on 31 Oct Ablation_EPS +1 (`prior_af_ablation_strategies`) and Imaging +2
   (`lv_hypertrophy`, `ra_size_category`) for Q-S1.

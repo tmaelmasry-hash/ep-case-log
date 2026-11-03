@@ -49,12 +49,12 @@ describe('category config', () => {
 
   it('has the owner-approved main menus in order', () => {
     expect(m.children(null).filter((i) => i.section === 'procedures').map((i) => i.label)).toEqual(['Ablation', 'Devices', 'Structural', 'Diagnostic']);
-    expect(m.children('ABLATION').map((i) => i.label)).toEqual(['AF ablation', 'Flutter ablation', 'SVT ablation', 'Accessory pathway ablation', 'AV node ablation', 'Ventricular ablation']);
-    expect(m.children('DEV').map((i) => i.label)).toEqual(['Pacemaker', 'ICD', 'CRT', 'Conduction system pacing', 'Extraction and revision', 'Generator change and upgrade', 'Other devices']);
-    expect(m.children('AF').map((i) => i.label)).toEqual(['First', 'Redo', 'By energy']);
-    expect(m.children('AF_ENERGY').map((i) => i.label)).toEqual(['RF', 'Cryoballoon', 'PFA (pulsed field)', 'Laser', 'Multiple energies', 'Other']);
+    expect(m.children('ABLATION').map((i) => i.label)).toEqual(['AF Ablation', 'Flutter Ablation', 'SVT Ablation', 'Accessory Pathway Ablation', 'AV Node Ablation', 'Ventricular Ablation']);
+    expect(m.children('DEV').map((i) => i.label)).toEqual(['Pacemaker', 'ICD', 'CRT', 'Conduction System Pacing', 'Extraction and Revision', 'Generator Change and Upgrade', 'Other Devices']);
+    expect(m.children('AF').map((i) => i.label)).toEqual(['First', 'Redo', 'By Energy']);
+    expect(m.children('AF_ENERGY').map((i) => i.label)).toEqual(['RF', 'Cryoballoon', 'PFA (Pulsed Field)', 'Laser', 'Multiple Energies', 'Other']);
     expect(m.children('DEV_OTHER').map((i) => i.label)).toEqual(['Leadless LVEP', 'CCM']);
-    expect(m.children('DEV_ICD').map((i) => i.label)).toEqual(['Single chamber', 'Dual chamber', 'Subcutaneous ICD', 'EV-ICD']);
+    expect(m.children('DEV_ICD').map((i) => i.label)).toEqual(['Single Chamber', 'Dual Chamber', 'Subcutaneous ICD', 'EV-ICD']);
   });
 });
 

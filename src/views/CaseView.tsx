@@ -791,11 +791,11 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
       </div>
       )}
 
-      <Part id="part-general" title="Procedure details" missing={missDetails} {...partProps('part-general')}>
+      <Part id="part-general" title="Procedure Details" missing={missDetails} {...partProps('part-general')}>
         <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} skip={MAPPING} />
         {showsDevice(types) && <DeviceSection ed={ed} leads={showsLeads(types)} offer={deviceOffer} onOpen={(e, rid) => setOpen({ entity: e, id: rid })} />}
       </Part>
-      <Part id="part-mapping" title="Mapping & access" missing={missMapping} {...partProps('part-mapping')}>
+      <Part id="part-mapping" title="Mapping & Access" missing={missMapping} {...partProps('part-mapping')}>
         <RowForm ed={ed} entity="EP_PROCEDURES" rowId={id} row={p} only={MAPPING} />
       </Part>
 

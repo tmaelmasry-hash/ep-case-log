@@ -319,11 +319,11 @@
  "groups": [
   {
    "id": "history",
-   "label": "Patient & history",
+   "label": "Patient & History",
    "rows": [
     {
      "id": "patient",
-     "label": "Patient & episode",
+     "label": "Patient & Episode",
      "title": "Patient Demographics",
      "icon": "user",
      "entities": [
@@ -334,7 +334,7 @@
     },
     {
      "id": "diagnosis",
-     "label": "Diagnosis & indication",
+     "label": "Diagnosis & Indication",
      "icon": "heart",
      "entities": [
       "ARRHYTHMIA_INDICATIONS"
@@ -380,7 +380,7 @@
     },
     {
      "id": "devices",
-     "label": "Device interrogation",
+     "label": "Device Interrogation",
      "icon": "chip",
      "entities": [
       "DEVICES",
@@ -460,7 +460,7 @@
    "rows": [
     {
      "id": "followup",
-     "label": "Follow-up visits & events",
+     "label": "Follow-up Visits & Events",
      "icon": "cal",
      "entities": [
       "FOLLOW_UPS",

@@ -70,10 +70,10 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await expect(rows.locator('.chip.c-cat').first()).toHaveText(/^AF\b/); // colored by its category ("AF Ablation" once the type is set)
 
   await inMenu(page, { id: 'SVT' });
-  await expect(page.getByTestId('filter-bar')).toContainText('SVT ablation');
+  await expect(page.getByTestId('filter-bar')).toContainText('SVT Ablation');
   await expect(rows).toHaveCount(0);
   await inMenu(page, { id: 'AF' }); // SVT or AF
-  await expect(page.getByTestId('filter-bar')).toContainText('AF ablation');
+  await expect(page.getByTestId('filter-bar')).toContainText('AF Ablation');
   await expect(rows).toHaveCount(1);
 
   // Cohort (on the Dashboard) combines with the procedure items: no pilgrim status recorded yet.
@@ -90,11 +90,11 @@ test('AF case: under AF, not SVT; AF or SVT together; cohort and period combine;
   await expect(rows).toHaveCount(0);
   await page.reload();
   await page.getByRole('searchbox', { name: 'Search MRN' }).fill(m);
-  await expect(page.getByTestId('filter-bar')).toContainText('AF ablation');
+  await expect(page.getByTestId('filter-bar')).toContainText('AF Ablation');
   await expect(rows).toHaveCount(0);
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await expect(rows).toHaveCount(1);
-  await expect(page.getByTestId('filter-bar')).not.toContainText('AF ablation');
+  await expect(page.getByTestId('filter-bar')).not.toContainText('AF Ablation');
 });
 
 test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a rule shows its live count', async ({ page }, info) => {
@@ -190,7 +190,7 @@ test('part 4: same MRN and date warns of a duplicate; search by MRN and procedur
 
   await inMenu(page, { id: 'SVT' });
   await page.goto('/#/stats');
-  await expect(page.getByTestId('dashboard-filter')).toContainText('SVT ablation');
+  await expect(page.getByTestId('dashboard-filter')).toContainText('SVT Ablation');
   await page.getByTestId('dashboard-filter').getByRole('button', { name: 'All cases' }).click();
   await expect(page.getByTestId('dashboard-filter')).toHaveCount(0);
 });

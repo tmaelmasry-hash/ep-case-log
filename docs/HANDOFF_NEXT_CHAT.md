@@ -17,9 +17,20 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 - Never delete a saved value: when a show rule hides a question, first count real answers it would hide (read only,
   codes and counts only, no MRN) and tell him; the value stays in the Sheet and Excel.
 
-## START HERE — state on 31 Oct 2026: everything is live, nothing half-done
-- `main` = `fa9e60b` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
-- **Live Worker `4787751b-c9b8-44ec-9b25-1ae70cab8587`** (Q-S1). Apps Script live = **Version 3** (unchanged since 30 Oct).
+## START HERE — state on 3 Nov 2026
+- `main` = `7ae9f84` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
+- **Live Worker `2b3fd05b-2cb8-42a0-b2c7-cb79d3580a8c`** (speed: `prime`, 3 Nov). Apps Script live = **Version 3**
+  (unchanged since 30 Oct).
+- 3 Nov owner test round (in progress): the 5 old fake cases on the main Sheet were wiped (backup first, numbering
+  back to 1); one test case `9990001` (Group 1 No. 1) stays on the main Sheet until the live tests end, then it is
+  deleted (owner yes). 10-case Admin + Member scenario ran on the TEST Sheet through the real screens: 0 errors
+  (QA accounts `qa_admin`, `qa_member`, `qa_member2` exist on the TEST Sheet only). Live speed after `prime`: save
+  4.0–5.5 s, open case 2.6–3.5 s, list 2.2 s. The rest of a save is the Apps Script write (4–6 s, every op writes its
+  tab separately): owner said yes to building a batched write (one Sheets API write) — needs a new Apps Script
+  version, published only on his yes. Still to do: Member test on the live site with his Member account (he signs
+  in himself); apply the label edits he makes in the label page (artifact `QrSNasFsXMxdHgXunx5Sry`, db collection
+  `label_edits`: `{key, old, new}`, key = `ENTITY.field`, `ENTITY.field.CODE` or `section:ENTITY`) to
+  `config/dictionary/labels.json` (sections: `config/case_layout.json` label), with a review page before deploy.
 - Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
   `generator_replacement_reasons`); later on 31 Oct Ablation_EPS +1 (`prior_af_ablation_strategies`) and Imaging +2
   (`lv_hypertrophy`, `ra_size_category`) for Q-S1.
@@ -41,6 +52,7 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 | Q-R1 closed: spec rules I3B and E5 stay yellow warnings (live since 21 Oct) | — |
 | Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header (`shared/pathway.ts`) | `5014eae` → `ffc4fd45` |
 | Q-S1: NCDR printed list values (`docs/NCDR_LISTS_Q-S1.md`): Anxiety + Irregular heartbeat (symptoms), Ethanol (energies used), prior AF ablation strategies (11 values, redo only, rule DR-NCDR-3), echo LV hypertrophy + RA size. Product lists are NCDR Master files, not public → model stays text | `ebc281b`, `fa9e60b` → `4787751b` |
+| Speed (3 Nov): `prime` reads users / groups / settings / cohort tags + the case (or every case) in one Sheet call at the start of a request. Fresh server: save 6 → 2 calls, open 5 → 1, new case 6 → 3 | `7ae9f84` → `2b3fd05b` |
 
 Real data hidden by the new rules (values kept in the Sheet): 1 PPM dual with defibrillation testing "Not done";
 1 typical CTI flutter with atypical target "RA free wall line" (both In progress cases).

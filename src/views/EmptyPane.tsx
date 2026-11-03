@@ -22,11 +22,11 @@ export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void
       {can('case.create') && groups.length > 0 && (
         <>
           <button className="btn primary big-new" onClick={() => setSheet('new')} data-testid="pane-new-case">
-            <Icon name="plus" size={24} /> New case
+            <Icon name="plus" size={24} /> New Case
           </button>
           {can('case.import') && (
             <button className="link small" onClick={() => setSheet('bulk')}>
-              or Bulk add MRNs
+              or Bulk Add MRNs
             </button>
           )}
         </>
@@ -34,9 +34,9 @@ export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void
       {w && w.items.length > 0 && (
         <div className="pane-block">
           <h2 className="sechead">
-            Your open cases · fewest missing first
+            Your Open Cases · Fewest Missing First
             <a href="#/mywork" className="link small">
-              All in My work →
+              All in My Work →
             </a>
           </h2>
           <div className="group">
@@ -49,9 +49,9 @@ export function EmptyPane({ fu, nav }: { fu: Followups; nav: (p: string) => void
       {me?.features?.followups && soon.length > 0 && (
         <div className="pane-block">
           <h2 className="sechead">
-            Follow-ups this week
+            Follow-ups This Week
             <a href="#/followup" className="link small">
-              All follow-ups →
+              All Follow-ups →
             </a>
           </h2>
           <div className="group">

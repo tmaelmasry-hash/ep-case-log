@@ -27,7 +27,7 @@ export function App() {
   const fu = useFollowups(!!me?.features?.followups);
   // Owner, step 5: My work first; Follow-up tab; no Patients tab (the patient page opens from an MRN); Dashboard for the Admin.
   const TABS = [
-    { key: 'mywork', label: 'My work', icon: 'clipboard' },
+    { key: 'mywork', label: 'My Work', icon: 'clipboard' },
     { key: 'cases', label: 'Cases', icon: 'cases' },
     ...(me?.features?.followups ? [{ key: 'followup', label: 'Follow-up', icon: 'cal', badge: fu.urgent }] : []),
     ...(can('dashboard.view') ? [{ key: 'stats', label: 'Dashboard', icon: 'stats' }] : []),

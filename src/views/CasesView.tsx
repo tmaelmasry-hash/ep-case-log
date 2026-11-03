@@ -88,13 +88,13 @@ export function CaseRow({ c, selected, showGroup, groupDot }: { c: CaseSummary; 
               {label('PROCEDURE_COMPONENTS', 'component_type', c.planned_type)} (planned)
             </span>
           ) : (
-            <span className="chip c-neutral">MRN only</span>
+            <span className="chip c-neutral">MRN Only</span>
           )}
           <PathwayTag pathway={pathwayOf(c)} />
         </span>
         <span className="sub">
           {groupDot && <span className="gdot" style={{ background: `var(--${groupDot})` }} aria-hidden />}
-          {showGroup ? `${showGroup} · ` : ''}{seqText(c.group_seq)} · {sync.isLocalOnly(c.case_id) && <span className="chip c-neutral" data-testid="device-only">On this device only</span>} <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
+          {showGroup ? `${showGroup} · ` : ''}{seqText(c.group_seq)} · {sync.isLocalOnly(c.case_id) && <span className="chip c-neutral" data-testid="device-only">On This Device Only</span>} <span className={`status ${c.collection_status === 'COMPLETED' ? 's-done' : 's-prog'}`}>{c.collection_status === 'COMPLETED' ? 'Completed' : 'In progress'}</span>
           {c.procedures.length > 1 ? ` · ${c.procedures.length} procedures` : ''}
           {missing > 0 && (
             <>
@@ -223,7 +223,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
         )}
         <div className="frow inline">
           <label className="lab-wrap" htmlFor="new-date">
-            <span className="lab">Procedure date <span className="req">*</span></span>
+            <span className="lab">Procedure Date <span className="req">*</span></span>
           </label>
           <input id="new-date" className="ios-value" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />
           {hijri && <div className="frow-err muted small hijri-line">{hijri}</div>}
@@ -265,7 +265,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
                           );
                         })
                       ) : (
-                        <span className="chip c-neutral">No procedures</span>
+                        <span className="chip c-neutral">No Procedures</span>
                       )}
                     </span>
                     <span className="sub">
@@ -279,12 +279,12 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
           )}
           {prompt.length > 0 && (
             <a className="btn block wide-btn open-case" href={`#/cases/${prompt[0].case_id}`} onClick={onClose} data-testid="open-earlier">
-              Open this case
+              Open This Case
             </a>
           )}
           <p className="muted small">A new case copies the patient's history and marks it "Copied" until you check it. Procedures are never copied.</p>
           <button className="btn primary block wide-btn" onClick={() => submit(true)} disabled={busy}>
-            {busy ? 'Creating…' : 'New case for this patient'}
+            {busy ? 'Creating…' : 'New Case for This Patient'}
           </button>
         </div>
       ) : (
@@ -295,7 +295,7 @@ export function NewCaseSheet({ onClose, onCreated, defaultGroup }: { onClose: ()
             </p>
           )}
           <button className="btn primary block wide-btn" onClick={() => submit()} disabled={busy}>
-            {busy ? 'Creating…' : 'Create case'}
+            {busy ? 'Creating…' : 'Create Case'}
           </button>
         </>
       )}
@@ -365,7 +365,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
 
   const gname = (id: string) => groups.find((g) => g.group_id === id)?.name ?? '';
   // Quick periods next to the date button (owner, 28 Oct).
-  const quick = useMemo(() => periodPresets().filter(([t]) => t === 'This month' || t === 'Last 3 months' || t.startsWith('Hajj season')), []);
+  const quick = useMemo(() => periodPresets().filter(([t]) => t === 'This Month' || t === 'Last 3 Months' || t.startsWith('Hajj Season')), []);
   const custom = !!(f.from || f.to) && !quick.some(([, a, b]) => f.from === a && f.to === b);
   const countIn = (id: string) => cases.filter((c) => c.group_id === id).length;
 
@@ -383,14 +383,14 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
         {/* On desktop the sidebar footer shows it (owner, 28 Oct: "Synced" once). */}
         {!wide && <SaveIndicator />}
         {wide && can('case.create') && (
-          <button className="icon-btn accent" aria-label="Add cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
+          <button className="icon-btn accent" aria-label="Add Cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
             <Icon name="plus" size={26} />
           </button>
         )}
       </div>
       {/* Owner, 28 Oct: on phones + is a big floating button (one hand); it opens New case / Bulk add. Admin only. */}
       {!wide && can('case.create') && (
-        <button className="fab" aria-label="Add cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
+        <button className="fab" aria-label="Add Cases" onClick={() => setAddMenu(true)} data-testid="add-menu" disabled={!groups.length}>
           <Icon name="plus" size={28} />
         </button>
       )}
@@ -408,8 +408,8 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
             >
               <Icon name="plus" size={20} />
               <span className="grow">
-                <span className="line1">New case</span>
-                <span className="sub">One patient, with the MRN</span>
+                <span className="line1">New Case</span>
+                <span className="sub">One Patient, with the MRN</span>
               </span>
             </button>
             {can('case.import') && (
@@ -424,8 +424,8 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
               >
                 <Icon name="list" size={20} />
                 <span className="grow">
-                  <span className="line1">Bulk add MRNs</span>
-                  <span className="sub">A list of MRNs, copied from Excel</span>
+                  <span className="line1">Bulk Add MRNs</span>
+                  <span className="sub">A List of MRNs, Copied from Excel</span>
                 </span>
               </button>
             )}
@@ -435,7 +435,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       <h1 className="large-title list-title">Registry Cases</h1>
       <div className="search">
         <Icon name="search" size={18} />
-        <input type="search" placeholder="Search MRN or procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN or procedure" />
+        <input type="search" placeholder="Search MRN or Procedure" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search MRN or Procedure" />
       </div>
       {patientHits.length > 0 && (
         <div className="group patient-hits">
@@ -488,20 +488,20 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           );
         })}
         <button type="button" className={`chip filter-chip quick${custom ? ' on' : ''}`} onClick={() => setPeriod(true)} data-testid="period">
-          <Icon name="cal" size={12} /> {custom ? `${f.from ? fmtDate(f.from) : '…'} – ${f.to ? fmtDate(f.to) : '…'}` : 'Any date'}
+          <Icon name="cal" size={12} /> {custom ? `${f.from ? fmtDate(f.from) : '…'} – ${f.to ? fmtDate(f.to) : '…'}` : 'Any Date'}
         </button>
         <label className="chip c-neutral filter-chip select-chip">
           <select value={status} onChange={(e) => setFilters({ status: e.target.value as Filters['status'] })} aria-label="Status" data-testid="status-filter">
-            <option value="ALL">All statuses</option>
+            <option value="ALL">All Statuses</option>
             <option value="IN_PROGRESS">In progress</option>
             <option value="COMPLETED">Completed</option>
           </select>
         </label>
         <label className="chip c-neutral filter-chip select-chip">
           <select value={sort} onChange={(e) => setFilters({ sort: e.target.value as Filters['sort'] })} aria-label="Order" data-testid="sort">
-            <option value="NEW">Newest first</option>
-            <option value="OLD">Oldest first</option>
-            <option value="MISSING">Most missing first</option>
+            <option value="NEW">Newest First</option>
+            <option value="OLD">Oldest First</option>
+            <option value="MISSING">Most Missing First</option>
           </select>
         </label>
         {filtering && (
@@ -531,24 +531,24 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
       )}
 
       {!groups.length ? (
-        <Empty icon="patients" title="You are not in a group yet">
+        <Empty icon="patients" title="You Are Not in a Group Yet">
           <p>Ask the Admin to add you to a group. Cases belong to groups.</p>
         </Empty>
       ) : cases.length === 0 ? (
-        <Empty icon="cases" title="No cases yet">
+        <Empty icon="cases" title="No Cases Yet">
           <p>A case is one episode of care. Create it with the MRN, then add its procedures.</p>
           {can('case.create') && (
             <button className="btn primary" onClick={() => setShowNew(true)}>
-              <Icon name="plus" size={18} /> New case
+              <Icon name="plus" size={18} /> New Case
             </button>
           )}
         </Empty>
       ) : filtered.length === 0 ? (
-        <Empty icon="search" title="No matching cases">
+        <Empty icon="search" title="No Matching Cases">
           <p>{filtering ? 'No case matches these filters.' : 'Try another MRN or group.'}</p>
           {filtering && (
             <button className="btn" onClick={clearFilters}>
-              Clear filters
+              Clear Filters
             </button>
           )}
         </Empty>
@@ -565,7 +565,7 @@ export function CasesView({ selectedId, nav }: { selectedId?: string; nav: (p: s
           {months.map((m) => (
             <div key={m.key}>
               <h2 className="monthhead">
-                {m.key === 'missing' ? 'Most missing first' : m.key === 'none' ? 'No episode date' : fmtMonthKey(m.key)}
+                {m.key === 'missing' ? 'Most Missing First' : m.key === 'none' ? 'No Episode Date' : fmtMonthKey(m.key)}
                 <span className="month-count" aria-label={`${m.items.length} case${m.items.length === 1 ? '' : 's'}`}>
                   {m.items.length}
                 </span>

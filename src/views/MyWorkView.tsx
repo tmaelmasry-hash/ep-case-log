@@ -45,9 +45,9 @@ export function MyWorkRow({ x, staleDays, compact }: { x: Item; staleDays: numbe
   const procs = c?.procedures.map((p) => procedureChip(p).text).join(' + ');
   const notStarted = x.stage === 'MRN_ONLY';
   const badge = x.ready ? (
-    <span className="mw-ready">Ready — mark Completed</span>
+    <span className="mw-ready">Ready — Mark Completed</span>
   ) : notStarted ? (
-    <span className="missing">Not started</span>
+    <span className="missing">Not Started</span>
   ) : x.missing_count > 0 ? (
     <span className="missing">{x.missing_count} missing</span>
   ) : null;
@@ -57,7 +57,7 @@ export function MyWorkRow({ x, staleDays, compact }: { x: Item; staleDays: numbe
       <span className="grow">
         <span className="line1 card-top">
           <b className="card-mrn">{x.mrn}</b>
-          {as ? <span className="muted card-as">{as}</span> : notStarted && <span className="muted card-as">MRN only</span>}
+          {as ? <span className="muted card-as">{as}</span> : notStarted && <span className="muted card-as">MRN Only</span>}
           {hajj && (
             <span className="chip c-cat hajj-mark" style={{ '--chip': 'var(--cat-pilgrim)' } as CSSProperties}>
               {hajj}
@@ -87,7 +87,7 @@ export function MyWorkView() {
   const { data: w, error, load } = useMyWork();
   const reminders = useMemo(() => (w?.reminders ?? []).filter((r) => r.kind !== 'ready'), [w]);
   return (
-    <section className="view" aria-label="My work" data-testid="mywork">
+    <section className="view" aria-label="My Work" data-testid="mywork">
       <div className="navbar">
         <span className="grow" />
         <SaveIndicator />
@@ -97,7 +97,7 @@ export function MyWorkView() {
         <p className="field-error" role="alert">
           {error}{' '}
           <button className="link strong" onClick={load}>
-            Try again
+            Try Again
           </button>
         </p>
       ) : !w ? (
@@ -108,7 +108,7 @@ export function MyWorkView() {
         <>
           <div className="kpis mw-kpis">
             <div className="kpi done" data-testid="done-this-week">
-              <span>Done this week</span>
+              <span>Done This Week</span>
               <b>{w.totals.done_this_week}</b>
             </div>
             <div className="kpi">
@@ -130,9 +130,9 @@ export function MyWorkView() {
               ))}
             </div>
           )}
-          <h2 className="sechead">Open cases · fewest missing first</h2>
+          <h2 className="sechead">Open Cases · Fewest Missing First</h2>
           {!w.items.length ? (
-            <Empty icon="check" title="Nothing open">
+            <Empty icon="check" title="Nothing Open">
               <p>Cases you fill in appear here until they are completed.</p>
             </Empty>
           ) : (

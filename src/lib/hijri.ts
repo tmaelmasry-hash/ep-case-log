@@ -55,7 +55,7 @@ export function hajjSeasonPreset(): [string, string, string] | null {
     d.setUTCDate(d.getUTCDate() + 14);
     end = iso(d);
   }
-  return [`Hajj season ${y}`, a[0], end > today ? today : end];
+  return [`Hajj Season ${y}`, a[0], end > today ? today : end];
 }
 
 /** Hijri shortcuts: this Hijri year so far, the latest Ramadan and the latest Dhu al-Hijjah (Hajj month). */

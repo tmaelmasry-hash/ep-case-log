@@ -185,7 +185,7 @@ function MonthChart({ data, picked, onPick }: { data: Dashboard['progress']['by_
 /** Statistics file (owner, step 7): period, Completed only or all, one row per procedure or case, groups. */
 function StatsFileSheet({ onClose }: { onClose: () => void }) {
   const { groups, toast } = useStore();
-  const presets = periodPresets().filter(([t]) => t === 'This year' || t === 'Last year' || t.startsWith('Hajj season'));
+  const presets = periodPresets().filter(([t]) => t === 'This year' || t === 'Last year' || t.startsWith('Hajj Season'));
   const choices: [string, string | null, string | null][] = [...presets, ['All dates', null, null]];
   const [period, setPeriod] = useState<[string | null, string | null]>([choices[0][1], choices[0][2]]);
   const [basis, setBasis] = useState<'COMPLETED' | 'ALL'>('COMPLETED');
@@ -291,7 +291,7 @@ function PeriodChips() {
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const presets = periodPresets();
   const year = presets.find(([t]) => t === 'This year');
-  const hajj = presets.find(([t]) => t.startsWith('Hajj season'));
+  const hajj = presets.find(([t]) => t.startsWith('Hajj Season'));
   const list: [string, string, string][] = [...(year ? [year] : []), ['Last 12 months', iso(y12), iso(today)], ...(hajj ? [hajj] : [])];
   const isCustom = !!(f.from || f.to) && !list.some(([, a, b]) => f.from === a && f.to === b);
   return (

@@ -530,17 +530,17 @@ function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (p
     onNext(pid);
   };
   return (
-    <Sheet title="Add procedure" onClose={onClose} testId="addproc-sheet">
+    <Sheet title="Add Procedure" onClose={onClose} testId="addproc-sheet">
       <div className="group">
         <div className="frow inline">
           <label htmlFor="addproc-date" className="lab-wrap">
-            <span className="lab">Procedure date</span>
+            <span className="lab">Procedure Date</span>
           </label>
           <input id="addproc-date" className="ios-value" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           {hijri && <div className="frow-err muted small">{hijri}</div>}
         </div>
       </div>
-      <h3 className="sechead">What was done? (one or more)</h3>
+      <h3 className="sechead">What Was Done? (One or More)</h3>
       <div className="group">
         <div className="frow stack">
           {(['Ablation', 'Devices', 'Other'] as const).map((g) => (
@@ -558,7 +558,7 @@ function AddProcedureSheet({ ed, onNext, onClose }: { ed: CaseEditor; onNext: (p
         </div>
       </div>
       <button className="btn primary block wide-btn" disabled={!chosen.length} onClick={next} data-testid="addproc-next">
-        {chosen.length ? `Next (${chosen.length} chosen)` : 'Choose what was done'}
+        {chosen.length ? `Next (${chosen.length} Chosen)` : 'Choose What Was Done'}
       </button>
     </Sheet>
   );
@@ -1760,7 +1760,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
         {!procs.length && !completed ? (
           <button className="add-first" onClick={addProcedure} data-testid="add-procedure">
             <Icon name="plus" size={30} />
-            Add procedure
+            Add Procedure
           </button>
         ) : (
           <div className="group" data-testid="procedures">
@@ -1790,7 +1790,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
                 <span className="row-ic">
                   <Icon name="plus" size={20} />
                 </span>
-                Add procedure
+                Add Procedure
               </button>
             )}
             {completed && !procs.length && <div className="grow-row muted">No procedures</div>}

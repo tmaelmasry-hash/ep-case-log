@@ -36,8 +36,8 @@ export function periodPresets(): [string, string, string][] {
   const d = new Date(`${today}T12:00:00`);
   d.setMonth(d.getMonth() - 3);
   return [
-    ['This month', `${today.slice(0, 7)}-01`, today],
-    ['Last 3 months', todayISO(d), today],
+    ['This Month', `${today.slice(0, 7)}-01`, today],
+    ['Last 3 Months', todayISO(d), today],
     ['This year', `${y}-01-01`, today],
     ['Last year', `${y - 1}-01-01`, `${y - 1}-12-31`],
     ...hijriPresets(),
@@ -156,7 +156,7 @@ export function CategoryTree({ cases, onCustomPeriod, show = 'menu' }: { cases: 
         </ul>
         {admin && Object.keys(overrides).some(hidden) && (
           <>
-            <div className="cat-head">Hidden cohorts</div>
+            <div className="cat-head">Hidden Cohorts</div>
             <ul className="cat-list">
               {Object.keys(overrides)
                 .filter((id) => hidden(id) && matcher.item(id))
@@ -184,13 +184,13 @@ export function CategoryTree({ cases, onCustomPeriod, show = 'menu' }: { cases: 
               <span className="cat-ic" aria-hidden>
                 <Icon name="list" size={16} />
               </span>
-              <span className="grow">All procedures</span>
+              <span className="grow">All Procedures</span>
               <span className="cat-count">{forProc.length}</span>
             </button>
           </div>
         </li>
       </ul>
-      <div className="cat-head">Procedures · pick one or more</div>
+      <div className="cat-head">Procedures · Pick One or More</div>
       <ul className="cat-list">
         {roots.filter((r) => r.section === 'procedures').map((r) => tree(r, 'proc', 0))}
         {unclassified > 0 && row({ id: UNCLASSIFIED, label: 'Unclassified' }, 'proc', 0, [])}
@@ -211,7 +211,7 @@ export function CategoryTree({ cases, onCustomPeriod, show = 'menu' }: { cases: 
       </div>
       {anyFilter && (
         <button type="button" className="link small cat-clear" onClick={clearFilters}>
-          Clear all filters
+          Clear All Filters
         </button>
       )}
     </div>

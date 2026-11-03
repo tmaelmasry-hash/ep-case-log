@@ -32,7 +32,7 @@ export function PeriodSheet({ onClose }: { onClose: () => void }) {
       </div>
       <p className="muted small">By the episode start date. Combines with the procedures and cohorts you picked.</p>
       <button className="btn block" onClick={() => apply('', '')}>
-        Any date
+        Any Date
       </button>
     </Sheet>
   );

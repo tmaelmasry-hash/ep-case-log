@@ -11,7 +11,7 @@ test('My work lists my open case with what is missing; Admin sees the dashboard,
   await page.reload();
   await open(page, 'sara', '#/mywork');
   await expect(page.getByTestId('mywork')).toBeVisible();
-  await expect(page.getByTestId('mywork').getByTestId('mywork-row').filter({ hasText: m })).toContainText('Not started');
+  await expect(page.getByTestId('mywork').getByTestId('mywork-row').filter({ hasText: m })).toContainText('Not Started');
   await expect(page.getByTestId('tab-stats')).toHaveCount(0);
 
   await page.context().clearCookies();

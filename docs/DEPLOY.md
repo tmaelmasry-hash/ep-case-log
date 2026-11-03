@@ -120,6 +120,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `5014eae` (Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header; 31 Oct) | `ffc4fd45-4092-47d5-ba56-0fb7731a140b` | same Sheet, no Sheet change (display only) |
 | `fa9e60b` (Q-S1: NCDR printed list values: Anxiety, Irregular heartbeat, Ethanol; prior AF ablation strategies for redo; echo LV hypertrophy, RA size; 31 Oct) | `4787751b-c9b8-44ec-9b25-1ae70cab8587` | main + TEST Sheet `sheets setup`: Ablation_EPS +1 column (`prior_af_ablation_strategies`), Imaging +2 columns (`lv_hypertrophy`, `ra_size_category`); old code still runs. New fields optional, no saved value hidden |
 | `7ae9f84` (speed: `prime` reads what a request needs in one Sheet call; 3 Nov) | `2b3fd05b-2cb8-42a0-b2c7-cb79d3580a8c` | same Sheet, no Sheet change, Apps Script Version 3 unchanged. Live: save 4.0–5.5 s (was 5–12 s) |
+| `351b6f6` (Apps Script **Version 4** "One-step write (3 Nov)": a write batch = one Sheets API read + one values.batchUpdate RAW; Worker unchanged) | `2b3fd05b-2cb8-42a0-b2c7-cb79d3580a8c` | same Sheet, no Sheet change. Gateway answer `read: api+write`. Live: save 2.0–3.8 s. Apps Script rollback = Manage deployments → Edit → Version 3 |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

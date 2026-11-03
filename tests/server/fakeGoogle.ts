@@ -64,8 +64,12 @@ export class FakeSheet {
     return this.cells.get(`${r},${c}`) ?? '';
   }
   set(r: number, c: number, v: V) {
+    this.setRaw(r, c, typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v);
+  }
+  /** A value as the Sheets API writes it with RAW: text is kept exactly (a leading apostrophe too). */
+  setRaw(r: number, c: number, v: V) {
     if (r > this.maxRows || c > this.maxCols) throw new Error(`write outside the sheet (${r},${c})`);
-    const val = typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v === null || v === undefined ? '' : v;
+    const val = v === null || v === undefined ? '' : v;
     if (val === '') this.cells.delete(`${r},${c}`);
     else this.cells.set(`${r},${c}`, val);
   }
@@ -161,20 +165,46 @@ class FakeBook {
   }
 }
 
-/** Stand-in for the Advanced Sheets service call Code.js makes: whole tabs in one request, empty cells at the end of
- *  a row and empty rows at the end left out (like the real API). */
-function fakeSheetsApi(book: FakeBook, count: () => void) {
+const colNum = (letters: string) => [...letters].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+/** `'Tab'` / `'Tab'!1:1` / `'Tab'!B5:D7` → the tab and the cells (1-based). */
+function parseRange(book: FakeBook, r: string) {
+  const m = /^'((?:[^']|'')+)'(?:!(?:(\d+):(\d+)|([A-Z]+)(\d+):([A-Z]+)(\d+)))?$/.exec(r);
+  const sh = m && book.getSheetByName(m[1].replace(/''/g, "'"));
+  if (!m || !sh) throw new Error(`Unable to parse range: ${r}`);
+  if (m[2]) return { sh, rows: [Number(m[2]), Number(m[3])] as const, cols: null };
+  if (m[4]) return { sh, rows: [Number(m[5]), Number(m[7])] as const, cols: [colNum(m[4]), colNum(m[6])] as const };
+  return { sh, rows: null, cols: null };
+}
+
+/** Stand-in for the Advanced Sheets service calls Code.js makes: whole tabs (or a row range) in one request, empty
+ *  cells at the end of a row and empty rows at the end left out (like the real API); value writes with RAW. */
+function fakeSheetsApi(book: FakeBook, count: () => void, countWrite: () => void) {
   return {
     Spreadsheets: {
       Values: {
+        batchUpdate(body: { valueInputOption: string; data: { range: string; values: V[][] }[] }, id: string) {
+          countWrite();
+          if (id !== book.id) throw new Error('no such sheet');
+          if (body.valueInputOption !== 'RAW') throw new Error('expected RAW');
+          // All or nothing, like the API: every range is checked before anything is written.
+          const plan = body.data.map((d) => {
+            const p = parseRange(book, d.range);
+            if (!p.cols) throw new Error(`write needs a cell range: ${d.range}`);
+            if (d.values.length !== p.rows![1] - p.rows![0] + 1 || d.values.some((row) => row.length !== p.cols![1] - p.cols![0] + 1)) throw new Error(`range size mismatch: ${d.range}`);
+            if (p.rows![1] > p.sh.maxRows || p.cols[1] > p.sh.maxCols) throw new Error(`exceeds grid limits: ${d.range}`);
+            return { p, values: d.values };
+          });
+          for (const { p, values } of plan) values.forEach((row, i) => row.forEach((v, j) => p.sh.setRaw(p.rows![0] + i, p.cols![0] + j, v)));
+          return { totalUpdatedCells: plan.reduce((n, x) => n + x.values.flat().length, 0) };
+        },
         batchGet(id: string, opt: { ranges: string[] }) {
           count();
           if (id !== book.id) throw new Error('no such sheet');
           return {
             valueRanges: opt.ranges.map((r) => {
-              const sh = book.getSheetByName(r.slice(1, -1).replace(/''/g, "'"));
-              if (!sh) throw new Error(`Unable to parse range: ${r}`);
-              const values = sh.getDataRange().getValues().map((row) => {
+              const { sh, rows } = parseRange(book, r);
+              const all = rows ? sh.getRange(rows[0], 1, rows[1] - rows[0] + 1, Math.max(1, sh.getLastColumn())).getValues() : sh.getDataRange().getValues();
+              const values = all.map((row) => {
                 let n = row.length;
                 while (n && row[n - 1] === '') n--;
                 return row.slice(0, n);
@@ -250,6 +280,8 @@ export class FakeAppsScript implements Gateway {
   calls = 0;
   /** Requests to the Advanced Sheets service (batchGet). */
   apiCalls = 0;
+  /** Value writes through the Advanced Sheets service (values.batchUpdate). */
+  apiWrites = 0;
   /** Drive folders by name (DriveApp stand-in). */
   folders: FakeFolder[] = [];
   /** HTTP status the fake Drive export address answers with. */
@@ -296,7 +328,7 @@ export class FakeAppsScript implements Gateway {
         },
       },
       Logger: { log: () => {} },
-      Sheets: opts.sheetsApi === false ? undefined : fakeSheetsApi(book, () => this.apiCalls++),
+      Sheets: opts.sheetsApi === false ? undefined : fakeSheetsApi(book, () => this.apiCalls++, () => this.apiWrites++),
     };
     const src = readFileSync(resolve(import.meta.dirname, '../../apps-script/Code.js'), 'utf8');
     const make = new Function(...Object.keys(globals), `${src}\nreturn { doPost: doPost, nightlyBackup: nightlyBackup };`);

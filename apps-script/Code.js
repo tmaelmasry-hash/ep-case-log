@@ -509,21 +509,23 @@ function prefetch_(ss, ops) {
   READ_ = 'api';
   var ranges = (res && res.valueRanges) || [];
   if (ranges.length !== names.length) return;
-  names.forEach(function (name, k) {
-    var rows = ranges[k].values || [];
-    var width = 0;
-    rows.forEach(function (r) { width = Math.max(width, r.length); });
-    // The API leaves out empty cells at the end of a row; getValues gives ''.
-    var data = rows.map(function (r) {
-      var v = [];
-      for (var j = 0; j < width; j++) v.push(j < r.length && r[j] !== null && r[j] !== undefined ? typedDate_(ss, r[j]) : '');
-      return v;
-    });
-    var entry = { head: data.length && data[0].some(function (h) { return h !== ''; }) ? data[0].map(String) : [], data: data };
-    // The tab itself is looked up only if a later op needs it (a write, or a read after a write).
-    Object.defineProperty(entry, 'sh', { get: function () { return sheet_(ss, name); } });
-    T_[name] = entry;
+  names.forEach(function (name, k) { T_[name] = apiTab_(ss, name, ranges[k].values || []); });
+}
+
+/** A tab as the Sheets API gave it → the same shape read_ holds (`head`, `data` = rows, header row first). */
+function apiTab_(ss, name, rows) {
+  var width = 0;
+  rows.forEach(function (r) { width = Math.max(width, r.length); });
+  // The API leaves out empty cells at the end of a row; getValues gives ''.
+  var data = rows.map(function (r) {
+    var v = [];
+    for (var j = 0; j < width; j++) v.push(j < r.length && r[j] !== null && r[j] !== undefined ? typedDate_(ss, r[j]) : '');
+    return v;
   });
+  var entry = { head: data.length && data[0].some(function (h) { return h !== ''; }) ? data[0].map(String) : [], data: data };
+  // The tab itself is looked up only if a later op needs it (a write, or a read after a write).
+  Object.defineProperty(entry, 'sh', { get: function () { return sheet_(ss, name); } });
+  return entry;
 }
 
 /** A date typed by hand into the Sheet comes from the API as its display text; make it the same text getValues
@@ -547,10 +549,206 @@ function typedDate_(ss, v) {
   return Number(h) || Number(mi) ? date + 'T' + p(h) + ':' + p(mi) : date;
 }
 
+// ── speed (3 Nov): a batch that writes, in two Sheets API requests ──────────────────────────────────────────
+// Writing op by op (find the row, read it, write it, tab after tab) took 4–6 s for one save. Now a batch that writes
+// reads the tabs it needs in ONE Sheets API request, works on that copy, and sends every changed cell in ONE more
+// (values.batchUpdate, RAW: text stays text, nothing becomes a formula). Only the cells that change are written, so
+// a date typed by hand in another cell of the row stays a date. A refused batch (STALE, NOT_FOUND, unknown column)
+// stops before the write request, so nothing is written. Without the Sheets service, or if the first request
+// fails, the batch runs op by op as before. Runs under the script lock like every write.
+
+/** Column number (1 = A) → letters. */
+function colA1_(n) {
+  var s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+  return s;
+}
+
+function rangeA1_(tab, row, col, nRows, nCols) {
+  return "'" + String(tab).replace(/'/g, "''") + "'!" + colA1_(col) + row + ':' + colA1_(col + nCols - 1) + (row + nRows - 1);
+}
+
+/** Value going out with RAW: the value itself ('' empties the cell). */
+function raw_(v) {
+  return v === null || v === undefined ? '' : v;
+}
+
+function writeBatch_(ss, ops) {
+  if (typeof Sheets === 'undefined') return null;
+  // Tabs that are only appended to need their header and last row, not their rows (History, Activity grow).
+  var full = [];
+  var headOnly = [];
+  ops.forEach(function (o) {
+    if (!o.tab) return;
+    if (o.op === 'append') { if (full.indexOf(o.tab) < 0 && headOnly.indexOf(o.tab) < 0) headOnly.push(o.tab); }
+    else if (full.indexOf(o.tab) < 0) { full.push(o.tab); var h = headOnly.indexOf(o.tab); if (h >= 0) headOnly.splice(h, 1); }
+  });
+  var q = function (n) { return "'" + String(n).replace(/'/g, "''") + "'"; };
+  var res;
+  try {
+    res = Sheets.Spreadsheets.Values.batchGet(ss.getId(), {
+      ranges: full.map(q).concat(headOnly.map(function (n) { return q(n) + '!1:1'; })),
+      valueRenderOption: 'UNFORMATTED_VALUE',
+      dateTimeRenderOption: 'FORMATTED_STRING'
+    });
+  } catch (err) {
+    READ_ = 'tabs (API write: ' + String(err && err.message || err).slice(0, 120) + ')';
+    return null;
+  }
+  var ranges = (res && res.valueRanges) || [];
+  if (ranges.length !== full.length + headOnly.length) return null;
+  full.forEach(function (name, k) {
+    if (!sheet_(ss, name)) throw new Error('No tab ' + name + ' (run setup)');
+    var t = apiTab_(ss, name, ranges[k].values || []);
+    t.last = t.data.length;
+    T_[name] = t;
+  });
+  headOnly.forEach(function (name, k) {
+    var sh = sheet_(ss, name);
+    if (!sh) throw new Error('No tab ' + name + ' (run setup)');
+    var t = apiTab_(ss, name, (ranges[full.length + k].values || []).slice(0, 1));
+    t.last = sh.getLastRow();
+    t.data = null;
+    T_[name] = t;
+  });
+  READ_ = 'api+write';
+  var out = [];
+  var grow = {};
+  var results = [];
+  var w = {
+    cell: function (t, tab, row, col, v) {
+      out.push({ range: rangeA1_(tab, row, col + 1, 1, 1), values: [[raw_(v)]] });
+      if (t.data && t.data[row - 1]) t.data[row - 1][col] = raw_(v);
+    },
+    rows: function (tab, start, values, width) {
+      out.push({ range: rangeA1_(tab, start, 1, values.length, width), values: values });
+    },
+    find: function (t, col, id) {
+      var c = t.head.indexOf(col);
+      if (c < 0) throw new Error('No column ' + col + ' in ' + t.tab);
+      for (var i = 1; i < t.data.length; i++) if (String(t.data[i][c]) === String(id)) return i + 1;
+      return 0;
+    }
+  };
+  ops.forEach(function (rawOp) {
+    var o = resolveObj_(rawOp, results);
+    var t = T_[o.tab];
+    if (t) t.tab = o.tab;
+    var fn = { read: function () { return readData_(t, o); }, append: wAppend_, appendIfAbsent: wAppendIfAbsent_, update: wUpdate_, updateMatching: wUpdateMatching_, increment: wIncrement_, expect: wExpect_ }[o.op];
+    if (!fn) throw new Error('unknown op ' + o.op);
+    results.push(fn(t, o, w, grow));
+  });
+  if (out.length) {
+    // A new row past the end of the tab's grid: add rows first (the API does not grow the grid on a value write).
+    Object.keys(grow).forEach(function (name) {
+      var sh = sheet_(ss, name);
+      var max = sh.getMaxRows();
+      if (grow[name] > max) sh.insertRowsAfter(max, grow[name] - max + 200);
+    });
+    if (Object.keys(grow).length) SpreadsheetApp.flush();
+    Sheets.Spreadsheets.Values.batchUpdate({ valueInputOption: 'RAW', data: out }, ss.getId());
+  }
+  return results;
+}
+
+function wAppend_(t, o, w, grow) {
+  if (!o.rows.length) return { ids: [] };
+  var start = Math.max(t.last, 1) + 1;
+  var ids = [];
+  var values = o.rows.map(function (r, i) {
+    checkCols_(t, r);
+    if (o.idCol) { r[o.idCol] = start - 1 + i; ids.push(start - 1 + i); }
+    return t.head.map(function (h) { return Object.prototype.hasOwnProperty.call(r, h) ? raw_(r[h]) : ''; });
+  });
+  t.last = start + values.length - 1;
+  grow[t.tab] = Math.max(grow[t.tab] || 0, t.last);
+  if (t.data) values.forEach(function (v) { t.data.push(v.slice()); });
+  w.rows(t.tab, start, values, t.head.length);
+  return { ids: ids };
+}
+
+function wAppendIfAbsent_(t, o, w, grow) {
+  if (w.find(t, o.key, o.row[o.key])) return { inserted: false };
+  wAppend_(t, { tab: o.tab, rows: [o.row] }, w, grow);
+  return { inserted: true };
+}
+
+function wUpdate_(t, o, w) {
+  var r = w.find(t, o.key, o.id);
+  if (!r) return { found: false };
+  var raw = t.data[r - 1];
+  while (raw.length < t.head.length) raw.push('');
+  var at = function (c) {
+    var i = t.head.indexOf(c);
+    if (i < 0) throw new Error('No column ' + c + ' in ' + o.tab + ' (run setup)');
+    return i;
+  };
+  var changed = {};
+  var set = o.set || {};
+  Object.keys(set).forEach(function (c) { changed[at(c)] = raw_(set[c]); });
+  Object.keys(o.merge || {}).forEach(function (c) {
+    var i = at(c);
+    var cur = {};
+    try { cur = JSON.parse(raw[i] || '{}'); } catch (e) { cur = {}; }
+    var m = o.merge[c];
+    Object.keys(m.set || {}).forEach(function (k) { cur[k] = m.set[k]; });
+    Object.keys(m.patch || {}).forEach(function (k) { cur[k] = Object.assign({}, cur[k] || {}, m.patch[k]); });
+    (m.unset || []).forEach(function (k) { delete cur[k]; });
+    changed[i] = Object.keys(cur).length ? JSON.stringify(cur) : '';
+  });
+  ['listAdd', 'listRemove'].forEach(function (kind) {
+    Object.keys(o[kind] || {}).forEach(function (c) {
+      var i = at(c);
+      var cur = splitList_(i in changed ? changed[i] : raw[i]);
+      o[kind][c].forEach(function (x) {
+        var p = cur.indexOf(x);
+        if (kind === 'listAdd' && p < 0) cur.push(x);
+        if (kind === 'listRemove' && p >= 0) cur.splice(p, 1);
+      });
+      changed[i] = cur.join(',');
+    });
+  });
+  Object.keys(changed).forEach(function (i) { w.cell(t, o.tab, r, Number(i), changed[i]); });
+  return o.returnRow ? { found: true, row: toObj_(t.head, raw, t.head.length) } : { found: true };
+}
+
+function wExpect_(t, o, w) {
+  var r = w.find(t, o.key, o.id);
+  if (!r) throw new Error('NOT_FOUND');
+  if (Number(t.data[r - 1][t.head.indexOf(o.col)]) !== Number(o.equals)) throw new Error('STALE');
+  return { ok: true };
+}
+
+function wUpdateMatching_(t, o, w) {
+  var n = 0;
+  for (var i = 1; i < t.data.length; i++) {
+    var row = t.data[i];
+    var ok = Object.keys(o.match).every(function (c) { return String(row[t.head.indexOf(c)] === undefined ? '' : row[t.head.indexOf(c)]) === String(o.match[c]); });
+    if (!ok) continue;
+    Object.keys(o.set).forEach(function (c) { w.cell(t, o.tab, i + 1, t.head.indexOf(c), o.set[c]); });
+    n++;
+  }
+  return { updated: n };
+}
+
+function wIncrement_(t, o, w) {
+  var r = w.find(t, o.key, o.id);
+  if (!r) throw new Error('Unknown ' + o.key + ' ' + o.id);
+  var c = t.head.indexOf(o.col);
+  var before = Number(t.data[r - 1][c]) || 1;
+  w.cell(t, o.tab, r, c, before + (o.by || 1));
+  return { value: before };
+}
+
 function batch_(ss, ops) {
   T_ = {};
   BOOK_ = null;
   READ_ = '';
+  if (ops.some(function (o) { return o.op !== 'read'; })) {
+    var fast = writeBatch_(ss, ops);
+    if (fast) return fast;
+    T_ = {};
+  }
   prefetch_(ss, ops);
   var results = [];
   ops.forEach(function (raw) {

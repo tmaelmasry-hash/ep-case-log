@@ -173,6 +173,58 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
     expect(off.apiCalls).toBe(0);
   });
 
+  it('a save is one Sheets API read and one API write; the same Sheet as op by op, and untouched cells stay', async () => {
+    const on = await sheets();
+    const off = new FakeAppsScript(undefined, { sheetsApi: false });
+    await off.call('init');
+    const offStore = new SheetsStore(config, off);
+    await offStore.setup();
+    for (const s of [on.store, offStore]) await s.putCase(newCase(), null);
+    // The owner types a real date into another cell of the Patient row by hand (a date, not text).
+    const typed = new Date(Date.UTC(2026, 2, 5));
+    for (const g of [on.google, off]) {
+      const sh = g.book.getSheetByName('Patient')!;
+      const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+      sh.cells.set(`2,${head.indexOf('PATIENT_IDENTIFIERS__date_of_birth') + 1}`, typed as never);
+    }
+    const save = async (store: SheetsStore) => {
+      const r = (await store.getCase('case_1'))!;
+      const base = structuredClone(r);
+      applyEdits(dict, r, { changes: [{ entity: 'PATIENTS', id: 'patient_1', field: 'sex_at_birth', value: 'FEMALE' }] }, a('u1'), new Set());
+      await store.putCase(r, base, [{ actor: 'u1', action: 'case.edit' }]);
+    };
+    const n0 = { calls: on.google.apiCalls, writes: on.google.apiWrites };
+    await save(on.store);
+    expect([on.google.apiCalls - n0.calls - 1, on.google.apiWrites - n0.writes]).toEqual([1, 1]); // getCase read + write read, one write
+    await save(offStore);
+    expect(off.apiWrites).toBe(0);
+    for (const tab of ['Cases', 'Patient', 'History']) {
+      const strip = (rows: Record<string, unknown>[]) => rows.map((x) => Object.fromEntries(Object.entries(x).filter(([k]) => k !== "id" && !/(_at|^at)$/.test(k))));
+      expect(strip(on.google.table(tab)), tab).toEqual(strip(off.table(tab)));
+    }
+    for (const g of [on.google, off]) await g.call('batch', { ops: [{ op: 'update', tab: 'Patient', key: 'case_id', id: 'case_1', set: { PATIENT_IDENTIFIERS__full_name: "'=1+1 synthetic" } }] });
+    expect(on.google.table('Patient')).toEqual(off.table('Patient'));
+    const pat = on.google.table('Patient')[0];
+    expect(pat.PATIENT_IDENTIFIERS__date_of_birth).toBeInstanceOf(Date); // not rewritten as text
+    expect(pat.PATIENT_IDENTIFIERS__full_name).toBe("'=1+1 synthetic"); // text kept exactly, never a formula
+    expect(on.google.table('Activity').map((r) => r.activity_id)).toEqual(off.table('Activity').map((r) => r.activity_id));
+  });
+
+  it('a refused save (STALE) writes nothing; a tab that is full gets more rows before the write', async () => {
+    const { google, store } = await sheets();
+    await store.putCase(newCase(), null);
+    const before = JSON.stringify(google.book.sheets.map((s) => [...s.cells]));
+    const w0 = google.apiWrites;
+    await expect(google.call('batch', { ops: [{ op: 'expect', tab: 'Cases', key: 'case_id', id: 'case_1', col: 'row_version', equals: 99 }, { op: 'update', tab: 'Cases', key: 'case_id', id: 'case_1', set: { mrn: '0990999' } }] })).rejects.toThrow(/STALE/);
+    expect(google.apiWrites).toBe(w0);
+    expect(JSON.stringify(google.book.sheets.map((s) => [...s.cells]))).toBe(before);
+    const act = google.book.getSheetByName('Activity')!;
+    act.maxRows = act.getLastRow();
+    await store.appendActivity([{ actor: 'u1', action: 'x' }, { actor: 'u1', action: 'y' }]);
+    expect(act.maxRows).toBeGreaterThan(act.getLastRow());
+    expect(google.table('Activity').slice(-2).map((r) => r.action)).toEqual(['x', 'y']);
+  });
+
   it('a date typed by hand into the Sheet reads as yyyy-MM-dd (date + time with T), in the Sheet\'s locale', async () => {
     const typedRead = async (locale: string) => {
       const google = new FakeAppsScript();

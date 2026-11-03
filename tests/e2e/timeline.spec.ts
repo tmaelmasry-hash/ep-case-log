@@ -14,7 +14,7 @@ test('patient timeline shows the episode start by its date and the procedure; ta
 
   await page.getByTestId('mrn-link').click();
   const view = page.getByTestId('patient-view');
-  await expect(view.getByTestId('patient-proc')).toContainText('CIED implant'); // Cases = the page as before
+  await expect(view.getByTestId('patient-proc')).toContainText('CIED Implant'); // Cases = the page as before
   await view.getByRole('radiogroup', { name: 'Patient view' }).getByRole('radio', { name: 'Timeline' }).click();
   const tl = page.getByTestId('patient-timeline');
   await expect(tl.getByRole('heading', { name: '2026' })).toBeVisible();
@@ -23,7 +23,7 @@ test('patient timeline shows the episode start by its date and the procedure; ta
   await expect(ep).toContainText('Case No.');
   await expect(ep).toContainText('In progress');
   // The procedure is either dated (start / scheduled) or listed under "Without a date": never dated by when it was made.
-  await expect(tl).toContainText('CIED implant');
+  await expect(tl).toContainText('CIED Implant');
   await expect(tl).toContainText('Planned follow-ups stay on the Follow-up tab');
   await ep.click();
   await expect(page).toHaveURL(new RegExp(`#/cases/${id}$`));

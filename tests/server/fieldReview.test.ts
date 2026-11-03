@@ -36,7 +36,7 @@ describe('field review (case_layout form)', () => {
     expect(offeredCodes(field('EP_PROCEDURES', 'procedure_status'))).toEqual(['COMPLETED', 'PARTIAL', 'FAILED']);
     expect(offeredCodes(field('EP_PROCEDURES', 'procedure_status'), { procedure_status: 'SCHEDULED' })).toContain('SCHEDULED'); // a saved value still shows
     const date = field('EP_PROCEDURES', 'procedure_start_datetime');
-    expect(date).toMatchObject({ type: 'date', label: 'Procedure date' });
+    expect(date).toMatchObject({ type: 'date', label: 'Procedure Date' });
     expect(encodeValue(date, '2026-09-14', {})).toBe('2026-09-14');
     expect(encodeValue(date, '2026-09-14T09:20', {})).toBe('2026-09-14'); // an older device may still send a time
   });
@@ -55,7 +55,7 @@ describe('field review (case_layout form)', () => {
     const rm = shown('RHYTHM_MONITORING');
     expect(rm.indexOf('pac_burden_pct')).toBe(rm.indexOf('pvc_burden_pct') + 1);
     expect(offeredCodes(field('RHYTHM_MONITORING', 'monitor_type'))).toContain('INPATIENT_MONITOR');
-    expect(field('RHYTHM_MONITORING', 'nsvt_or_vt_detected').label).toBe('NSVT / VT detected');
+    expect(field('RHYTHM_MONITORING', 'nsvt_or_vt_detected').label).toBe('NSVT / VT Detected');
     expect(def('PATIENTS').copy_forward).toEqual(expect.arrayContaining(['nationality_code', 'residence_category']));
     expect(encodeValue(valve, ['MITRAL_STENOSIS_SEVERE', 'TRICUSPID_REGURGITATION_MODERATE'], {})).toBe('["MITRAL_STENOSIS_SEVERE","TRICUSPID_REGURGITATION_MODERATE"]');
   });

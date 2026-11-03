@@ -59,9 +59,9 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   await page.getByRole('button', { name: /What's missing/ }).click();
   const ready = page.getByTestId('ready-sheet');
   await expect(ready.getByTestId('blocker')).toHaveCount(2);
-  await expect(ready).toContainText('LA/LAA thrombus status is empty');
+  await expect(ready).toContainText('LA/LAA Thrombus Status is empty');
   await expect(ready.getByTestId('mark-completed')).toBeDisabled();
-  await ready.getByTestId('blocker').filter({ hasText: 'LA/LAA thrombus status' }).getByRole('button', { name: 'Go' }).click();
+  await ready.getByTestId('blocker').filter({ hasText: 'LA/LAA Thrombus Status' }).getByRole('button', { name: 'Go' }).click();
   const field = page.getByTestId('procedure-sheet').locator('[data-field="AF_ABLATIONS.la_laa_thrombus_status"]');
   await expect(field).toBeVisible();
   await field.getByTestId('na-open').click();
@@ -83,7 +83,7 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   await page.getByTestId('section-sheet').getByRole('button', { name: 'Done' }).click();
 
   await page.getByRole('button', { name: /What's missing/ }).click();
-  await expect(ready).toContainText('Date of birth not available (Old paper file only)');
+  await expect(ready).toContainText('Date of Birth not available (Old paper file only)');
   await ready.getByTestId('mark-completed').click();
   await expect(page.getByTestId('case-status')).toHaveText('Completed');
   await expect(page.getByTestId('completed-banner')).toContainText('Completed by Test Admin');
@@ -110,7 +110,7 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   const h = page.getByTestId('history-sheet');
   await expect(h.getByTestId('history-item').first()).toContainText('Reopened — Discharge date was wrong');
   await expect(h).toContainText('Marked completed');
-  await expect(h).toContainText('Procedure 1 · LA/LAA thrombus status: Not available (Not documented in the record)');
+  await expect(h).toContainText('Procedure 1 · LA/LAA Thrombus Status: Not available (Not documented in the record)');
   await expect(h).toContainText('Component AF added to Procedure 1');
   await expect(h.getByTestId('history-item').last()).toContainText('Case created in');
   await h.getByRole('button', { name: 'Done' }).click();

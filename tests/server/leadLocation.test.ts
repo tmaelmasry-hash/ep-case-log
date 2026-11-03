@@ -9,18 +9,18 @@ import { codeLabel, offeredCodes } from '../../shared/dictionary.ts';
 
 const { dict } = loadConfig();
 const f = dict.entities.DEVICE_LEADS.fields.find((x) => x.name === 'lead_location')!;
-const NCDR = ['RA endocardial', 'RA epicardial', 'RV endocardial', 'RV epicardial', 'His bundle', 'Left bundle', 'LV endocardial', 'LV epicardial (CVS)', 'LV epicardial (surgical)', 'Azygos vein', 'SVC / subclavian', 'Subcutaneous array', 'Subcutaneous (S-ICD)', 'Substernal', 'Other'];
+const NCDR = ['RA Endocardial', 'RA Epicardial', 'RV Endocardial', 'RV Epicardial', 'His Bundle', 'Left Bundle', 'LV Endocardial', 'LV Epicardial (CVS)', 'LV Epicardial (Surgical)', 'Azygos Vein', 'SVC / Subclavian', 'Subcutaneous Array', 'Subcutaneous (S-ICD)', 'Substernal', 'Other'];
 
 describe('NCDR lead locations', () => {
   it('offers the 15 NCDR locations in NCDR order; old codes keep their stored value and get the NCDR name', () => {
     expect(offeredCodes(f, {}).map((c) => codeLabel(f, c))).toEqual(NCDR);
-    expect(['RA', 'RV', 'HIS', 'LBB_AREA', 'CS_LV'].map((c) => codeLabel(f, c))).toEqual(['RA endocardial', 'RV endocardial', 'His bundle', 'Left bundle', 'LV epicardial (CVS)']);
+    expect(['RA', 'RV', 'HIS', 'LBB_AREA', 'CS_LV'].map((c) => codeLabel(f, c))).toEqual(['RA Endocardial', 'RV Endocardial', 'His Bundle', 'Left Bundle', 'LV Epicardial (CVS)']);
   });
 
   it('the coarse old Epicardial / Subcutaneous are not offered, but a row that holds one keeps showing it', () => {
     expect(offeredCodes(f, {})).not.toContain('EPICARDIAL');
     expect(offeredCodes(f, { lead_location: 'EPICARDIAL' })).toContain('EPICARDIAL');
-    expect(codeLabel(f, 'SUBCUTANEOUS')).toBe('Subcutaneous (old, not split)');
+    expect(codeLabel(f, 'SUBCUTANEOUS')).toBe('Subcutaneous (Old, Not Split)');
   });
 
   it('a new code saves', () => {

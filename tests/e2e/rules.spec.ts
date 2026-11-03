@@ -20,8 +20,8 @@ test('mapping system follows "mapping used"; turning it off asks before removing
   await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
-  const used = ps.getByRole('radiogroup', { name: 'Electroanatomic mapping used' });
-  const system = ps.getByRole('radiogroup', { name: 'Mapping system' });
+  const used = ps.getByRole('radiogroup', { name: 'Electroanatomic Mapping Used' });
+  const system = ps.getByRole('radiogroup', { name: 'Mapping System' });
   await expect(system).toHaveCount(0);
   await used.getByRole('radio', { name: 'Yes', exact: true }).click();
   await system.getByRole('radio', { name: 'Carto' }).click();
@@ -29,7 +29,7 @@ test('mapping system follows "mapping used"; turning it off asks before removing
 
   // Keep: nothing changes.
   await used.getByRole('radio', { name: 'No', exact: true }).click();
-  await expect(page.getByTestId('rule-consequences')).toContainText('Mapping system');
+  await expect(page.getByTestId('rule-consequences')).toContainText('Mapping System');
   await page.getByRole('button', { name: 'Cancel' }).last().click();
   await expect(used.getByRole('radio', { name: 'Yes', exact: true })).toHaveAttribute('aria-checked', 'true');
   await expect(system.getByRole('radio', { name: 'Carto' })).toHaveAttribute('aria-checked', 'true');

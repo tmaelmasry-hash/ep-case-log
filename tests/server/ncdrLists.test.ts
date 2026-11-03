@@ -51,8 +51,8 @@ describe('Q-S1 NCDR lists', () => {
     expect(n[n.indexOf('last_prior_af_catheter_ablation_date') + 1]).toBe('prior_af_ablation_strategies');
     expect(field('AF_ABLATIONS', 'prior_af_ablation_strategies')).toMatchObject({ type: 'lookup_array', req: 'O' });
     expect(field('AF_ABLATIONS', 'prior_af_ablation_strategies').codes!.map((c) => c.label)).toEqual([
-      'Complex fractionated atrial electrogram', 'Convergent procedure', 'Cryoablation', 'Empiric LA linear lesions', 'Focal ablation', 'Ganglion plexus ablation',
-      'Pulmonary vein isolation', 'PFA (pulsed field)', 'Rotor based mapping', 'Segmental PV ablation', 'Wide area circumferential ablation',
+      'Complex Fractionated Atrial Electrogram', 'Convergent Procedure', 'Cryoablation', 'Empiric LA Linear Lesions', 'Focal Ablation', 'Ganglion Plexus Ablation',
+      'Pulmonary Vein Isolation', 'PFA (Pulsed Field)', 'Rotor Based Mapping', 'Segmental PV Ablation', 'Wide Area Circumferential Ablation',
     ]);
   });
 

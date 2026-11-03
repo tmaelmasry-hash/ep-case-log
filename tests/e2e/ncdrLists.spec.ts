@@ -17,13 +17,13 @@ test('AF redo asks for prior ablation strategies; energies used offer Ethanol; c
 
   const strategies = ps.locator('[data-field="AF_ABLATIONS.prior_af_ablation_strategies"]');
   await expect(strategies).toHaveCount(0); // first procedure: not asked
-  await ps.getByRole('radiogroup', { name: 'First or redo' }).getByRole('radio', { name: 'Redo', exact: true }).click();
+  await ps.getByRole('radiogroup', { name: 'First or Redo' }).getByRole('radio', { name: 'Redo', exact: true }).click();
   await saved(page);
   await expect(strategies).toBeVisible();
-  for (const s of ['Pulmonary vein isolation', 'Empiric LA linear lesions']) await strategies.getByRole('button', { name: s }).click();
+  for (const s of ['Pulmonary Vein Isolation', 'Empiric LA Linear Lesions']) await strategies.getByRole('button', { name: s }).click();
   await saved(page);
 
-  await af.getByLabel('Energy source').selectOption({ label: 'Multiple' });
+  await af.getByLabel('Energy Source').selectOption({ label: 'Multiple' });
   await saved(page);
   const energies = ps.locator('[data-field="AF_ABLATIONS.af_energy_sources_used"]');
   for (const e of ['RF', 'Ethanol']) await energies.getByRole('button', { name: e, exact: true }).click();
@@ -31,7 +31,7 @@ test('AF redo asks for prior ablation strategies; energies used offer Ethanol; c
 
   await page.reload();
   await page.getByTestId('procedure-row').first().click();
-  for (const s of ['Pulmonary vein isolation', 'Empiric LA linear lesions']) await expect(strategies.getByRole('button', { name: s })).toHaveAttribute('aria-pressed', 'true');
-  await expect(strategies.getByRole('button', { name: 'Focal ablation' })).toHaveAttribute('aria-pressed', 'false');
+  for (const s of ['Pulmonary Vein Isolation', 'Empiric LA Linear Lesions']) await expect(strategies.getByRole('button', { name: s })).toHaveAttribute('aria-pressed', 'true');
+  await expect(strategies.getByRole('button', { name: 'Focal Ablation' })).toHaveAttribute('aria-pressed', 'false');
   for (const e of ['RF', 'Ethanol']) await expect(energies.getByRole('button', { name: e, exact: true })).toHaveAttribute('aria-pressed', 'true');
 });

@@ -26,7 +26,7 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await expect(cmr.getByRole('radio', { name: 'Not done' })).toHaveAttribute('aria-checked', 'true');
   await cmr.getByRole('radio', { name: 'Done', exact: true }).click();
   const row = page.getByTestId('row-sheet');
-  await expect(row.getByRole('radiogroup', { name: 'Imaging modality' }).getByRole('radio', { name: 'CMR' })).toHaveAttribute('aria-checked', 'true');
+  await expect(row.getByRole('radiogroup', { name: 'Imaging Modality' }).getByRole('radio', { name: 'CMR' })).toHaveAttribute('aria-checked', 'true');
   await saved(page);
   await row.getByRole('button', { name: 'Done' }).click();
   await expect(cmr.getByRole('radio', { name: 'Done', exact: true })).toHaveAttribute('aria-checked', 'true');

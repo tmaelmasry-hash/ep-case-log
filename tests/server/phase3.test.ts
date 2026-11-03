@@ -281,7 +281,7 @@ describe('case history', () => {
     const res = await sara.call('GET', `/api/cases/${id}/history`);
     expect(res.status).toBe(200);
     const items = res.data.items as { kind: string; text: string; old?: string; new?: string; by: string }[];
-    expect(items[0]).toMatchObject({ kind: 'na', text: 'Procedure 1 · Acute AF endpoint: Not available (Not documented in the record)', by: 'Sara' });
+    expect(items[0]).toMatchObject({ kind: 'na', text: 'Procedure 1 · Acute AF Endpoint: Not available (Not documented in the record)', by: 'Sara' });
     const edits = items.filter((x) => x.kind === 'edit' && String(x.new).endsWith(' kg')); // the app's own fills (date, type, diagnosis) have lines too
     expect(edits.map((x) => [x.old, x.new])).toEqual([
       ['15 kg', '12.5 kg'],

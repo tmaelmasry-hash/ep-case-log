@@ -19,19 +19,19 @@ test('CHA2DS2-VASc shows for AF care, incomplete until every item is known; repo
 
   await page.getByTestId('section-patient').click();
   const ps = page.getByTestId('section-sheet');
-  await ps.getByLabel('Date of birth').fill('1950-01-01');
+  await ps.getByLabel('Date of Birth').fill('1950-01-01');
   await ps.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Female' }).click();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
   await page.getByTestId('section-risk').click();
   const rs = page.getByTestId('section-sheet');
-  for (const [name, v] of [['Hypertension', 'Yes'], ['Diabetes', 'No'], ['Heart failure', 'No'], ['Vascular disease', 'No']] as const) {
+  for (const [name, v] of [['Hypertension', 'Yes'], ['Diabetes', 'No'], ['Heart Failure', 'No'], ['Vascular Disease', 'No']] as const) {
     await rs.getByRole('radiogroup', { name, exact: true }).getByRole('radio', { name: v, exact: true }).click();
   }
   await saved(page);
   await expect(rs.getByTestId('cha-line')).toContainText('incomplete'); // stroke not answered yet
   // M-4a: stroke, TIA and thromboembolism are three questions.
-  for (const name of ['Prior stroke', 'Prior TIA', 'Prior thromboembolic event']) {
+  for (const name of ['Prior Stroke', 'Prior TIA', 'Prior Thromboembolic Event']) {
     await rs.getByRole('radiogroup', { name, exact: true }).getByRole('radio', { name: 'No', exact: true }).click();
   }
   await saved(page);
@@ -83,14 +83,14 @@ test('a CIED implant opens device sections only: Device implant ticked, device +
   await page.getByTestId('addproc-next').click();
   const ps = page.getByTestId('procedure-sheet');
   await saved(page);
-  await expect(ps.getByTestId('procedure-type')).toContainText('CIED implant');
+  await expect(ps.getByTestId('procedure-type')).toContainText('CIED Implant');
   await expect(ps.getByTestId('module-DEVICE_IMPLANTS')).toBeVisible();
   await expect(ps.getByTestId('device-section')).toBeVisible();
   await expect(ps.getByTestId('device-leads')).toBeVisible();
   // Only pacemaker types are offered for the case device.
   const types = ps.locator('[data-field="DEVICES.current_device_type"] option');
   await expect(types.filter({ hasText: 'ICD' })).toHaveCount(0);
-  await expect(types.filter({ hasText: 'Pacemaker, dual chamber' })).toHaveCount(1);
+  await expect(types.filter({ hasText: 'Pacemaker, Dual Chamber' })).toHaveCount(1);
   for (const f of ['electroanatomic_mapping_used', 'intracardiac_echo_used', 'transseptal_access', 'first_or_redo']) await expect(ps.locator(`[data-field="EP_PROCEDURES.${f}"]`)).toHaveCount(0);
 
   // An ablation of AF shows the ablation fields and no device sections.

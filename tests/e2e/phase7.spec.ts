@@ -18,8 +18,8 @@ test('add a 6-month follow-up to a procedure with a quick event', async ({ page 
   await page.getByTestId('section-followup').click();
   await page.getByTestId('followups-sheet').getByRole('button', { name: 'Add follow-up visit' }).click();
   const s = page.getByTestId('followup-sheet');
-  await s.getByRole('radiogroup', { name: 'Followup timepoint' }).getByRole('radio', { name: 'M6' }).click();
-  await s.getByLabel('Actual followup date').fill('2026-09-10');
+  await s.getByRole('radiogroup', { name: 'Followup Timepoint' }).getByRole('radio', { name: 'M6' }).click();
+  await s.getByLabel('Actual Followup Date').fill('2026-09-10');
   const q = s.getByTestId('quick-events').locator('[data-quick="ARRHYTHMIA_RECURRENCE"]');
   await q.getByRole('radio', { name: 'Yes' }).click();
   await q.getByLabel(/date/).fill('2026-08-01');

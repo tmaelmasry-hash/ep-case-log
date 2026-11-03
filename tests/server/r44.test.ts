@@ -44,8 +44,8 @@ describe('R4-4 fields', () => {
     expect(names.slice(names.indexOf('implant_indication'), names.indexOf('implant_indication') + 3)).toEqual(['implant_indication', 'pacing_indication_reasons', 'generator_replacement_reasons']);
     expect(field('implant_indication')).toMatchObject({ type: 'enum', req: 'R' });
     for (const f of ['pacing_indication_reasons', 'generator_replacement_reasons']) expect(field(f)).toMatchObject({ type: 'lookup_array', req: 'O' });
-    expect(field('pacing_indication_reasons').codes!.map((c) => c.label)).toEqual(['2:1 AV block', '2nd degree Mobitz II', 'AV node ablation', 'Anticipated >40% RV pacing', 'Chronotropic incompetence', 'Complete heart block', 'HF unresponsive to GDMT', 'Sick sinus syndrome', 'Other']);
-    expect(field('generator_replacement_reasons').codes!.map((c) => c.label)).toEqual(['Device relocation', 'End of battery life', 'Faulty connector / header', 'Infection', 'Malfunction', 'Replaced at lead revision', 'Manufacturer advisory / recall', 'Upgrade', 'Other']);
+    expect(field('pacing_indication_reasons').codes!.map((c) => c.label)).toEqual(['2:1 AV Block', '2nd Degree Mobitz II', 'AV Node Ablation', 'Anticipated >40% RV Pacing', 'Chronotropic Incompetence', 'Complete Heart Block', 'HF Unresponsive to GDMT', 'Sick Sinus Syndrome', 'Other']);
+    expect(field('generator_replacement_reasons').codes!.map((c) => c.label)).toEqual(['Device Relocation', 'End of Battery Life', 'Faulty Connector / Header', 'Infection', 'Malfunction', 'Replaced at Lead Revision', 'Manufacturer Advisory / Recall', 'Upgrade', 'Other']);
     expect(encodeValue(field('generator_replacement_reasons'), ['MANUFACTURER_ADVISORY_RECALL', 'END_OF_BATTERY_LIFE'], {})).toBe('["END_OF_BATTERY_LIFE","MANUFACTURER_ADVISORY_RECALL"]');
   });
 

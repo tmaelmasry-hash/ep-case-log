@@ -52,11 +52,11 @@ test('create a case, add two procedures with components and module fields; it pe
   await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Other' }).getByRole('button', { name: 'EP study' }).click();
   await page.getByTestId('addproc-next').click();
   let ps = page.getByTestId('procedure-sheet');
-  await ps.getByLabel('Procedure date').fill('2026-03-12');
+  await ps.getByLabel('Procedure Date').fill('2026-03-12');
   // Field review phase 2: tick what was done; the procedure type follows.
   await expect(ps.getByTestId('procedure-type')).toContainText('EPS');
   await expect(ps.getByTestId('module-DIAGNOSTIC_EPS')).toBeVisible();
-  await ps.getByTestId('module-DIAGNOSTIC_EPS').getByLabel('EPS indication').selectOption({ label: 'Syncope' });
+  await ps.getByTestId('module-DIAGNOSTIC_EPS').getByLabel('EPS Indication').selectOption({ label: 'Syncope' });
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
 
@@ -65,25 +65,25 @@ test('create a case, add two procedures with components and module fields; it pe
   await page.getByTestId('addproc-sheet').getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'AF', exact: true }).click();
   await page.getByTestId('addproc-next').click();
   ps = page.getByTestId('procedure-sheet');
-  await ps.getByLabel('Procedure date').fill('2026-03-13');
+  await ps.getByLabel('Procedure Date').fill('2026-03-13');
   await ps.getByRole('group', { name: 'Ablation' }).getByRole('button', { name: 'Flutter', exact: true }).click();
   await expect(ps.getByTestId('procedure-type')).toContainText('Ablation');
   const af = ps.getByTestId('module-AF_ABLATIONS');
   await expect(af).toBeVisible();
   await expect(ps.getByTestId('module-FLUTTER_ABLATIONS')).toBeVisible();
   // 6 choices: a list on the question's line (owner, 28 Oct).
-  await af.getByLabel('Energy source').selectOption({ label: 'PFA (pulsed field)' });
-  await af.getByRole('radiogroup', { name: 'PV status at case end' }).getByRole('radio', { name: 'All target PVs isolated' }).click();
+  await af.getByLabel('Energy Source').selectOption({ label: 'PFA (Pulsed Field)' });
+  await af.getByRole('radiogroup', { name: 'PV Status at Case End' }).getByRole('radio', { name: 'All Target PVs Isolated' }).click();
   // M-1: the reconnected vein count shows only at a redo with reconnection present.
-  await expect(af.getByLabel('Reconnected PV count')).toHaveCount(0);
-  await ps.getByRole('radiogroup', { name: 'First or redo' }).getByRole('radio', { name: 'Redo', exact: true }).click();
-  await af.getByRole('radiogroup', { name: 'PV reconnection present at redo' }).getByRole('radio', { name: 'Yes', exact: true }).click();
+  await expect(af.getByLabel('Reconnected PV Count')).toHaveCount(0);
+  await ps.getByRole('radiogroup', { name: 'First or Redo' }).getByRole('radio', { name: 'Redo', exact: true }).click();
+  await af.getByRole('radiogroup', { name: 'PV Reconnection Present at Redo' }).getByRole('radio', { name: 'Yes', exact: true }).click();
   // A number field refuses text, with a message under the field.
-  await af.getByLabel('Reconnected PV count').fill('abc');
-  await af.getByLabel('Reconnected PV count').blur();
+  await af.getByLabel('Reconnected PV Count').fill('abc');
+  await af.getByLabel('Reconnected PV Count').blur();
   await expect(ps.getByText('Reconnected PV count: enter a whole number.')).toBeVisible();
-  await af.getByLabel('Reconnected PV count').fill('2');
-  await af.getByLabel('Reconnected PV count').blur();
+  await af.getByLabel('Reconnected PV Count').fill('2');
+  await af.getByLabel('Reconnected PV Count').blur();
   await expect(ps.getByText('Reconnected PV count: enter a whole number.')).toBeHidden();
   await saved(page);
   await ps.getByRole('button', { name: 'Done' }).click();
@@ -97,8 +97,8 @@ test('create a case, add two procedures with components and module fields; it pe
   await expect(page.getByTestId('procedure-row')).toHaveCount(2);
   await page.getByTestId('procedure-row').nth(1).click();
   ps = page.getByTestId('procedure-sheet');
-  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Energy source').locator('option:checked')).toHaveText('PFA (pulsed field)');
-  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Reconnected PV count')).toHaveValue('2');
+  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Energy Source').locator('option:checked')).toHaveText('PFA (Pulsed Field)');
+  await expect(ps.getByTestId('module-AF_ABLATIONS').getByLabel('Reconnected PV Count')).toHaveValue('2');
   await ps.getByRole('button', { name: 'Done' }).click();
 
   // List: one case, two procedure chips, grouped under March 2026.
@@ -120,7 +120,7 @@ test('patient & history: age from date of birth, diagnosis subtype follows the d
   await page.getByTestId('section-patient').click();
   const s = page.getByTestId('section-sheet');
   await expect(s.locator('[data-field="PATIENT_IDENTIFIERS.mrn"]')).toContainText(m);
-  await s.getByLabel('Date of birth').fill('1968-01-20');
+  await s.getByLabel('Date of Birth').fill('1968-01-20');
   await s.getByRole('radiogroup', { name: 'Sex' }).getByRole('radio', { name: 'Male', exact: true }).click();
   await saved(page);
   await s.getByRole('button', { name: 'Done' }).click();
@@ -129,13 +129,13 @@ test('patient & history: age from date of birth, diagnosis subtype follows the d
   await page.getByTestId('section-diagnosis').click();
   const d = page.getByTestId('section-sheet');
   await expect(d.getByText('Choose the primary ep diagnosis first.')).toBeVisible();
-  await d.getByLabel('Primary EP diagnosis').selectOption({ label: 'AF' });
+  await d.getByLabel('Primary EP Diagnosis').selectOption({ label: 'AF' });
   // 5 choices or fewer are buttons on the question (owner, 28 Oct).
-  const subtype = d.getByRole('radiogroup', { name: 'Diagnosis subtype' });
-  await expect(subtype.getByRole('radio')).toHaveText(['Paroxysmal AF', 'Persistent AF', 'Long-standing persistent AF']);
+  const subtype = d.getByRole('radiogroup', { name: 'Diagnosis Subtype' });
+  await expect(subtype.getByRole('radio')).toHaveText(['Paroxysmal AF', 'Persistent AF', 'Long-Standing Persistent AF']);
   await subtype.getByRole('radio', { name: 'Paroxysmal AF' }).click();
   await saved(page);
-  await d.getByLabel('Primary EP diagnosis').selectOption({ label: 'AVNRT' });
+  await d.getByLabel('Primary EP Diagnosis').selectOption({ label: 'AVNRT' });
   await saved(page);
   const sub = d.locator('[data-field="ARRHYTHMIA_INDICATIONS.diagnosis_subtype"]');
   await expect(sub).not.toContainText('Paroxysmal AF');
@@ -238,7 +238,7 @@ test('patients and my work follow the cases', async ({ page }, info) => {
   // Step 5: no Patients tab; the MRN in the case header and in search open the patient page.
   await page.getByTestId('mrn-link').click();
   await expect(page.getByTestId('patient-view').getByRole('heading', { name: m })).toBeVisible();
-  await expect(page.getByTestId('patient-proc')).toContainText('CIED implant');
+  await expect(page.getByTestId('patient-proc')).toContainText('CIED Implant');
   await page.goto('/#/cases');
   await page.getByLabel('Search MRN or procedure').fill(m);
   await page.getByTestId('patient-hit').click();

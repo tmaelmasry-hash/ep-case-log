@@ -117,7 +117,7 @@ test('Admin makes a tag cohort, adds a case from inside it, and filters by it; a
   await cs.locator('#cohort-name').fill(name);
   await cs.getByRole('radio', { name: 'By rule' }).click();
   await cs.getByRole('searchbox', { name: 'Search fields' }).fill('pilgrim');
-  await cs.getByRole('button', { name: /Pilgrim status/ }).first().click();
+  await cs.getByRole('button', { name: /Pilgrim Status/ }).first().click();
   await cs.getByRole('button', { name: 'Hajj', exact: true }).click();
   await expect(cs.getByTestId('cohort-count')).toContainText(/\d+ cases? match(es)? now/);
   await cs.getByRole('radio', { name: 'By tag' }).click();

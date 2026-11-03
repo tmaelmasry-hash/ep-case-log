@@ -19,7 +19,8 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 
 ## START HERE — state on 3 Nov 2026
 - `main` = `7ae9f84` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
-- **Live Worker `87c7cc43-4966-4c09-a4f0-80acb45a83d9`** (owner's 744 label edits, 3 Nov; before: `2b3fd05b`, speed). Apps Script live = **Version 4**
+- **Live Worker `8e07e84f-3a56-469f-b0fd-ae547f236026`** (Title Case for menu / case groups / picker, 3 Nov; before:
+  `87c7cc43` labels, `2b3fd05b` speed). Apps Script live = **Version 4**
   (3 Nov, `351b6f6`: one-step write; rollback = Version 3). Live save 2.0–3.8 s (target ≤ 4 s met).
 - 3 Nov owner test round (in progress): the 5 old fake cases on the main Sheet were wiped (backup first, numbering
   back to 1); one test case `9990001` (Group 1 No. 1) stays on the main Sheet until the live tests end, then it is
@@ -29,9 +30,9 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
   `label_edits`: `{key, old, new}`, key = `ENTITY.field`, `ENTITY.field.CODE` or `section:ENTITY`) → 744 edits live
   (`a86eaab`). Apply: fields to `labels.json` fields unless `case_layout.json` form.labels has the key (form.labels
   wins); codes to `labels.json` codes (per-field key); sections to `case_layout.json` entities.label.
-  Still to do: (1) owner said yes to Title Case for the app's own names that are not dictionary labels (left menu
-  categories like "AF ablation", case-screen group headings like "Patient & episode", status "In progress"?) —
-  build, show a review page, deploy on his yes; (2) Member test on the live site with his Member account (he signs
+  App's own names (menu, case groups, procedure parts, picker) are Title Case too (`7673ffb`, live); collection
+  status stays exactly "In progress / Completed" (hard rule).
+  Still to do: (2) Member test on the live site with his Member account (he signs
   in himself); (3) delete test case 9990001 from the main Sheet at the end.
 - Main + TEST Sheet: Device_Procedures got 2 columns on 31 Oct (`pacing_indication_reasons`,
   `generator_replacement_reasons`); later on 31 Oct Ablation_EPS +1 (`prior_af_ablation_strategies`) and Imaging +2
@@ -55,6 +56,7 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 | Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header (`shared/pathway.ts`) | `5014eae` → `ffc4fd45` |
 | Q-S1: NCDR printed list values (`docs/NCDR_LISTS_Q-S1.md`): Anxiety + Irregular heartbeat (symptoms), Ethanol (energies used), prior AF ablation strategies (11 values, redo only, rule DR-NCDR-3), echo LV hypertrophy + RA size. Product lists are NCDR Master files, not public → model stays text | `ebc281b`, `fa9e60b` → `4787751b` |
 | Speed (3 Nov): `prime` reads users / groups / settings / cohort tags + the case (or every case) in one Sheet call at the start of a request. Fresh server: save 6 → 2 calls, open 5 → 1, new case 6 → 3 | `7ae9f84` → `2b3fd05b` |
+| Title Case (3 Nov): left menu (31), case page groups (5), procedure parts (2), procedure picker (9) | `7673ffb` → `8e07e84f` |
 | Labels (3 Nov): the owner's 744 display-label edits (Title Case and 25 wording fixes) from his label page | `a86eaab` → `87c7cc43` |
 | Speed (3 Nov): Apps Script Version 4 — a write batch reads its tabs in one Sheets API request and writes every changed cell in one `values.batchUpdate` (RAW); only changed cells are written; a refused batch writes nothing | `351b6f6` → Apps Script V4 |
 

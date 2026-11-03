@@ -7,6 +7,10 @@ import { ENTITY_TABS, buildLayout } from '../../server/store/sheet-layout.ts';
 import { SheetsStore } from '../../server/store/sheets.ts';
 import { StaleCaseError, type RegistryStore } from '../../server/store/types.ts';
 import { FakeAppsScript } from './fakeGoogle.ts';
+import { Client, PW } from './harness.ts';
+import { buildRouter } from '../../server/api.ts';
+import { makeContext } from '../../server/context.ts';
+import { seedTestUsers } from '../../server/seed.ts';
 import { readXlsx } from './readXlsx.ts';
 
 const config = loadConfig();
@@ -121,6 +125,38 @@ describe.skipIf(process.env.TEST_STORE === 'sheets')('Google Sheet store', () =>
     applyEdits(dict, r, { changes: [{ entity: 'PATIENTS', id: 'patient_1', field: 'sex_at_birth', value: 'FEMALE' }] }, a('u1'), new Set());
     await store.putCase(r, base);
     expect(google.calls - n0).toBe(2);
+  });
+
+  it('on a fresh server a save is 2 gateway calls and opening a case 1 (prime reads what the request needs)', async () => {
+    const google = new FakeAppsScript();
+    await google.call('init');
+    const server = () => {
+      const store = new SheetsStore(config, google);
+      return { store, app: buildRouter(makeContext({ sessionSecret: 'test-secret-0123456789-0123456789-abcdef', secureCookies: true }, store, config)), groups: [], clock: { now: new Date() } };
+    };
+    const h = server();
+    await h.store.setup();
+    await seedTestUsers(h.store, PW, [{ username: 'admin', name: 'Test Admin', role: 'ADMIN', groupIndex: [0] }]);
+    const c = new Client(h);
+    await c.call('POST', '/api/auth/login', { username: 'admin', password: PW });
+    const group = (await h.store.listGroups())[0].group_id;
+    const calls = async (f: () => Promise<{ status: number; data: any }>) => {
+      const n0 = google.calls;
+      const r = await f();
+      expect(r.status).toBe(200);
+      return { n: google.calls - n0, data: r.data };
+    };
+    const created = await calls(() => c.call('POST', '/api/cases', { group_id: group, mrn: '0990777', episode_start_date: '2026-03-12' }));
+    expect(created.n).toBe(3); // cases + users/groups, number, write
+    const id = created.data.case_id;
+    const fresh = () => Object.assign(new Client(server()), { cookie: c.cookie, csrf: c.csrf });
+    const opened = await calls(() => fresh().call('GET', `/api/cases/${id}`));
+    expect(opened.n).toBe(1);
+    const pid = opened.data.rows.PATIENTS[0]._id;
+    const edit = (v: string) => ({ changes: [{ entity: 'PATIENTS', id: pid, field: 'sex_at_birth', value: v }] });
+    expect((await calls(() => fresh().call('PATCH', `/api/cases/${id}`, edit('MALE')))).n).toBe(2);
+    expect((await calls(() => c.call('PATCH', `/api/cases/${id}`, edit('FEMALE')))).n).toBe(3); // the kept copy is stale: refused, read again, saved
+    expect((await calls(() => c.call('PATCH', `/api/cases/${id}`, edit('MALE')))).n).toBe(1);
   });
 
   it('reads all the tabs of a case in one Sheets API request, with the same answer as tab by tab', async () => {

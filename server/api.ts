@@ -98,6 +98,9 @@ export async function handleApi(app: Router, request: Request, ip = '127.0.0.1')
     };
 
     // ── guard ──
+    // Speed (3 Nov): a store that can reads in one call what this request will need (Sheet store: prime).
+    const caseId = /^\/api\/cases\/(case_[^/]+)/.exec(url.pathname)?.[1];
+    await ctx.store.prime?.({ caseId, allCases: url.pathname === '/api/cases' });
     req.user = await resolveUser(ctx, req);
     const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
     if (unsafe && headers.origin) {

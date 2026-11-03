@@ -88,6 +88,8 @@ export interface ExportFile {
 /** Storage boundary: users, groups, activity, cases. The Google Sheet store implements the same interface in phase 4. */
 export interface RegistryStore {
   readonly kind: 'memory' | 'file' | 'sheets';
+  /** Optional (Sheet store): reads in one call what a request will need — the case of the address, or every case. */
+  prime?(hint: { caseId?: string; allCases?: boolean }): Promise<void>;
   getUser(id: string): Promise<User | null>;
   findUserByUsername(username: string): Promise<User | null>;
   listUsers(): Promise<User[]>;

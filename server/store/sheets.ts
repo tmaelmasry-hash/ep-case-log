@@ -84,6 +84,9 @@ export class SheetsStore implements RegistryStore {
   private settings: { at: number; map: Map<string, unknown> } | null = null;
   private tags: { at: number; list: CohortTag[] } | null = null;
   private cases = new Map<string, { at: number; rec: CaseRecord }>();
+  // Read by prime() at the start of this request; used once, within a few seconds.
+  private primedCase: { id: string; at: number } | null = null;
+  private primedList: { at: number; list: CaseRecord[] } | null = null;
 
   private config: AppConfig;
   private gw: Gateway;
@@ -173,8 +176,11 @@ export class SheetsStore implements RegistryStore {
   async listUsers() {
     if (this.users && Date.now() - this.users.at < CACHE_MS) return structuredClone(this.users.list);
     const [r] = await this.batch([{ op: 'read', tab: 'Users' }]);
-    this.users = { at: Date.now(), list: (r.rows ?? []).filter((x) => x.user_id).map((x) => this.userFrom(x)) };
-    return structuredClone(this.users.list);
+    return structuredClone(this.setUsers(r.rows));
+  }
+  private setUsers(rows: SheetRow[] = []) {
+    this.users = { at: Date.now(), list: rows.filter((x) => x.user_id).map((x) => this.userFrom(x)) };
+    return this.users.list;
   }
   async getUser(id: string) {
     return (await this.listUsers()).find((u) => u.user_id === id) ?? null;
@@ -201,8 +207,11 @@ export class SheetsStore implements RegistryStore {
   async listGroups() {
     if (this.groups && Date.now() - this.groups.at < CACHE_MS) return structuredClone(this.groups.list);
     const [r] = await this.batch([{ op: 'read', tab: 'Groups' }]);
-    this.groups = { at: Date.now(), list: (r.rows ?? []).filter((x) => x.group_id).map((x) => this.groupFrom(x)) };
-    return structuredClone(this.groups.list);
+    return structuredClone(this.setGroups(r.rows));
+  }
+  private setGroups(rows: SheetRow[] = []) {
+    this.groups = { at: Date.now(), list: rows.filter((x) => x.group_id).map((x) => this.groupFrom(x)) };
+    return this.groups.list;
   }
   async createGroup(g: Group) {
     this.groups = null;
@@ -218,19 +227,24 @@ export class SheetsStore implements RegistryStore {
     return this.allocateSeqs(groupId, 1);
   }
   async allocateSeqs(groupId: string, n: number) {
-    this.groups = null;
     const [r] = await this.batch([{ op: 'increment', tab: 'Groups', key: 'group_id', id: groupId, col: 'next_seq', by: n }]);
+    // The kept groups stay (no second read for the group name); only their next number moves.
+    const g = this.groups?.list.find((x) => x.group_id === groupId);
+    if (g) g.next_seq = Number(r.value) + n;
     return Number(r.value);
   }
 
   // ── settings ──
   async getSetting<T>(key: string, fallback: T): Promise<T> {
     if (!this.settings || Date.now() - this.settings.at >= CACHE_MS) {
-      const read = this.batch([{ op: 'read', tab: 'Settings' }]).then(([r]) => new Map((r.rows ?? []).filter((x) => x.key).map((x) => [String(x.key), json<unknown>(x.value_json, null)])));
-      this.settings = { at: Date.now(), map: await read };
+      const [r] = await this.batch([{ op: 'read', tab: 'Settings' }]);
+      this.setSettings(r.rows);
     }
-    const v = this.settings.map.get(key);
+    const v = this.settings!.map.get(key);
     return v === undefined || v === null ? fallback : (structuredClone(v) as T);
+  }
+  private setSettings(rows: SheetRow[] = []) {
+    this.settings = { at: Date.now(), map: new Map(rows.filter((x) => x.key).map((x) => [String(x.key), json<unknown>(x.value_json, null)])) };
   }
   async setSetting(key: string, value: unknown, by: string) {
     this.settings = null;
@@ -243,11 +257,14 @@ export class SheetsStore implements RegistryStore {
   async listCohortTags(): Promise<CohortTag[]> {
     if (this.tags && Date.now() - this.tags.at < CACHE_MS) return structuredClone(this.tags.list);
     const [r] = await this.batch([{ op: 'read', tab: 'CohortTags' }]);
-    const list = (r.rows ?? [])
+    return structuredClone(this.setTags(r.rows));
+  }
+  private setTags(rows: SheetRow[] = []) {
+    const list = rows
       .filter((x) => x.tag_key)
       .map((x) => ({ cohort_id: String(x.cohort_id), case_id: String(x.case_id), on: x.on === true || x.on === 'TRUE' || x.on === 'true', updated_at: String(x.updated_at), updated_by: String(x.updated_by) }));
     this.tags = { at: Date.now(), list };
-    return structuredClone(list);
+    return list;
   }
   async setCohortTag(cohortId: string, caseId: string, on: boolean, by: string) {
     this.tags = null;
@@ -354,7 +371,51 @@ export class SheetsStore implements RegistryStore {
   }
 
   /** Every case (lists, counts). History is not read here; it is read with one case (getCase). */
+  /** Speed (3 Nov): each gateway call costs about 2 s whatever it reads, so what a request will need is read in
+   *  one call at its start: the users, groups, settings and cohort tags whose kept copies are old, plus the case of
+   *  the address (when not kept) or every case (list, new case). On a fresh server a save is then 2 calls, not 4-6. */
+  async prime(hint: { caseId?: string; allCases?: boolean }) {
+    const old = (c: { at: number } | null) => !c || Date.now() - c.at >= CACHE_MS;
+    const ops: Op[] = [];
+    const take: ((res: { rows?: SheetRow[] }[]) => void)[] = [];
+    const add = (more: Op[], use: (res: { rows?: SheetRow[] }[]) => void) => {
+      const at = ops.length;
+      ops.push(...more);
+      take.push((res) => use(res.slice(at, at + more.length)));
+    };
+    if (old(this.users)) add([{ op: 'read', tab: 'Users' }], ([r]) => this.setUsers(r.rows));
+    if (old(this.groups)) add([{ op: 'read', tab: 'Groups' }], ([r]) => this.setGroups(r.rows));
+    if (old(this.settings)) add([{ op: 'read', tab: 'Settings' }], ([r]) => this.setSettings(r.rows));
+    if (old(this.tags)) add([{ op: 'read', tab: 'CohortTags' }], ([r]) => this.setTags(r.rows));
+    const tabs = this.entityTabs();
+    const kept = hint.caseId ? this.cases.get(hint.caseId) : undefined;
+    if (hint.allCases) {
+      add([{ op: 'read', tab: 'Cases' }, ...tabs.map((tab) => ({ op: 'read', tab }))], (res) => {
+        this.primedList = { at: Date.now(), list: this.assemble(res[0].rows ?? [], res.slice(1).flatMap((r) => r.rows ?? []), []) };
+      });
+    } else if (hint.caseId && (!kept || old(kept))) {
+      const id = hint.caseId;
+      const where = { col: 'case_id', in: [id] };
+      add([{ op: 'read', tab: 'Cases', where }, ...tabs.map((tab) => ({ op: 'read', tab, where })), { op: 'read', tab: 'History', where }], (res) => {
+        const rec = this.assemble(res[0].rows ?? [], res.slice(1, -1).flatMap((r) => r.rows ?? []), res[res.length - 1].rows ?? [])[0] ?? null;
+        this.keep(rec);
+        if (rec) this.primedCase = { id, at: Date.now() };
+      });
+    }
+    if (!ops.length) return;
+    const res = await this.batch(ops);
+    for (const t of take) t(res);
+  }
+
+  /** A read prime() made for this request (used once, within a few seconds), or nothing. */
+  private primed<T extends { at: number }>(p: T | null): T | null {
+    return p && Date.now() - p.at < 5_000 ? p : null;
+  }
+
   async listCases() {
+    const pl = this.primed(this.primedList);
+    this.primedList = null;
+    if (pl) return pl.list;
     const tabs = this.entityTabs();
     const res = await this.batch([{ op: 'read', tab: 'Cases' }, ...tabs.map((tab) => ({ op: 'read', tab }))]);
     return this.assemble(res[0].rows ?? [], res.slice(1).flatMap((r) => r.rows ?? []), []);
@@ -362,7 +423,9 @@ export class SheetsStore implements RegistryStore {
 
   async getCase(id: string, opts?: { forEdit?: boolean }) {
     const kept = this.cases.get(id);
-    if (opts?.forEdit && kept && Date.now() - kept.at < CACHE_MS) return structuredClone(kept.rec);
+    const pc = this.primed(this.primedCase);
+    if (pc?.id === id) this.primedCase = null;
+    if (kept && ((opts?.forEdit && Date.now() - kept.at < CACHE_MS) || pc?.id === id)) return structuredClone(kept.rec);
     const where = { col: 'case_id', in: [id] };
     const tabs = this.entityTabs();
     const res = await this.batch([{ op: 'read', tab: 'Cases', where }, ...tabs.map((tab) => ({ op: 'read', tab, where })), { op: 'read', tab: 'History', where }]);

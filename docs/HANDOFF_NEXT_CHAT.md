@@ -4,15 +4,15 @@ Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / 
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
-## CONTINUE HERE — 4 Nov 2026: everything is live; one check is waiting on the owner
+## CONTINUE HERE — 4 Nov 2026: everything is live and checked; nothing open from this round
 **Live Worker `740df03c-955c-4677-9b42-255eb8cf1f2d` (`64ab36d`, deployed on the owner's "Deploy now").** Rollback:
 `node scripts/wrangler.ts rollback 468b4750-73df-4737-9fc6-497421f4e1f0`. No Sheet change. Live JS checked (`index-DCYA_NAb.js`).
 
 Live since this deploy:
 1. **Study rows named by type:** "Cardiac CT", or "TEE 1" / "TEE 2 · Mar 11" (`CaseView.tsx`: `rowTitle`, `studyKind`, `DoneFirst`).
 2. **List or number field closing by itself:** `Sheet` and `SideDrawer` move focus once on opening; a save reply applies
-   with `flushSync` in `caseEditor.tsx`. `tests/e2e/keepfocus.spec.ts` checks focus, **not the native popup, so the owner still
-   has to try a list and a number in a case on the live site.** Ask him for the result; this fix is not proven until then.
+   with `flushSync` in `caseEditor.tsx`. `tests/e2e/keepfocus.spec.ts` checks focus, not the native popup; the owner tried a
+   list and a number on the live site on 4 Nov: both stayed open. Closed.
 3. **Patient & Episode:** same title inside as outside.
 4. **Title Case:** the 149 labels he had not edited, buttons and headings inside sections (`CaseView.tsx`, `Fields.tsx`), and his 3
    typed names on his yes (CKD - Not on Dialysis, RVR Intolerant of Drug Therapy, Pacing Induced CM: `labels.json` and db

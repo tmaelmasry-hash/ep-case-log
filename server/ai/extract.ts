@@ -327,6 +327,17 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
   return items;
 }
 
+/** For a case with no procedure to use: a new procedure is made only if the note really fills one. A note with labs or
+ *  an echo only leaves no empty procedure behind. Tried on a copy, so the case is untouched if the procedure goes. */
+export function applyToNewProcedure(dict: Dictionary, rec: CaseRecord, raw: RawExtraction, redactedNote: string, a: Actor): { rec: CaseRecord; procedureId: string | null; items: ReviewItem[] } {
+  const trial = structuredClone(rec);
+  const procedureId = addNewRow(dict, trial, 'EP_PROCEDURES', null, a)._id;
+  const items = applyExtraction(dict, trial, raw, redactedNote, procedureId, a);
+  const fields = aiFields(dict);
+  if (items.some((i) => i.status !== 'DROPPED' && fields.get(`${i.entity}.${i.field}`)?.procedure)) return { rec: trial, procedureId, items };
+  return { rec, procedureId: null, items: applyExtraction(dict, rec, raw, redactedNote, null, a) };
+}
+
 // ── review: accept / reject a filled value, choose for a conflict ──
 
 export interface ReviewAction {

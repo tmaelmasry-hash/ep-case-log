@@ -1,10 +1,10 @@
 // AI Assistant (phase 11; ported from EP Workspace routes/ai.ts): status, the "what will be sent" preview, extract &
 // autofill inside one case only, review, and the Admin's provider choice. The note travels only in the request body, is never stored or logged,
 // and only its de-identified text is sent to the provider.
-import { aiRunSummary, applyExtraction, fixtureExtract, llmExtract, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
+import { aiRunSummary, applyExtraction, applyToNewProcedure, fixtureExtract, llmExtract, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
 import { AiError, choose, llm, type ProviderId } from '../ai/providers.ts';
 import { mrnsInNote, redact } from '../ai/redact.ts';
-import { addNewRow, liveRows, toDetail, type Actor } from '../domain/cases.ts';
+import { liveRows, toDetail, type Actor } from '../domain/cases.ts';
 import { HttpError, badRequest, groupIdsFor, notFound, requireCap, type Req, type Router } from '../http.ts';
 import type { CaseRecord } from '../../shared/caseTypes.ts';
 
@@ -137,13 +137,12 @@ export function aiRoutes(app: Router) {
 
     const base = structuredClone(rec);
     const a: Actor = { userId: u.userId, now: ctx.now().toISOString() };
-    const procedureId = target === 'new' ? addNewRow(config.dict, rec, 'EP_PROCEDURES', null, a)._id : target;
-    const items = applyExtraction(config.dict, rec, raw, red.text, procedureId, a);
+    const { rec: done, procedureId, items } = target === 'new' ? applyToNewProcedure(config.dict, rec, raw, red.text, a) : { rec, procedureId: target, items: applyExtraction(config.dict, rec, raw, red.text, target, a) };
     const s = aiRunSummary(items);
-    if (s.filled || s.conflicts || s.additional || target === 'new') {
-      Object.assign(rec.meta, { updated_at: a.now, updated_by: a.userId, row_version: rec.meta.row_version + 1 });
-      rec.meta.collector_user_id ??= a.userId;
-      await store.putCase(rec, base);
+    if (s.filled || s.conflicts || s.additional) {
+      Object.assign(done.meta, { updated_at: a.now, updated_by: a.userId, row_version: done.meta.row_version + 1 });
+      done.meta.collector_user_id ??= a.userId;
+      await store.putCase(done, base);
     }
     // Counts only: never the note or its text.
     await store.appendActivity([{ actor: u.userId, action: 'ai.extract', detail: { case_id: rec.meta.case_id, provider: choice.provider, model: choice.model, ...s, removed: red.removed, note_chars: note.length, tokens } }]);
@@ -156,7 +155,7 @@ export function aiRoutes(app: Router) {
         u.userId,
       );
     }
-    return { provider: choice.label, recognised, summary: s, items, removed: red.removed, procedure_id: procedureId, case: await detail(rec) };
+    return { provider: choice.label, recognised, summary: s, items, removed: red.removed, procedure_id: procedureId, case: await detail(done) };
   });
 
   /** Accept / reject AI values, or choose for a conflict. accept_all = accept every value still waiting. */

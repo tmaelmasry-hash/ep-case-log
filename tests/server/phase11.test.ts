@@ -171,6 +171,36 @@ describe('This is what will be sent', () => {
     expect(r.data.case.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBe('1961-03-02');
   });
 
+  it('a new procedure is made only if the note really fills one (owner, 4 Nov)', async () => {
+    const { admin } = await liveAdmin('Hypertension on amlodipine');
+    const procs = async (id: string) => (await admin.call('GET', `/api/cases/${id}`)).data.rows.EP_PROCEDURES ?? [];
+
+    // Case data only: filled, and no empty procedure.
+    const a = (await newCase(admin, '9990716')).case_id;
+    const r = await admin.call('POST', `/api/cases/${a}/ai/extract`, { note: 'Hypertension on amlodipine.', procedure_id: 'new' });
+    expect(r.data.summary.filled).toBe(1);
+    expect(r.data.procedure_id).toBeNull();
+    expect(r.data.case.rows.CLINICAL_PROFILE_SNAPSHOTS[0].hypertension).toBe('YES');
+    expect(await procs(a)).toHaveLength(0);
+
+    // Nothing found: nothing changes.
+    const b = (await newCase(admin, '9990717')).case_id;
+    const before = (await admin.call('GET', `/api/cases/${b}`)).data.meta.row_version;
+    const none = await admin.call('POST', `/api/cases/${b}/ai/extract`, { note: 'A note with no such quote.', procedure_id: 'new' });
+    expect(none.data.summary).toMatchObject({ filled: 0, dropped: 1 });
+    expect(await procs(b)).toHaveLength(0);
+    expect((await admin.call('GET', `/api/cases/${b}`)).data.meta.row_version).toBe(before);
+  });
+
+  it('procedure details make the new procedure, and fill it', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '1184420');
+    const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N01', '1184420'), procedure_id: 'new' });
+    expect(r.data.procedure_id).toBeTruthy();
+    expect(r.data.case.rows.EP_PROCEDURES.map((p: { _id: string }) => p._id)).toEqual([r.data.procedure_id]);
+    expect(r.data.case.rows.AF_ABLATIONS[0].procedure_id).toBe(r.data.procedure_id);
+  });
+
   it('the sample-note list is gone', async () => {
     const sara = await as(h, 'sara');
     expect((await sara.call('GET', '/api/ai/status')).data.sample_notes).toBeUndefined();

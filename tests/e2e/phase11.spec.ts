@@ -72,7 +72,7 @@ test('a device check note fills Device Interrogation; the review list names the 
   await sheet.getByTestId('ai-note').fill(sampleNote('N16', m));
   await sheet.getByTestId('ai-preview').click();
   await sheet.getByTestId('ai-send').click();
-  await expect(sheet.getByTestId('ai-run')).toContainText('9 filled');
+  await expect(sheet.getByTestId('ai-run')).toContainText('10 filled');
   const mode = sheet.getByTestId('ai-value').filter({ hasText: 'Programmed Mode' });
   await expect(mode).toContainText('Medtronic');
   await expect(mode).toContainText('Device Interrogation');
@@ -81,6 +81,38 @@ test('a device check note fills Device Interrogation; the review list names the 
   await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('section-devices')).not.toContainText('Add');
+});
+
+test('a study with no date in the note asks for the date before its values can be accepted', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info, 7_340_000);
+  await createCase(page, m);
+  await page.getByTestId('ai-row').click();
+  const sheet = page.getByTestId('ai-sheet');
+  await sheet.getByTestId('ai-note').fill(sampleNote('N17', m));
+  await sheet.getByTestId('ai-preview').click();
+  await sheet.getByTestId('ai-send').click();
+  const ask = sheet.getByTestId('ai-date-missing');
+  await expect(ask).toHaveCount(1);
+  await expect(ask).toContainText('Date missing');
+  const inr = sheet.getByRole('button', { name: /^Accept INR/ });
+  await expect(inr).toBeDisabled();
+  await ask.locator('input[type="date"]').fill('2026-10-01');
+  await expect(ask).toHaveCount(0);
+  await expect(inr).toBeEnabled();
+  await sheet.getByTestId('ai-accept-all').click();
+  await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
+});
+
+test('no field in the app asks for a time', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info, 7_350_000);
+  await createCase(page, m);
+  await page.getByTestId('section-ecg').click();
+  await page.getByTestId('section-sheet').getByRole('button', { name: 'Add ecg' }).click();
+  await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
+  await expect(page.locator('input[type="time"]')).toHaveCount(0);
+  await expect(page.locator('input[type="date"]').first()).toBeVisible();
 });
 
 test('a note naming another MRN is stopped before anything is sent', async ({ page }, info) => {

@@ -16,7 +16,7 @@ The owner reviewed every case-form field (527 fields, 39 sections) on the privat
   - `code_order` — Sex: Male, Female. Antiarrhythmic (medication, AF ablation, follow-up): None, Beta blocker only,
     Non-DHP CCB only, Amiodarone, then the rest.
   - `offer` — Procedure status: Completed / Partial / Failed. Monitor type: Holter, Mobile telemetry, ILR, CIED.
-  - `date_only` — Procedure date (a time sent by an older device is cut to the date).
+  - `date_only` — every date & time field (owner, 4 Nov: no time anywhere in the app). A time sent by an older device is cut to the date; a time already stored stays in the Sheet and is not shown.
 - `config/rules.json`: **DR-KAMC-01** First or redo only for ablation components. **DR-M3-E1** (V1 morphology) now
   follows CSP strategy LBBAP / LOT-CRT, because CSP target is hidden.
 - A chosen Yes / No / Unknown (segmented control) is blue, like the pills (owner note, all fields).

@@ -102,6 +102,8 @@ function rangeCheck(f: FormField, n: number) {
 export function decodeValue(f: FormField | undefined, v: unknown): unknown {
   if (v === null || v === undefined) return null;
   if (!f) return v;
+  // A date-only field may hold a time saved before the owner removed times (4 Nov): the date is shown; the stored value is not rewritten.
+  if (f.date_only && typeof v === 'string') return v.slice(0, 10);
   if (f.type === 'boolean') return v === 1 || v === '1' || v === true;
   if (f.type === 'lookup_array' || f.type === 'json_object') {
     try {

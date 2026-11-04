@@ -692,6 +692,14 @@
    "DEVICES.manufacturer"
   ],
   "labels": {
+   "COMPLICATIONS.event_datetime": "Event Date",
+   "DEVICE_INTERROGATIONS.check_datetime": "Check Date",
+   "DEVICE_INTERROGATIONS.review_period_start_datetime": "Review Period Start Date",
+   "ECG_STUDIES.ecg_datetime": "ECG Date",
+   "EP_PROCEDURES.procedure_end_datetime": "Procedure End Date",
+   "RHYTHM_MONITORING.start_datetime": "Start Date",
+   "RHYTHM_MONITORING.end_datetime": "End Date",
+   "TILT_TESTS.test_datetime": "Test Date",
    "EP_PROCEDURES.procedure_start_datetime": "Procedure Date",
    "PATIENTS.sex_at_birth": "Sex",
    "RHYTHM_MONITORING.target_arrhythmia_detected": "Arrhythmia Detected",
@@ -774,7 +782,17 @@
    ]
   },
   "date_only": [
-   "EP_PROCEDURES.procedure_start_datetime"
+   "EP_PROCEDURES.procedure_start_datetime",
+   "COMPLICATIONS.event_datetime",
+   "DEVICE_INTERROGATIONS.check_datetime",
+   "DEVICE_INTERROGATIONS.review_period_start_datetime",
+   "DEVICE_LEAD_CONNECTIONS.connected_from_datetime",
+   "DEVICE_LEAD_CONNECTIONS.connected_to_datetime",
+   "ECG_STUDIES.ecg_datetime",
+   "EP_PROCEDURES.procedure_end_datetime",
+   "RHYTHM_MONITORING.start_datetime",
+   "RHYTHM_MONITORING.end_datetime",
+   "TILT_TESTS.test_datetime"
   ],
   "hajj_season": {
    "start": [

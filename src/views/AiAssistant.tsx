@@ -2,7 +2,7 @@
 // then the AI fills empty fields of this case (marked "AI" until a person accepts them) and lists conflicts with saved
 // values for a person to choose. The note is sent once and never kept.
 import { useEffect, useState } from 'react';
-import { displayValue } from '../../shared/dictionary.ts';
+import { displayValue, hasValue } from '../../shared/dictionary.ts';
 import { decodeValue } from '../../shared/validate.ts';
 import type { AiMark, CaseDetail } from '../../shared/caseTypes.ts';
 import { dict, fieldOf } from '../lib/dict';
@@ -160,6 +160,15 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
   };
 
   const { values, conflicts } = aiPending(d);
+  // Rows the AI added whose required date the note did not state: a person gives the date; it is never guessed (owner, 4 Nov).
+  const undated = Object.values(d.ai ?? {}).flatMap((m) => {
+    if (m.source !== 'AI' || m.field !== '*') return [];
+    const field = dict.entities[m.entity]?.fields.find((f) => f.type === 'date' && f.req === 'R');
+    const row = ed.rows(m.entity).find((r) => r._id === m.record_id);
+    return field && row && !hasValue(row[field.name]) ? [{ mark: m, field, quote: values.find(([, v]) => v.entity === m.entity && v.record_id === m.record_id)?.[1].evidence }] : [];
+  });
+  const waitsForDate = (m: AiMark) => undated.some((u) => u.mark.entity === m.entity && u.mark.record_id === m.record_id);
+  const acceptable = values.filter(([, m]) => !waitsForDate(m));
   const ready = status?.configured && !ed.readOnly;
   const removedNow = preview && removedText(preview.removed);
   const removedAgain = run && removedText(run.removed);
@@ -245,15 +254,37 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
         </div>
       )}
 
-      {!preview && (values.length > 0 || conflicts.length > 0) && (
+      {!preview && (values.length > 0 || conflicts.length > 0 || undated.length > 0) && (
         <>
           <h3 className="sechead">To review</h3>
-          {values.length > 0 && !ed.readOnly && (
-            <button className="btn block" disabled={busy} onClick={() => review({ accept_all: true }, `${values.length} AI value${values.length === 1 ? '' : 's'} accepted`)} data-testid="ai-accept-all">
-              Accept all {values.length} AI value{values.length === 1 ? '' : 's'}
+          {acceptable.length > 0 && !ed.readOnly && (
+            <button
+              className="btn block"
+              disabled={busy}
+              onClick={() => review(undated.length ? { actions: acceptable.map(([key]) => ({ key, action: 'accept' })) } : { accept_all: true }, `${acceptable.length} AI value${acceptable.length === 1 ? '' : 's'} accepted`)}
+              data-testid="ai-accept-all"
+            >
+              Accept all {acceptable.length} AI value{acceptable.length === 1 ? '' : 's'}
             </button>
           )}
           <div className="group" data-testid="ai-review">
+            {undated.map((u) => (
+              <div key={`${u.mark.entity}|${u.mark.record_id}`} className="frow stack" data-testid="ai-date-missing">
+                <span className="lab">
+                  {where(u.mark)} <span className="ai-tag conflict">Date missing</span>
+                </span>
+                {u.quote && <span className="sub ai-quote">Note: “{u.quote}”</span>}
+                <input
+                  className="ios-value"
+                  type="date"
+                  disabled={ed.readOnly}
+                  aria-label={`${u.field.label} for ${where(u.mark)}`}
+                  value=""
+                  onChange={(e) => e.target.value && ed.setField(u.mark.entity, u.mark.record_id, u.field.name, e.target.value)}
+                />
+                <span className="muted small">The note gives no date for this. Enter it to accept these values.</span>
+              </div>
+            ))}
             {conflicts.map(([key, m]) => (
               <div key={key} className="grow-row ai-item" data-testid="ai-conflict">
                 <span className="grow">
@@ -294,7 +325,7 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
                 </span>
                 {!ed.readOnly && (
                   <span className="ai-actions">
-                    <button className="btn small" disabled={busy} onClick={() => review({ actions: [{ key, action: 'accept' }] }, '')} aria-label={`Accept ${fieldLabel(m.entity, m.field)}`}>
+                    <button className="btn small" disabled={busy || waitsForDate(m)} onClick={() => review({ actions: [{ key, action: 'accept' }] }, '')} aria-label={`Accept ${fieldLabel(m.entity, m.field)}`}>
                       Accept
                     </button>
                     <button className="btn small danger-text" disabled={busy} onClick={() => review({ actions: [{ key, action: 'reject' }] }, '')} aria-label={`Reject ${fieldLabel(m.entity, m.field)}`}>

@@ -293,7 +293,8 @@ describe('case history', () => {
 
     // Other groups cannot read it; the activity log never holds values.
     expect((await (await Client.as('omar')).call('GET', `/api/cases/${id}/history`)).status).toBe(404);
-    const log = JSON.stringify(await store.listActivity());
+    // Without the real timestamps: "18:39:12.512" would match the value below.
+    const log = JSON.stringify((await store.listActivity()).map(({ at: _at, ...entry }) => entry));
     expect(log).not.toContain('12.5');
     expect(log).not.toContain('Not documented');
   });

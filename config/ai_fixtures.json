@@ -491,6 +491,7 @@
       "expected": [
         ["DEVICES[device-1]", "manufacturer", "MEDTRONIC", "Medtronic"],
         ["DEVICES[device-1]", "current_device_type", "ICD_DUAL", "dual-chamber ICD"],
+        ["DEVICE_INTERROGATIONS[check-1]", "check_datetime", "2026-10-12", "Device check 12 Oct 2026"],
         ["DEVICE_INTERROGATIONS[check-1]", "programmed_mode", "DDD", "mode DDD"],
         ["DEVICE_INTERROGATIONS[check-1]", "lower_rate_bpm", "60", "lower rate 60 bpm"],
         ["DEVICE_INTERROGATIONS[check-1]", "rv_pacing_pct", "3", "RV pacing 3%"],
@@ -498,6 +499,17 @@
         ["DEVICE_CHECK_CHANNELS[check-1:RV]", "capture_threshold_v", "0.75", "threshold 0.75 V"],
         ["DEVICE_CHECK_CHANNELS[check-1:RV]", "sensing_mv", "11", "sensing 11 mV"],
         ["DEVICE_CHECK_CHANNELS[check-1:RV]", "impedance_ohm", "520", "impedance 520 ohm"]
+      ]
+    },
+    {
+      "id": "N17", "title": "A lab with no date in the note",
+      "identifiers": { "mrn": "9990740", "name": "Sami Madeup" },
+      "text": [
+        "MRN 9990740. Sami Madeup, 62-year-old man, anticoagulation review.",
+        "Latest labs: INR 2.4."
+      ],
+      "expected": [
+        ["LAB_RESULTS[lab-1]", "inr", "2.4", "INR 2.4"]
       ]
     }
   ]

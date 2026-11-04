@@ -125,6 +125,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `7673ffb` (Title Case for the app's own names: left menu, case page groups, procedure parts, procedure picker; 3 Nov) | `8e07e84f-3a56-469f-b0fd-ae547f236026` | same Sheet, no Sheet change (display only). Rollback: `node scripts/wrangler.ts rollback 87c7cc43-4966-4c09-a4f0-80acb45a83d9` |
 | `9c5a016` (Title Case for My Work, the case list, the + menu, New Case and Add Procedure; 3 Nov) | `8e07ee32-3b10-42f2-8388-8d2898bbcad3` | same Sheet, no Sheet change (display only). Rollback: `node scripts/wrangler.ts rollback 8e07e84f-3a56-469f-b0fd-ae547f236026` |
 | `d8b2b58` (imaging: type not asked again, CMR / CT / TEE ask their own questions, DR-IMG-*; 4 Nov) | `468b4750-73df-4737-9fc6-497421f4e1f0` | same Sheet, no Sheet change. Real data: 1 imaging row, 0 answers hidden. Rollback: `node scripts/wrangler.ts rollback 8e07ee32-3b10-42f2-8388-8d2898bbcad3` |
+| `64ab36d` (Title Case in every section, study rows named by type, fields keep focus, "N filled" counts answers only; 4 Nov) | `740df03c-955c-4677-9b42-255eb8cf1f2d` | same Sheet, no Sheet change. Rollback: `node scripts/wrangler.ts rollback 468b4750-73df-4737-9fc6-497421f4e1f0` |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

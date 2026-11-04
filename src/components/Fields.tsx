@@ -177,7 +177,7 @@ function NaLine({ na, onNa, label }: { na: NaInfo; onNa: () => void; label: stri
     return (
       <span className="na-line">
         <span className="na-tag" data-testid="na-tag">
-          Not available · {na.reason}
+          Not Available · {na.reason}
         </span>
         <button type="button" className="link small" onClick={onNa} data-testid="na-change" title={`Change "not available" for ${label}`}>
           Change
@@ -287,7 +287,7 @@ export function FieldRow({
     return (
       <div className="frow inline" data-field={`${def.entity}.${f.name}`}>
         {lab}
-        <span className="val">{(shown && f.unit && !f.codes ? `${shown} ${f.unit}` : shown) || (na?.state === 'not_available' ? `Not available · ${na.reason}` : '—')}</span>
+        <span className="val">{(shown && f.unit && !f.codes ? `${shown} ${f.unit}` : shown) || (na?.state === 'not_available' ? `Not Available · ${na.reason}` : '—')}</span>
       </div>
     );
   }

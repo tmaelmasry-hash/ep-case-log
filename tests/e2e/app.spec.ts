@@ -160,13 +160,13 @@ test('repeatable rows: add an ECG, fill it, remove it with confirmation', async 
   await expect(list).toHaveCount(1);
   await expect(list).toContainText('Mar 11');
   await list.click();
-  await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ecg/ }).click();
+  await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ECG/ }).click();
   // Step 8: removed at once with Undo; Undo brings it back, a second remove stays.
   await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(1);
   await page.getByTestId('section-sheet').getByTestId('list-row').click();
-  await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ecg/ }).click();
+  await page.getByTestId('row-sheet').getByRole('button', { name: /Remove ECG/ }).click();
   await expect(page.getByTestId('section-sheet').getByTestId('list-row')).toHaveCount(0);
   await page.waitForTimeout(7500); // the Undo message closes, then the removal is sent
   await saved(page);

@@ -4,6 +4,71 @@ Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / 
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
+## CONTINUE HERE — 4 Nov 2026: fixes in progress, NOT committed, NOT deployed
+The owner stopped the last chat because its context grew. **The live site is Worker `468b4750` (`ba4b9a7`). Everything
+below is uncommitted in the working tree: keep it, do not revert it.** No test has run on this exact state yet.
+
+### Already in the working tree (uncommitted)
+1. **Study rows named by type** (`src/views/CaseView.tsx`: `rowTitle`, `studyKind`, `DoneFirst`): "Cardiac CT", or "TEE 1" /
+   "TEE 2 · Mar 11", not "CMR / CT / TEE 1 · Cardiac CT". Checked in `tests/e2e/fieldreview.spec.ts`.
+2. **A list or number field closing by itself, in every section. Two causes, both fixed, last run not done:**
+   - `Sheet` (`src/components/ui.tsx`) and `SideDrawer`: the effect depended on `onClose`, a new function on every draw, so
+     each refresh moved focus to the sheet. Now a ref and `[]`: focus moves once, on opening.
+   - `src/caseEditor.tsx`: on a save reply the edit left the outbox before the new copy applied, so a new row vanished for
+     one draw and its form was rebuilt (live, that lands 2-4 s after opening). Now `flushSync(() => setDetail(e.detail))`.
+   - Test: `tests/e2e/keepfocus.spec.ts`. It failed before the fixes (focus on `DIV`, then `BODY` after the first fix alone).
+     **Run it now; it has not been run with the `flushSync` fix.** It checks focus, not the native popup, so ask the owner
+     to try a list and a number on the live site after the deploy.
+3. **Inside title = outside name:** the `"title": "Patient Demographics"` line is removed from the `patient` row in
+   `config/case_layout.json`, so the sheet opens as "Patient & Episode". It was the only row with its own title.
+4. **Title Case for the 149 labels the owner had not edited** (`config/dictionary/labels.json`, one section name in
+   `case_layout.json`). The owner first asked for all, then undid it ("only what is on the page"), then on 4 Nov showed
+   Enrollment date / Residence status / Saudi citizen and asked for Title Case in every section: the latest request wins.
+   Long QT, Short QT and Türkiye were corrected by hand. His 744 page edits are unchanged (checked 744/744, 149/149).
+
+### Update, 4 Nov (second chat): steps 1-5 below are DONE, still uncommitted and NOT deployed
+- Buttons and headings inside sections are Title Case (`CaseView.tsx`, `Fields.tsx`), `Lead Connections` in the layout. Left as they are:
+  Dashboard, sentences, Bulk Add "Add another list", History text, fields hidden by the field review.
+- Tests on this state: build OK, unit 370 passed / 14 skipped, e2e 106/106, e2e:worker 105/106. The one failure was
+  `timeline` mobile: a random MRN equal to an `app.spec` MRN (9985000 + 5000 reached 9990xxx). Its base is now 9987000;
+  `timeline` + `keepfocus` re-run on the Worker setup 4/4. The full e2e:worker was not repeated after that one-number change.
+- Label page republished (Version 4): baseline shows the 149 names, 744 edits untouched, all equal to the app's labels.
+- Review page: https://claude.ai/artifact/7bXd3XuakPmHaNnBC2DmcR . Waiting for the owner on: his 3 typed names still with
+  lowercase (CKD - Not on dialysis, RVR intolerant of drug therapy, Pacing induced CM), the "N filled" count, and "Deploy now".
+- Any code change from those answers needs the test run again before deploying. Then do step 6.
+
+### Still to do, in order
+1. **Finish the buttons inside sections** (the edit script stopped before writing `CaseView.tsx`, so none of this is applied):
+   "Not done" → "Not Done" (the button, and the Undo message `marked Not done`), "Add another" → "Add Another" (appears
+   twice), `Add {label.toLowerCase()}` → `Add {label}` (lines ~284, ~450), `Remove {kind ?? def.label.toLowerCase()}` →
+   `Remove {kind ?? def.label}`. Keep the lowercase in sentences (`useNewRow` "Discard this new …", the "No … added yet"
+   hint). Update tests: `tests/e2e/app.spec.ts` `/Remove ecg/` is case-sensitive; `fieldreview.spec.ts` names are not.
+2. **Look over the other sections for anything still not Title Case**, the owner asked for all sections. Keep full
+   sentences as they are and keep the status exactly "In progress / Completed" (hard rule). The Dashboard was not in his
+   request. Say what you left.
+3. **Run:** `npm test`, `npm run build`, `npm run e2e` in a Terminal tab (owner watches). Exact-label tests will fail where
+   the 149 changed: fix them by hand from the errors. Do not bulk-replace: "In progress", "Include In progress" and menu
+   names are app text that can equal a dictionary label; `getByRole` / `getByLabel` ignore case unless `exact: true`.
+   - r44 (mobile) failed once only when a temp screenshot spec shared its MRN range (9949xxx = 9944000 + 5000); that cause
+     is my guess, never confirmed. If it fails without a `zz_*` spec, investigate.
+   - Port 8790 busy = a leftover `node server/main.ts --e2e`; check it is that exact command before stopping it.
+4. **Republish the label page** (`https://claude.ai/artifact/QrSNasFsXMxdHgXunx5Sry`; last chat's scratchpad `labels.html`)
+   so its baseline shows the 149 names. It holds the owner's 744 edits in db `label_edits`: do not touch those.
+5. **Review page, then the owner's "Deploy now":** Egyptian Arabic, real screenshots: Cardiac CT and TEE rows, Patient &
+   Episode with the same title inside, Enrollment Date / Residence Status / Saudi Citizen, and a note that the field-closing
+   fix can only be proven on the live site. No Sheet change is needed.
+6. **After the deploy:** check the live JS, add a row to `docs/DEPLOY.md` restore points, update this file, commit, push.
+
+### Reported and open
+- "5 filled" on a study row counts the preset type as a filled answer (one too many). The owner has not decided.
+- The owner's Member account was left signed in to the built-in browser. Never sign out for him.
+- The main Sheet holds real cases the owner entered: never touch them in tests. TEST Sheet accounts: `qa_admin`,
+  `qa_member`, `qa_member2`.
+
+### Tool notes from the last chat
+- Bash heredocs can mangle backslashes in scripts: write script files with the Write tool.
+- Source files are CRLF: normalise before matching multi-line text, and restore after.
+
 ## How the owner wants to work
 - Work in steps and stop after each one. Ask with multiple-choice questions (AskUserQuestion), recommendation first.
 - **Preview before building anything visible**, and **a review page before every deploy**: an HTML artifact in

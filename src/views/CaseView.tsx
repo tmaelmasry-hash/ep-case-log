@@ -70,7 +70,15 @@ export function rowTitle(entity: string, row: DecodedRow, i: number): string {
   const def = dict.entities[entity];
   const code = firstCode(entity, row);
   const date = firstDate(entity, row);
+  // Owner, 4 Nov: a study added from "Done" is called by its type ("Cardiac CT"), not "CMR / CT / TEE 1 · Cardiac CT".
+  const kind = studyKind(entity, row);
+  if (kind) return [kind, date ? fmtShortDate(date) : null].filter(Boolean).join(' · ');
   return [`${def.label} ${i + 1}`, code, date ? fmtShortDate(date) : null].filter(Boolean).join(' · ');
+}
+
+/** The "Done" option (CMR / Cardiac CT / TEE) a study belongs to, by its preset type. */
+function studyKind(entity: string, row: DecodedRow | null | undefined): string | undefined {
+  return DONE_FIRST[entity]?.find((o) => o.values && Object.entries(o.values).every(([k, v]) => row?.[k] === v))?.label;
 }
 
 function procedureTitle(p: DecodedRow, i: number): string {
@@ -80,6 +88,11 @@ function procedureTitle(p: DecodedRow, i: number): string {
 function filledCount(entity: string, row: DecodedRow | undefined): number {
   if (!row) return 0;
   return dict.entities[entity].fields.filter((f) => !f.auto && f.type !== 'json_object' && hasValue(row[f.name])).length;
+}
+
+/** Owner, 4 Nov: the "N filled" of a list row counts answers only, not what the app set by itself (the episode, a study's preset type). */
+function answeredCount(entity: string, row: DecodedRow, preset: string[] = []): number {
+  return dict.entities[entity].fields.filter((f) => !f.auto && f.type !== 'json_object' && !(f.type === 'fk' && f.target === 'EP_EPISODES') && !preset.includes(f.name) && hasValue(row[f.name])).length;
 }
 
 /** Values a person entered in a row and in the rows that point to it (procedure sections, nested rows, events). */
@@ -127,7 +140,7 @@ function useFk(ed: CaseEditor) {
     if (f.target === 'USERS') return (ed.detail?.users ?? []).map((u) => ({ value: u.id, label: u.name }));
     if (!f.target || !dict.entities[f.target]) return [];
     if (f.target === 'EP_PROCEDURES') return ed.rows('EP_PROCEDURES').map((p, i) => ({ value: p._id, label: procedureTitle(p, i) }));
-    if (f.target === 'EP_EPISODES') return ed.rows('EP_EPISODES').map((e) => ({ value: e._id, label: 'This episode' }));
+    if (f.target === 'EP_EPISODES') return ed.rows('EP_EPISODES').map((e) => ({ value: e._id, label: 'This Episode' }));
     return ed.rows(f.target).map((r, i) => ({ value: r._id, label: rowTitle(f.target!, r, i) }));
   };
 }
@@ -236,11 +249,11 @@ function CoreWithoutRows({ entity }: { entity: string }) {
             <span className="na-line">
               {info.state === 'not_available' && (
                 <span className="na-tag" data-testid="na-tag">
-                  Not available · {info.reason}
+                  Not Available · {info.reason}
                 </span>
               )}
               <button type="button" className="link small" onClick={() => c.askNa(x.entity, x.field, null)}>
-                {info.state === 'not_available' ? 'Change' : 'Not available…'}
+                {info.state === 'not_available' ? 'Change' : 'Not Available…'}
               </button>
             </span>
           </div>
@@ -273,7 +286,7 @@ function NestedLists({ ed, parentEntity, parentId, onOpen }: { ed: CaseEditor; p
               ))}
               {!ed.readOnly && (
                 <button className="grow-row add" onClick={() => onOpen(child.entity, ed.addRow(child.entity, parentId))}>
-                  <Icon name="plus" size={18} /> Add {child.label.toLowerCase()}
+                  <Icon name="plus" size={18} /> Add {child.label}
                 </button>
               )}
               {ed.readOnly && !kids.length && <div className="grow-row muted">None</div>}
@@ -295,7 +308,7 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   const fresh = useNewRow(ed, entity, id, def.label.toLowerCase(), onClose);
   // Owner, 3 Nov: a study added from "Done" already has its type (CMR / Cardiac CT / TEE); it is not asked again.
   const preset = (DONE_FIRST[entity] ?? []).flatMap((o) => Object.keys(o.values ?? {})).filter((k) => row?.[k] != null && row[k] !== '');
-  const kind = DONE_FIRST[entity]?.find((o) => o.values && Object.entries(o.values).every(([k, v]) => row?.[k] === v))?.label;
+  const kind = studyKind(entity, row);
   if (child) return <RowSheet ed={ed} entity={child.entity} id={child.id} onClose={() => setChild(null)} />;
   return (
     <Sheet title={kind ?? (row ? rowTitle(entity, row, i) : def.label)} onClose={fresh.cancel} onDone={fresh.done} testId="row-sheet">
@@ -315,7 +328,7 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
                 onClose();
               }}
             >
-              <Icon name="trash" size={18} /> Remove {kind ?? def.label.toLowerCase()}
+              <Icon name="trash" size={18} /> Remove {kind ?? def.label}
             </button>
           )}
         </>
@@ -350,7 +363,7 @@ function PatientBasics({ ed }: { ed: CaseEditor }) {
 
 /** Field review phase 2: these studies start with "Done / Not done"; Done adds the study (with its type) and opens it. */
 const DONE_FIRST: Record<string, { label: string; values?: Record<string, string> }[]> = {
-  TILT_TESTS: [{ label: 'Tilt-table test' }],
+  TILT_TESTS: [{ label: 'Tilt-Table Test' }],
   ADVANCED_IMAGING: [
     { label: 'CMR', values: { modality_code: 'CMR' } },
     { label: 'Cardiac CT', values: { modality_code: 'CARDIAC_CT' } },
@@ -375,21 +388,21 @@ function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: st
                   <button type="button" role="radio" aria-checked={rows.length > 0} className={rows.length ? 'on' : ''} disabled={ed.readOnly} onClick={() => (rows.length ? onOpen(rows[0]._id) : onOpen(ed.addRow(entity, null, o.values)))}>
                     Done
                   </button>
-                  <button type="button" role="radio" aria-checked={!rows.length} className={rows.length ? '' : 'on'} disabled={ed.readOnly} onClick={() => rows.length && ed.removeWithUndo(rows.map((r) => ({ entity, id: r._id })), `${o.label} marked Not done`)}>
-                    Not done
+                  <button type="button" role="radio" aria-checked={!rows.length} className={rows.length ? '' : 'on'} disabled={ed.readOnly} onClick={() => rows.length && ed.removeWithUndo(rows.map((r) => ({ entity, id: r._id })), `${o.label} marked Not Done`)}>
+                    Not Done
                   </button>
                 </div>
               </div>
               {rows.map((r, i) => (
                 <button key={r._id} className="grow-row" onClick={() => onOpen(r._id)} data-testid="list-row">
-                  <span className="grow">{rowTitle(entity, r, i)}</span>
-                  <span className="muted small">{filledCount(entity, r)} filled</span>
+                  <span className="grow">{o.values && rows.length > 1 ? rowTitle(entity, r, i).replace(o.label, `${o.label} ${i + 1}`) : rowTitle(entity, r, i)}</span>
+                  <span className="muted small">{answeredCount(entity, r, Object.keys(o.values ?? {}))} filled</span>
                   <Icon name="chevron" size={16} className="muted" />
                 </button>
               ))}
               {rows.length > 0 && !ed.readOnly && (
                 <button className="grow-row add" onClick={() => onOpen(ed.addRow(entity, null, o.values))}>
-                  <Icon name="plus" size={18} /> Add another
+                  <Icon name="plus" size={18} /> Add Another
                 </button>
               )}
             </div>
@@ -433,13 +446,13 @@ function SectionSheet({ ed, title, entities, values, focus, cha, onClose }: { ed
               {rows.map((r, i) => (
                 <button key={r._id} className="grow-row" onClick={() => setOpen({ entity, id: r._id })} data-testid="list-row">
                   <span className="grow">{rowTitle(entity, r, i)}</span>
-                  <span className="muted small">{filledCount(entity, r)} filled</span>
+                  <span className="muted small">{answeredCount(entity, r)} filled</span>
                   <Icon name="chevron" size={16} className="muted" />
                 </button>
               ))}
               {!ed.readOnly && (
                 <button className="grow-row add" onClick={() => setOpen({ entity, id: ed.addRow(entity) })}>
-                  <Icon name="plus" size={18} /> Add {def.label.toLowerCase()}
+                  <Icon name="plus" size={18} /> Add {def.label}
                 </button>
               )}
               {ed.readOnly && !rows.length && <div className="grow-row muted">None</div>}
@@ -494,7 +507,7 @@ function DeviceSection({ ed, leads, offer, onOpen }: { ed: CaseEditor; leads: bo
             ))}
             {!ed.readOnly && (
               <button className="grow-row add" onClick={() => onOpen('DEVICE_LEADS', ed.addRow('DEVICE_LEADS'))}>
-                <Icon name="plus" size={18} /> Add lead
+                <Icon name="plus" size={18} /> Add Lead
               </button>
             )}
             {ed.readOnly && !rows.length && <div className="grow-row muted">None</div>}
@@ -625,7 +638,7 @@ function NextMissing({ items, parts, partOf, openPart }: { items: CoreCheck[]; p
   return (
     <div className="next-missing">
       <button type="button" className="btn primary block" onClick={press} data-testid="next-missing">
-        Next missing
+        Next Missing
         <span className="next-count">
           {here} of {list.length}
         </span>
@@ -814,7 +827,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
       })}
       {offer.length > 0 && !ed.readOnly && (
         <details className="offer">
-          <summary>Add details for another procedure type</summary>
+          <summary>Add Details for Another Procedure Type</summary>
           <div className="pill-set">
             {offer.map((m) => (
               <button key={m.entity} type="button" onClick={() => setExtra((x) => [...x, m.entity])}>
@@ -836,7 +849,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         ))}
         {!ed.readOnly && (
           <button className="grow-row add" onClick={() => setOpen({ entity: 'COMPLICATIONS', id: ed.addRow('COMPLICATIONS', id) })}>
-            <Icon name="plus" size={18} /> Add complication
+            <Icon name="plus" size={18} /> Add Complication
           </button>
         )}
         {ed.readOnly && !complications.length && <div className="grow-row muted">None</div>}
@@ -851,7 +864,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
             onClose();
           }}
         >
-          <Icon name="trash" size={18} /> Remove this procedure
+          <Icon name="trash" size={18} /> Remove This Procedure
         </button>
       )}
 
@@ -868,7 +881,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
         <Confirm
           title="Remove this component?"
           message={`The ${confirm.module} section has values. It stays in the case; you can remove its values separately.`}
-          confirmLabel="Remove component"
+          confirmLabel="Remove Component"
           danger={false}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
@@ -908,7 +921,7 @@ function AdditionalSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void 
       <>
       <div className="group" style={{ marginTop: 14 }}>
         <div className="frow stack">
-          <span className="lab">New information</span>
+          <span className="lab">New Information</span>
           <textarea className="ios-text" rows={2} value={text} onChange={(e) => setText(e.target.value)} aria-label="New information" />
         </div>
         <div className="frow inline">
@@ -925,7 +938,7 @@ function AdditionalSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void 
           setDate('');
         }}
       >
-        Add information
+        Add Information
       </button>
       </>
       )}
@@ -991,7 +1004,7 @@ function NaDialog({ label, current, onSave, onClose }: { label: string; current:
             Cancel
           </button>
           <button className="btn primary" disabled={!reason} onClick={() => reason && onSave(reason)}>
-            Save "Not available"
+            Save "Not Available"
           </button>
         </div>
       </div>
@@ -1094,7 +1107,7 @@ function ReadySheet({ ed, onGo, onComplete, busy, onClose }: { ed: CaseEditor; o
       <p className="note">Every core field needs a value, or "Not available" with a reason. Procedure fields are checked for each procedure.</p>
       {!ed.readOnly && (
         <button className="btn primary block" disabled={!!missing || busy || ed.pending > 0} onClick={onComplete} data-testid="mark-completed">
-          {missing ? `Mark completed (${missing} missing)` : 'Mark completed'}
+          {missing ? `Mark Completed (${missing} missing)` : 'Mark Completed'}
         </button>
       )}
     </Sheet>
@@ -1114,7 +1127,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
       </div>
       <div className="cmp-tiles">
         <div className="cmp-tile" data-testid="cmp-answered">
-          <span className="muted small">Core items answered</span>
+          <span className="muted small">Core Items Answered</span>
           <span className="cmp-num">
             {t.recorded + t.not_available} <small>of {t.applicable}</small>
           </span>
@@ -1123,7 +1136,7 @@ function CompletenessSheet({ ed, procs, sub, onGo, onClose }: { ed: CaseEditor; 
           </span>
         </div>
         <div className="cmp-tile" data-testid="cmp-recorded">
-          <span className="muted small">Values recorded</span>
+          <span className="muted small">Values Recorded</span>
           <span className="cmp-num">
             {t.recorded} <small>of {t.applicable}</small>
           </span>
@@ -1257,7 +1270,7 @@ function QuickEvents({ ed, fu }: { ed: CaseEditor; fu: DecodedRow }) {
   const typeField = fieldOf('OUTCOME_EVENTS', QUICK.type_field);
   return (
     <>
-      <h3 className="sechead">Events since the last visit</h3>
+      <h3 className="sechead">Events Since the Last Visit</h3>
       <div className="group" data-testid="quick-events">
         {QUICK.codes.map((code) => {
           const ev = events.find((e) => e[QUICK.type_field] === code);
@@ -1320,10 +1333,10 @@ function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onC
           <RowForm ed={ed} entity="FOLLOW_UPS" rowId={id} row={row} only={primary} />
           <QuickEvents ed={ed} fu={row} />
           <details className="offer more-fields">
-            <summary>More fields</summary>
+            <summary>More Fields</summary>
             <RowForm ed={ed} entity="FOLLOW_UPS" rowId={id} row={row} only={more} />
           </details>
-          <h3 className="sechead">Event details</h3>
+          <h3 className="sechead">Event Details</h3>
           <div className="group">
             {events.map((e, k) => (
               <button key={e._id} className="grow-row" onClick={() => setOpen(e._id)}>
@@ -1333,7 +1346,7 @@ function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onC
             ))}
             {!ed.readOnly && (
               <button className="grow-row add" onClick={() => setOpen(ed.addRow('OUTCOME_EVENTS', String(row.procedure_id), { [QUICK.fk]: id }))}>
-                <Icon name="plus" size={18} /> Add another event
+                <Icon name="plus" size={18} /> Add Another Event
               </button>
             )}
             {ed.readOnly && !events.length && <div className="grow-row muted">None</div>}
@@ -1346,7 +1359,7 @@ function FollowUpRowSheet({ ed, id, onClose }: { ed: CaseEditor; id: string; onC
                 onClose();
               }}
             >
-              <Icon name="trash" size={18} /> Remove this follow-up
+              <Icon name="trash" size={18} /> Remove This Follow-Up
             </button>
           )}
         </>
@@ -1392,7 +1405,7 @@ function FollowUpSheet({ ed, onClose }: { ed: CaseEditor; onClose: () => void })
               ))}
               {!ed.readOnly && (
                 <button className="grow-row add" onClick={() => setOpen({ entity: 'FOLLOW_UPS', id: ed.addRow('FOLLOW_UPS', p._id) })}>
-                  <Icon name="plus" size={18} /> Add follow-up visit
+                  <Icon name="plus" size={18} /> Add Follow-Up Visit
                 </button>
               )}
               {ed.readOnly && !fus.length && !loose.length && <div className="grow-row muted">None</div>}
@@ -1848,7 +1861,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             <span className="row-ic">
               <Icon name={d.additional.length ? 'edit' : 'plus'} size={20} />
             </span>
-            {d.additional.length ? `${d.additional.length} note${d.additional.length === 1 ? '' : 's'}` : completed ? 'None' : 'Add note'}
+            {d.additional.length ? `${d.additional.length} note${d.additional.length === 1 ? '' : 's'}` : completed ? 'None' : 'Add Note'}
           </button>
         </div>
 
@@ -1860,14 +1873,14 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
 
         {can('case.delete') && !completed && (
           <button className="btn danger-text block delete-case" onClick={deleteCase} disabled={!serverCase}>
-            <Icon name="trash" size={18} /> Delete case
+            <Icon name="trash" size={18} /> Delete Case
           </button>
         )}
 
         {!completed && procs.length > 0 && (
           <div className="bottomact" data-testid="complete-bar">
             <button className="btn draft-btn" onClick={saveDraft} disabled={busy} data-testid="save-draft">
-              Save draft
+              Save Draft
             </button>
             <button className="btn grow" onClick={() => setSheet({ kind: 'ready' })} data-testid="whats-missing">
               {missing ? `What's missing? (${missing})` : "What's missing?"}

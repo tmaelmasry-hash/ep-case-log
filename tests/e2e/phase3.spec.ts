@@ -68,7 +68,7 @@ test('core progress, "Not available", complete, read only, reopen with a reason,
   const dlg = page.getByTestId('na-dialog');
   await dlg.getByRole('radio', { name: 'Not documented in the record' }).click();
   await dlg.getByRole('button', { name: 'Save "Not available"' }).click();
-  await expect(field.getByTestId('na-tag')).toHaveText('Not available · Not documented in the record');
+  await expect(field.getByTestId('na-tag')).toHaveText('Not Available · Not documented in the record');
   await saved(page);
   await page.getByTestId('procedure-sheet').getByRole('button', { name: 'Done' }).click();
 

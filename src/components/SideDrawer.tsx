@@ -3,14 +3,17 @@ import { useEffect, useRef, type ReactNode } from 'react';
 
 export function SideDrawer({ title, onClose, children, testId }: { title: string; onClose: () => void; children: ReactNode; testId?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Focus moves here once, on opening; a new onClose on a later draw must not take it from a field (see Sheet).
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close.current();
     };
     window.addEventListener('keydown', onKey);
     ref.current?.focus();
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
   return (
     <div className="overlay drawer-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="side-drawer" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref} data-testid={testId}>

@@ -60,7 +60,7 @@
   "PROCEDURE_COMPONENTS": {
    "scope": "procedure",
    "cardinality": "multi",
-   "label": "Procedure components"
+   "label": "Procedure Components"
   },
   "DIAGNOSTIC_EPS": {
    "scope": "procedure",
@@ -247,7 +247,7 @@
   },
   "DEVICE_LEAD_CONNECTIONS": {
    "cardinality": "multi",
-   "label": "Lead connections",
+   "label": "Lead Connections",
    "nest_under": {
     "entity": "DEVICES",
     "fk": "device_id"
@@ -324,7 +324,6 @@
     {
      "id": "patient",
      "label": "Patient & Episode",
-     "title": "Patient Demographics",
      "icon": "user",
      "entities": [
       "PATIENT_IDENTIFIERS",

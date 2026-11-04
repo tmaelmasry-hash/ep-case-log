@@ -34,6 +34,17 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await saved(page);
   await row.getByRole('button', { name: 'Done' }).click();
   await expect(cmr.getByRole('radio', { name: 'Done', exact: true })).toHaveAttribute('aria-checked', 'true');
+  // Owner, 4 Nov: the study row is called by its type, numbered only when there are several.
+  const studyRows = is.getByTestId('list-row').locator('.grow');
+  await expect(studyRows).toHaveText(['CMR']);
+  // Owner, 4 Nov: "filled" counts answers only, not the type or the episode the app set by itself.
+  await expect(is.getByTestId('list-row').locator('.small')).toHaveText(['0 filled']);
+  await is.getByRole('button', { name: 'Add another' }).click();
+  await row.locator('input[type="date"]').first().fill('2026-03-11');
+  await saved(page);
+  await row.getByRole('button', { name: 'Done' }).click();
+  await expect(studyRows).toHaveText(['CMR 1', 'CMR 2 · Mar 11']);
+  await expect(is.getByTestId('list-row').locator('.small')).toHaveText(['0 filled', '1 filled']);
   // Not done removes the study at once, with Undo (owner step 8).
   await cmr.getByRole('radio', { name: 'Not done' }).click();
   await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();

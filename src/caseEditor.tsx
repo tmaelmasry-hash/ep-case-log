@@ -2,6 +2,7 @@
 // Local-first (owner R3-4, L2): the case opens from this device's copy at once and is refreshed from the server in
 // the background; edits go to the device outbox (src/lib/sync.ts) and are sent in order in the background, so a
 // save never waits for the Google Sheet. Field-level: the last save of a field wins (EP Workspace P3-4).
+import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { CaseDetail, DecodedRow } from '../shared/caseTypes.ts';
 import { idPrefix, slotId } from '../shared/caseTypes.ts';
@@ -145,7 +146,9 @@ export function useCaseEditor(caseId: string): CaseEditor {
     () =>
       sync.onCase(caseId, (e) => {
         if (e.kind === 'saved') {
-          setDetail(e.detail);
+          // At once: the edit has just left the outbox, and a draw without this copy would drop a new row for a moment,
+          // rebuilding its form: an open list closed and a number field lost focus (owner, 4 Nov).
+          flushSync(() => setDetail(e.detail));
           upsertCase(e.detail.summary);
           const counters: Record<string, number> = { create: 0, change: 0, remove: 0, additional: 0, na: 0, items: 0 };
           const byKind = new Map(e.results.map((x) => [`${x.kind}:${x.i}`, x]));

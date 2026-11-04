@@ -17,7 +17,7 @@ test('Next missing walks the missing items of the procedure, opens a closed part
   // The count is the procedure's missing core items (the same number as its row on the case page).
   const next = ps.getByTestId('next-missing');
   await expect(next).toBeVisible();
-  await expect(next).toContainText(/Next missing\s*1 of \d+/);
+  await expect(next).toContainText(/Next Missing\s*1 of \d+/);
   const total = Number((await next.textContent())!.match(/of (\d+)/)![1]);
   expect(total).toBeGreaterThan(1);
 

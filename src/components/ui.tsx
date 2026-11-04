@@ -27,9 +27,13 @@ export function Sheet({
   testId?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Focus moves here once, when the sheet opens. Callers pass a new onClose on every draw, so it must not restart this
+  // effect: that took focus from the field in use and closed an open list whenever the screen refreshed (owner, 4 Nov).
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close.current();
     };
     window.addEventListener('keydown', onKey);
     const prev = document.activeElement as HTMLElement | null;
@@ -38,7 +42,7 @@ export function Sheet({
       window.removeEventListener('keydown', onKey);
       prev?.focus?.();
     };
-  }, [onClose]);
+  }, []);
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`sheet${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref} data-testid={testId}>

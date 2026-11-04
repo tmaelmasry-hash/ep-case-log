@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { createCase, mrn, open, saved } from './flow';
 
 test('patient timeline shows the episode start by its date and the procedure; tapping opens the case', async ({ page }, info) => {
-  const m = mrn(info, 9985000);
+  const m = mrn(info, 9987000); // not 9985000: on mobile (+5000) that reached 9990xxx, which other tests also use
   await open(page);
   const id = await createCase(page, m, { date: '2026-03-12' });
   await page.getByRole('button', { name: 'Add Procedure' }).click();

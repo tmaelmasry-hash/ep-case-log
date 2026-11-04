@@ -174,7 +174,7 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
           <p className="small" data-testid="ai-removed">
             {removedNow ? `Removed: ${removedNow}` : 'Nothing was found to remove.'}
           </p>
-          <div className="banner info">
+          <div className="banner info ai-check-note">
             <span className="grow small">Removal is automatic and can miss things. Read the text below and delete anything that could identify a person before you send it.</span>
           </div>
           <div className="group">

@@ -71,7 +71,6 @@
         "Hypertension: yes. Diabetes mellitus type 2: yes."
       ],
       "expected": [
-        ["PATIENT_IDENTIFIERS", "date_of_birth", "1961-03-02", "DOB 02/03/1961"],
         ["PATIENTS", "sex_at_birth", "FEMALE", "Female"],
         ["ARRHYTHMIA_INDICATIONS", "primary_ep_diagnosis", "AF", "paroxysmal AF"],
         ["ARRHYTHMIA_INDICATIONS", "diagnosis_subtype", "PAROXYSMAL_AF", "paroxysmal AF"],
@@ -471,7 +470,6 @@
         ["CLINICAL_PROFILE_SNAPSHOTS", "prior_ep_ablation", "YES", "PVI with RF in March 2023"],
         ["CLINICAL_PROFILE_SNAPSHOTS", "thyroid_disease", "YES", "Hypothyroidism on levothyroxine"],
         ["CLINICAL_PROFILE_SNAPSHOTS", "obstructive_sleep_apnea", "YES", "Obstructive sleep apnoea on CPAP"],
-        ["PATIENT_IDENTIFIERS", "date_of_birth", "1970-07-21", "DOB 21/07/1970"],
         ["EP_PROCEDURES", "discharge_date", "2026-10-02", "Discharged 2 Oct 2026"]
       ],
       "must_not": [

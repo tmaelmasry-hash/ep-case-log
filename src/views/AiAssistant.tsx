@@ -94,6 +94,14 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
   const where = (m: AiMark): string => {
     if (m.entity === 'EP_PROCEDURES') return procs.find((p) => p.id === m.record_id)?.title ?? 'Procedure';
     const row = ed.rows(m.entity).find((r) => r._id === m.record_id);
+    // A device check or a lead's measurements: say which device (and lead) the value went to.
+    const check = m.entity === 'DEVICE_CHECK_CHANNELS' ? ed.rows('DEVICE_INTERROGATIONS').find((r) => r._id === row?.device_check_id) : m.entity === 'DEVICE_INTERROGATIONS' ? row : undefined;
+    if (check) {
+      const device = ed.rows('DEVICES').find((r) => r._id === check.device_id);
+      const lead = m.entity === 'DEVICE_CHECK_CHANNELS' ? ed.rows('DEVICE_LEADS').find((r) => r._id === row?.lead_id) : undefined;
+      const name = device && ['manufacturer', 'current_device_type'].filter((f) => device[f]).map((f) => show('DEVICES', f, device[f])).join(' ');
+      return [name || 'Device', dict.entities[m.entity].label, lead?.lead_location ? show('DEVICE_LEADS', 'lead_location', lead.lead_location) : null].filter(Boolean).join(' · ');
+    }
     const pid = (row?.procedure_id as string | undefined) ?? m.procedure_id;
     const proc = pid ? procs.find((p) => p.id === pid)?.title : null;
     return [proc, dict.entities[m.entity]?.label].filter(Boolean).join(' · ');

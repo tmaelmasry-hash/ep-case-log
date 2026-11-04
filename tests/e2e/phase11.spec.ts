@@ -3,12 +3,13 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { createCase, mrn, open } from './flow';
 
-/** The made-up note N01, with this test's MRN. */
-const n01 = (m: string) => {
+/** A made-up sample note, with this test's MRN. */
+const sampleNote = (id: string, m: string) => {
   const notes = JSON.parse(readFileSync('config/ai_fixtures.json', 'utf8')).notes as { id: string; identifiers: { mrn: string }; text: string[] }[];
-  const fx = notes.find((f) => f.id === 'N01')!;
+  const fx = notes.find((f) => f.id === id)!;
   return fx.text.join('\n').split(fx.identifiers.mrn).join(m);
 };
+const n01 = (m: string) => sampleNote('N01', m);
 
 test('AI Assistant fills from a note after the review step; values wait for review, then Accept all', async ({ page }, info) => {
   await open(page);
@@ -60,6 +61,26 @@ test('AI Assistant fills from a note after the review step; values wait for revi
   await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('ai-banner')).toHaveCount(0);
+});
+
+test('a device check note fills Device Interrogation; the review list names the device and the case page shows it', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info, 7_330_000);
+  await createCase(page, m);
+  await page.getByTestId('ai-row').click();
+  const sheet = page.getByTestId('ai-sheet');
+  await sheet.getByTestId('ai-note').fill(sampleNote('N16', m));
+  await sheet.getByTestId('ai-preview').click();
+  await sheet.getByTestId('ai-send').click();
+  await expect(sheet.getByTestId('ai-run')).toContainText('9 filled');
+  const mode = sheet.getByTestId('ai-value').filter({ hasText: 'Programmed Mode' });
+  await expect(mode).toContainText('Medtronic');
+  await expect(mode).toContainText('Device Interrogation');
+  await expect(sheet.getByTestId('ai-value').filter({ hasText: 'Capture Threshold' })).toContainText('threshold 0.75 V');
+  await sheet.getByTestId('ai-accept-all').click();
+  await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
+  await sheet.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('section-devices')).not.toContainText('Add');
 });
 
 test('a note naming another MRN is stopped before anything is sent', async ({ page }, info) => {

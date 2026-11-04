@@ -65,6 +65,7 @@ Use only the sections and fields listed below, with their exact entity and field
 - If the note gives the same field two different values, put it in "conflicts" (both values, both quotes), not in "proposals".
 - Clinically relevant facts that fit no listed field go to "additional_info" (one short sentence each, with its quote).
 - Repeatable sections: give each separate event (each ECG, each medication, each lab draw) its own row label such as "ecg-1", "ecg-2". One-per-case sections: row "".
+- Device checks: DEVICE_INTERROGATIONS gets a row label such as "check-1". Each lead's measurements go to DEVICE_CHECK_CHANNELS with the row label of its check, a colon, and the lead's DEVICE_LEADS lead_location code, such as "check-1:RV", and with channel_type stated.
 - Leave out anything not stated. Missing fields stay missing.`;
 
 const STR = { type: 'string' };
@@ -109,9 +110,9 @@ export function fixtureExtract(config: AppConfig, redactedNote: string): { raw: 
   }
   if (!best || best.score < 0.6) return null;
   const rowOf = (raw: string) => {
-    const m = /^([A-Z_]+)(?:\[(\d+)\])?$/.exec(raw)!;
+    const m = /^([A-Z_]+)(?:\[([^\]]+)\])?$/.exec(raw)!;
     const multi = config.dict.entities[m[1]]?.cardinality === 'multi';
-    return { entity: m[1], row: multi ? `${m[1]}-${m[2] ?? 0}` : '' };
+    return { entity: m[1], row: !multi ? '' : m[2] && !/^\d+$/.test(m[2]) ? m[2] : `${m[1]}-${m[2] ?? 0}` };
   };
   const str = (v: unknown) => (Array.isArray(v) ? v.join(',') : String(v));
   return {
@@ -248,20 +249,55 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
   //    row already holds exactly these values (running the same note twice adds nothing).
   const scopeOf = (af: AiField) => (af.procedure ? procedureId : null);
   const rowIds = new Map<string, string>();
-  const labels = [...new Set([...proposals, ...conflicts].filter((x) => x.af.multi).map((x) => `${x.entity}|${x.row}`))];
+  const depth = (e: string): number => (dict.entities[e].nest_under ? 1 + depth(dict.entities[e].nest_under!.entity) : 0);
+  const labels = [...new Set([...proposals, ...conflicts].filter((x) => x.af.multi).map((x) => `${x.entity}|${x.row}`))].sort((x, y) => depth(x.split('|')[0]) - depth(y.split('|')[0]));
+  const aiRow = (entity: string, parentId?: string, af?: AiField) => {
+    const row = addNewRow(dict, rec, entity, af ? scopeOf(af) : null, a, parentId);
+    marks[aiKey(entity, row._id, '*')] = mark({ source: 'AI', entity, record_id: row._id, field: '*', evidence: null });
+    return row;
+  };
+  /** The row a nested row belongs to. A device check goes to the case's device (one per case), made if there is none
+   *  (owner, 4 Nov). A channel goes to the check its row label names, or else this note's check. */
+  const parentOf = (entity: string, rowLabel: string): string => {
+    const up = dict.entities[entity].nest_under!.entity;
+    if (!dict.entities[up].nest_under) {
+      const saved = liveRows(rec, up)[0];
+      if (saved) return saved._id;
+      const made = ensureSingleRow(dict, rec, up, null, a);
+      marks[aiKey(up, made._id, '*')] = mark({ source: 'AI', entity: up, record_id: made._id, field: '*', evidence: null });
+      return made._id;
+    }
+    const check = rowLabel.split(':')[0];
+    const known = rowIds.get(`${up}|${check}`) ?? [...rowIds].find(([k]) => k.startsWith(`${up}|`))?.[1];
+    if (known) return known;
+    const made = aiRow(up, parentOf(up, check));
+    rowIds.set(`${up}|${check}`, made._id);
+    return made._id;
+  };
+  const linkLeads: { row: StoredRow; location: string }[] = [];
   for (const label of labels) {
-    const [entity] = label.split('|');
+    const [entity, rowLabel] = [label.slice(0, label.indexOf('|')), label.slice(label.indexOf('|') + 1)];
+    const fk = dict.entities[entity].nest_under?.fk;
     const mine = proposals.filter((x) => `${x.entity}|${x.row}` === label);
-    if (!mine.length) continue; // a conflict alone does not make a row; choosing a value makes it
-    const af = mine[0].af;
-    const twin = liveRows(rec, entity).find((r) => (!af.procedure || r.procedure_id === procedureId) && mine.every((x) => sameValue(r[x.field], x.value)));
+    if (!mine.length && !fk) continue; // a conflict alone does not make a row; choosing a value makes it. A nested row needs its parent, so it is made here.
+    const af = (mine[0] ?? conflicts.find((x) => `${x.entity}|${x.row}` === label))!.af;
+    // The lead a channel measures, when its row label names a location only one of the case's leads has. Otherwise a person chooses.
+    const location = entity === 'DEVICE_CHECK_CHANNELS' ? rowLabel.split(':')[1] : undefined;
+    const leads = location ? liveRows(rec, 'DEVICE_LEADS').filter((l) => l.lead_location === location) : [];
+    const leadId = leads.length === 1 ? leads[0]._id : undefined;
+    const upLabel = fk && dict.entities[entity].nest_under!.entity;
+    const parentKnown = fk && dict.entities[upLabel!].nest_under ? rowIds.get(`${upLabel}|${rowLabel.split(':')[0]}`) : undefined;
+    const twin = mine.length
+      ? liveRows(rec, entity).find((r) => (!af.procedure || r.procedure_id === procedureId) && (!parentKnown || r[fk!] === parentKnown) && (!leadId || r.lead_id === leadId) && mine.every((x) => sameValue(r[x.field], x.value)))
+      : undefined;
     if (twin) {
       rowIds.set(label, twin._id);
+      if (fk && dict.entities[upLabel!].nest_under) rowIds.set(`${upLabel}|${rowLabel.split(':')[0]}`, twin[fk] as string);
       continue;
     }
-    const row = addNewRow(dict, rec, entity, scopeOf(af), a);
+    const row = aiRow(entity, fk ? parentOf(entity, rowLabel) : undefined, af);
+    if (location) linkLeads.push({ row, location });
     rowIds.set(label, row._id);
-    marks[aiKey(entity, row._id, '*')] = mark({ source: 'AI', entity, record_id: row._id, field: '*', evidence: null });
   }
   const targetRow = (x: { entity: string; row: string; af: AiField }): StoredRow | null => {
     if (x.af.multi) {
@@ -299,6 +335,12 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     } else {
       conflicts.push({ entity: x.entity, field: x.field, row: x.row, af: x.af, values: [x.value], evidences: [x.evidence] });
     }
+  }
+
+  // After the values, so a lead named in this same note counts.
+  for (const { row, location } of linkLeads) {
+    const leads = liveRows(rec, 'DEVICE_LEADS').filter((l) => l.lead_location === location);
+    if (leads.length === 1) row.lead_id = leads[0]._id;
   }
 
   // 4. Conflicts: nothing is written; the saved value (if any) stays until a person chooses.
@@ -406,8 +448,14 @@ function dropEmptyAiRow(dict: Dictionary, rec: CaseRecord, entity: string, id: s
   if (!row) return;
   const typed = dict.entities[entity].fields.filter((f) => !f.auto && f.type !== 'fk' && f.type !== 'fk_polymorphic' && f.type !== 'json_object');
   if (typed.some((f) => row[f.name] !== null && row[f.name] !== undefined)) return;
+  // Rows inside this one keep it; removing it would remove them and the AI values still waiting on them.
+  const children = Object.values(dict.entities).filter((d) => d.nest_under?.entity === entity);
+  if (children.some((d) => liveRows(rec, d.entity).some((r) => r[d.nest_under!.fk] === id))) return;
   removeRow(dict, rec, entity, id, a);
   delete marks[aiKey(entity, id, '*')];
+  // A device check the AI made for this row, and a device made for that check, go with their last row.
+  const up = dict.entities[entity].nest_under;
+  if (up) dropEmptyAiRow(dict, rec, up.entity, row[up.fk] as string, a);
 }
 
 export function aiRunSummary(items: ReviewItem[]) {

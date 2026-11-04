@@ -563,10 +563,10 @@ export function ensureSingleRow(dict: Dictionary, rec: CaseRecord, entity: strin
 }
 
 /** A new repeatable row (in a procedure for procedure sections). */
-export function addNewRow(dict: Dictionary, rec: CaseRecord, entity: string, procedureId: string | null, a: Actor): StoredRow {
+export function addNewRow(dict: Dictionary, rec: CaseRecord, entity: string, procedureId: string | null, a: Actor, parentId?: string): StoredRow {
   const def = dict.entities[entity];
   const id = newRowId(def);
-  const row = insert(rec, entity, id, placeRow(dict, rec, def, id, def.scope === 'procedure' || entity === 'EP_PROCEDURES' ? (entity === 'EP_PROCEDURES' ? null : procedureId) : null, a), a);
+  const row = insert(rec, entity, id, placeRow(dict, rec, def, id, def.nest_under ? parentId : def.scope === 'procedure' || entity === 'EP_PROCEDURES' ? (entity === 'EP_PROCEDURES' ? null : procedureId) : null, a), a);
   const p = placeOf(dict, rec, entity, row);
   addHistory(rec, { kind: 'add', entity, row_id: id, text: entity === 'EP_PROCEDURES' ? `${p.proc} added (AI)` : `${p.own} added${p.proc ? ` to ${p.proc}` : ''} (AI)` }, a);
   return row;

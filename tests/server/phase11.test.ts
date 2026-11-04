@@ -1,6 +1,7 @@
 // Phase 11: AI Assistant (EP Workspace P5) on the synthetic sample notes (Test AI) and a stubbed live provider.
 // Synthetic data only; the note is never stored or logged.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { expectedSlot } from '../../server/domain/cases.ts';
 import { as, config, edit, harness, newCase, type Harness } from './harness.ts';
 
 let h: Harness;
@@ -205,6 +206,91 @@ describe('This is what will be sent', () => {
     const sara = await as(h, 'sara');
     expect((await sara.call('GET', '/api/ai/status')).data.sample_notes).toBeUndefined();
     expect((await sara.call('GET', '/api/ai/sample/N01')).status).toBe(404);
+  });
+});
+
+describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
+  const NOTE = sample('N16', '9990731');
+  const rowsOf = (r: { data: { case: { rows: Record<string, Record<string, unknown>[]> } } }, e: string) => r.data.case.rows[e] ?? [];
+  const run = async (c: Awaited<ReturnType<typeof as>>, id: string) => c.call('POST', `/api/cases/${id}/ai/extract`, { note: NOTE });
+
+  /** A saved row, by the same route the case page uses. */
+  async function addRow(c: Awaited<ReturnType<typeof as>>, id: string, entity: string, rowId: string, values: Record<string, unknown>) {
+    const r = await c.call('PATCH', `/api/cases/${id}`, { creates: [{ entity, id: rowId, values }] });
+    expect(r.data.results.every((x: { ok: boolean }) => x.ok)).toBe(true);
+    return rowId;
+  }
+  const leadId = () => `lead_${crypto.randomUUID()}`;
+
+  it('no device in the case: makes the device, the check and the channel, linked, all waiting for review', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990731');
+    const r = await run(sara, case_id);
+    expect(r.data.summary).toMatchObject({ filled: 9, dropped: 0 });
+    const [device] = rowsOf(r, 'DEVICES');
+    const [check] = rowsOf(r, 'DEVICE_INTERROGATIONS');
+    const [channel] = rowsOf(r, 'DEVICE_CHECK_CHANNELS');
+    expect(rowsOf(r, 'DEVICES')).toHaveLength(1);
+    expect(device).toMatchObject({ manufacturer: 'MEDTRONIC', current_device_type: 'ICD_DUAL' });
+    expect(check).toMatchObject({ device_id: device._id, programmed_mode: 'DDD', lower_rate_bpm: 60, rv_pacing_pct: 3 });
+    expect(channel).toMatchObject({ device_check_id: check._id, channel_type: 'PHYSICAL_LEAD', capture_threshold_v: 0.75, sensing_mv: 11, impedance_ohm: 520 });
+    expect(channel.lead_id ?? null).toBeNull(); // no lead saved: a person chooses
+    expect(Object.values(r.data.case.ai).every((m: any) => m.source === 'AI')).toBe(true);
+    const all = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { accept_all: true });
+    expect(rowsOf(all, 'DEVICE_INTERROGATIONS')[0].programmed_mode).toBe('DDD');
+  });
+
+  it('the same note twice adds no second check or channel', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990731');
+    await run(sara, case_id);
+    const r = await run(sara, case_id);
+    expect(r.data.summary.filled).toBe(0);
+    for (const e of ['DEVICES', 'DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS']) expect(rowsOf(r, e)).toHaveLength(1);
+  });
+
+  it('one saved device: the check goes to it, with no new device', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990731');
+    const slot = expectedSlot(config.dict, 'DEVICES', case_id);
+    await addRow(sara, case_id, 'DEVICES', slot, { manufacturer: 'MEDTRONIC', current_device_type: 'ICD_DUAL' });
+    const r = await run(sara, case_id);
+    expect(rowsOf(r, 'DEVICES').map((d) => d._id)).toEqual([slot]);
+    expect(rowsOf(r, 'DEVICE_INTERROGATIONS')[0].device_id).toBe(slot);
+  });
+
+  it('the channel links to a lead only when one lead has that location', async () => {
+    const sara = await as(h, 'sara');
+    const one = (await newCase(sara, '9990731')).case_id;
+    const rv = await addRow(sara, one, 'DEVICE_LEADS', leadId(), { lead_location: 'RV' });
+    await addRow(sara, one, 'DEVICE_LEADS', leadId(), { lead_location: 'RA' });
+    expect(rowsOf(await run(sara, one), 'DEVICE_CHECK_CHANNELS')[0].lead_id).toBe(rv);
+
+    const admin = await as(h, 'admin');
+    const two = (await newCase(admin, '9990732')).case_id;
+    await addRow(admin, two, 'DEVICE_LEADS', leadId(), { lead_location: 'RV' });
+    await addRow(admin, two, 'DEVICE_LEADS', leadId(), { lead_location: 'RV' });
+    const r = await admin.call('POST', `/api/cases/${two}/ai/extract`, { note: sample('N16', '9990732') });
+    expect(rowsOf(r, 'DEVICE_CHECK_CHANNELS')[0].lead_id ?? null).toBeNull();
+  });
+
+  it('rejecting every AI value removes the channel, the check and the device the AI made', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990731');
+    const r = await run(sara, case_id);
+    const actions = Object.entries(r.data.case.ai as Record<string, { field: string }>).filter(([, m]) => m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
+    const done = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions });
+    for (const e of ['DEVICES', 'DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS']) expect(rowsOf(done, e)).toHaveLength(0);
+  });
+
+  it('rejecting only the check values keeps the check while a channel value still waits', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990731');
+    const r = await run(sara, case_id);
+    const actions = Object.entries(r.data.case.ai as Record<string, { entity: string; field: string }>).filter(([, m]) => m.entity === 'DEVICE_INTERROGATIONS' && m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
+    const done = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions });
+    expect(rowsOf(done, 'DEVICE_INTERROGATIONS')).toHaveLength(1);
+    expect(rowsOf(done, 'DEVICE_CHECK_CHANNELS')[0].sensing_mv).toBe(11);
   });
 });
 

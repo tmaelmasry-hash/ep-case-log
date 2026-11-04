@@ -15,6 +15,8 @@ export interface AiField {
 // The research study's own patient ID (M-3 F2) is an identifier too.
 const NEVER = new Set(['PATIENT_IDENTIFIERS.mrn', 'PATIENT_IDENTIFIERS.full_name', 'PATIENT_IDENTIFIERS.merged_into_patient_id', 'PATIENTS.research_study_patient_id']);
 const NO_TYPES = new Set(['fk', 'fk_polymorphic', 'json_object']);
+/** Rows inside another row that the AI may fill (owner, 4 Nov). Other nested rows are entered by hand. */
+const AI_NESTED = ['DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS'];
 
 export interface AiSection {
   id: string;
@@ -41,11 +43,12 @@ function build(dict: Dictionary) {
   sections.push({ id: 'procedure', label: 'The procedure this note describes', entities: procEntities });
   const fu = sections.find((s) => s.id === 'followup');
   if (fu) fu.entities = ['FOLLOW_UPS', 'OUTCOME_EVENTS'];
+  sections.find((s) => s.id === 'devices')?.entities.push(...AI_NESTED);
   const fields = new Map<string, AiField>();
   for (const s of sections) {
     for (const e of s.entities) {
       const def = dict.entities[e];
-      if (def.nest_under || def.later) continue; // rows inside another row are entered by hand
+      if ((def.nest_under && !AI_NESTED.includes(e)) || def.later) continue;
       for (const x of def.fields) {
         if (!editable(def, x) || NO_TYPES.has(x.type) || x.role === 'OTHER_SPECIFY' || NEVER.has(`${e}.${x.name}`)) continue;
         fields.set(`${e}.${x.name}`, { entity: e, field: x, section: s.id, multi: def.cardinality === 'multi' && e !== 'EP_PROCEDURES', procedure: e === 'EP_PROCEDURES' || def.scope === 'procedure' });

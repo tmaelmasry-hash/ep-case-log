@@ -478,6 +478,27 @@
         ["AF_ABLATIONS", "af_energy_source", "RF", "RF was the 2023 procedure (history)"],
         ["EP_PROCEDURES", "procedure_start_datetime", "2023-03", "history, not the index procedure"]
       ]
+    },
+    {
+      "id": "N16", "title": "Device clinic check, ICD, RV lead measurements",
+      "identifiers": { "mrn": "9990730", "name": "Reem Madeup" },
+      "text": [
+        "MRN 9990730. Reem Madeup, 58-year-old woman, device clinic visit.",
+        "Medtronic dual-chamber ICD.",
+        "Device check 12 Oct 2026: mode DDD, lower rate 60 bpm, RV pacing 3%.",
+        "RV lead: threshold 0.75 V, sensing 11 mV, impedance 520 ohm."
+      ],
+      "expected": [
+        ["DEVICES[device-1]", "manufacturer", "MEDTRONIC", "Medtronic"],
+        ["DEVICES[device-1]", "current_device_type", "ICD_DUAL", "dual-chamber ICD"],
+        ["DEVICE_INTERROGATIONS[check-1]", "programmed_mode", "DDD", "mode DDD"],
+        ["DEVICE_INTERROGATIONS[check-1]", "lower_rate_bpm", "60", "lower rate 60 bpm"],
+        ["DEVICE_INTERROGATIONS[check-1]", "rv_pacing_pct", "3", "RV pacing 3%"],
+        ["DEVICE_CHECK_CHANNELS[check-1:RV]", "channel_type", "PHYSICAL_LEAD", "RV lead"],
+        ["DEVICE_CHECK_CHANNELS[check-1:RV]", "capture_threshold_v", "0.75", "threshold 0.75 V"],
+        ["DEVICE_CHECK_CHANNELS[check-1:RV]", "sensing_mv", "11", "sensing 11 mV"],
+        ["DEVICE_CHECK_CHANNELS[check-1:RV]", "impedance_ohm", "520", "impedance 520 ohm"]
+      ]
     }
   ]
 }

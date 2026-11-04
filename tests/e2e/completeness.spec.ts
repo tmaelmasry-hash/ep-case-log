@@ -14,10 +14,16 @@ test('Admin opens Data completeness from Admin; the new case is a row; MRN opens
   await expect(v.getByTestId('cm-in-progress')).toHaveAttribute('aria-pressed', 'true');
   await expect(v.getByTestId('cm-pager')).toContainText(/1–\d+ of \d+/);
   await expect(v).toContainText('Core answered counts recorded + not available with a reason.');
-  // Rows go by group, then No.: the newest case is on the last page.
+  // Rows go by group, then No.: with cases in later groups the new case need not be on the last page, so look through the pages.
   const next = v.getByTestId('cm-next');
-  while (await next.isEnabled()) await next.click();
+  const pager = v.getByTestId('cm-pager');
   const row = v.getByTestId('cm-row').filter({ hasText: m });
+  await expect(v.getByTestId('cm-row').first()).toBeVisible();
+  while (!(await row.count()) && (await next.isEnabled())) {
+    const before = await pager.innerText();
+    await next.click();
+    await expect(pager).not.toHaveText(before);
+  }
   await expect(row).toHaveCount(1);
   // A new case has no procedure: nothing required under Procedure.
   await expect(row.locator('td[data-section="procedure"]')).toHaveText('—');

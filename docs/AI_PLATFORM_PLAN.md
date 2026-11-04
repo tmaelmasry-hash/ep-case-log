@@ -38,6 +38,9 @@ preview first, every deploy gets a review page and his "Deploy now". Sheet chang
 ## Phase 1 status (4 Nov)
 Run on the local build: unit 370 passed, 14 skipped; Chromium e2e 106/106; `npm run e2e:webkit` 101 passed, 1 skipped on purpose (Mac and iPhone 14 sizes). The WebKit config sets `SECURE_COOKIES=0` for its local server and leaves out four offline tests that Playwright cannot drive on WebKit; `tests/webkit/serverstop.spec.ts` covers opening and editing with a really stopped server. Sending edits when the connection returns is not covered on WebKit: the owner's trial checks it. Trial page: https://claude.ai/artifact/Gsj4SGQgHitUQLRVkKkrZN. Not deployed. The owner has no iPhone or Mac (4 Nov): members may use them, so the real-device trial moves to a member after the next deploy and does not block other phases. Status and Order lists get 16 px on iOS only (`@supports (-webkit-touch-callout: none)`, builder's decision on his behalf; Android and desktop keep their look). WebKit on Windows does not apply that rule, so the test checks that it exists and iPhone confirmation stays open. After this last CSS and test change only unit tests and `tests/webkit/serverstop.spec.ts` were rerun; run the full set before deploy.
 
+## Phase 2 status (4 Nov)
+Branch `claude/privacy-phase2-373e74` merged into `main` up to `b8fd482` on the owner's yes. On that merge: unit 524 passed, 14 skipped; Chromium e2e 108/108; WebKit 103 passed, 1 skipped on purpose. `e2e:worker` NOT_RUN. Commit `65a0cd7` on that branch is not merged. Not deployed, not pushed.
+
 ## Open and accepted
 - Open item stated to the owner: real cases sit on a personal Gmail Sheet, Drive and Cloudflare, and `docs/` records no institutional approval. Separate from the AI work.
 - OCR reads text only: no ECG waveforms, and no promise of accurate measurements from every clinical image.

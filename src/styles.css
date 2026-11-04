@@ -2532,6 +2532,14 @@ button.cbar:hover {
   flex-wrap: wrap;
   align-items: flex-start;
 }
+.ai-send-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ai-send-row .btn {
+  flex: 1;
+}
 .ai-quote {
   font-style: italic;
 }

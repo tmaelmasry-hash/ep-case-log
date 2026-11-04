@@ -1,5 +1,5 @@
-// AI Assistant (phase 11; ported from EP Workspace routes/ai.ts): status, extract & autofill inside one case only,
-// review, and the Admin's provider choice. The note travels only in the request body, is never stored or logged,
+// AI Assistant (phase 11; ported from EP Workspace routes/ai.ts): status, the "what will be sent" preview, extract &
+// autofill inside one case only, review, and the Admin's provider choice. The note travels only in the request body, is never stored or logged,
 // and only its de-identified text is sent to the provider.
 import { aiRunSummary, applyExtraction, fixtureExtract, llmExtract, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
 import { AiError, choose, llm, type ProviderId } from '../ai/providers.ts';
@@ -65,39 +65,58 @@ export function aiRoutes(app: Router) {
       usage,
       monthly_cost_cap_usd: ai.monthly_cost_cap_usd ?? null,
       providers: PROVIDERS.map((p) => ({ id: p, model: p === 'fixture' || p === 'off' ? null : (ai[p]?.model ?? null), key_set: p === 'fixture' || p === 'off' ? null : choose(config, env, { provider: p }).configured })),
-      sample_notes: choice.provider === 'fixture' ? config.aiFixtures.map((f) => ({ id: f.id, title: f.title })) : [],
     };
   });
 
-  /** One synthetic sample note's text (Test AI only), so the Assistant can be tried without real notes. */
-  app.get('/api/ai/sample/:id', async (req) => {
+  function checkLength(text: string, field: string) {
+    const max = ai.max_note_chars ?? 20000;
+    if (text.length > max) throw badRequest(`The note is too long (${text.length.toLocaleString()} characters; at most ${max.toLocaleString()}). Split it.`, { field });
+  }
+
+  /** A note that names another MRN stops here — nothing is sent to the provider, nothing is filled. */
+  function checkMrn(text: string, rec: CaseRecord) {
+    const other = mrnsInNote(text).filter((m) => m !== rec.meta.mrn);
+    if (other.length) throw new HttpError(409, 'MRN_MISMATCH', `This note names MRN ${other[0]}, but this case is MRN ${rec.meta.mrn}. Nothing was sent or filled. Open the right patient's case.`, { found: other });
+  }
+
+  const savedName = (rec: CaseRecord) => (liveRows(rec, 'PATIENT_IDENTIFIERS')[0]?.full_name as string | undefined) ?? null;
+
+  /** "This is what will be sent": the de-identified text and counts. No provider is called; nothing is stored or logged. */
+  app.post('/api/cases/:id/ai/preview', async (req) => {
     requireCap(req, 'ai.extract');
-    const fx = config.aiFixtures.find((f) => f.id === req.params.id);
-    if (!fx) throw notFound('Unknown sample note.');
-    return { id: fx.id, title: fx.title, mrn: fx.identifiers.mrn, text: fx.text.join('\n') };
+    const note = String(req.body?.note ?? '');
+    if (!note.trim()) throw badRequest('Paste a clinical note first.', { field: 'note' });
+    checkLength(note, 'note');
+    const [{ choice }, rec] = await Promise.all([state(), requireOpenCase(req)]);
+    if (!choice.configured) throw new HttpError(503, 'AI_NOT_CONFIGURED', choice.reason ?? 'AI is not configured.');
+    checkMrn(note, rec);
+    const red = redact(note, { mrn: rec.meta.mrn, fullName: savedName(rec) });
+    return { text: red.text, removed: red.removed };
   });
 
+  /** note = what the person pasted (for the MRN check). sent_text = the text they read and edited; without it, the note itself. */
   app.post('/api/cases/:id/ai/extract', async (req) => {
     const u = requireCap(req, 'ai.extract');
     const b = req.body ?? {};
     const note = String(b.note ?? '');
     if (!note.trim()) throw badRequest('Paste a clinical note first.', { field: 'note' });
-    const max = ai.max_note_chars ?? 20000;
-    if (note.length > max) throw badRequest(`The note is too long (${note.length.toLocaleString()} characters; at most ${max.toLocaleString()}). Split it.`, { field: 'note' });
+    checkLength(note, 'note');
+    const sentText = b.sent_text === undefined ? note : String(b.sent_text);
+    if (!sentText.trim()) throw badRequest('The text to send is empty.', { field: 'sent_text' });
+    checkLength(sentText, 'sent_text');
     const [{ choice, usage }, rec] = await Promise.all([state(), requireOpenCase(req)]);
     if (!choice.configured) throw new HttpError(503, 'AI_NOT_CONFIGURED', choice.reason ?? 'AI is not configured.');
     const cap = Number(ai.monthly_cost_cap_usd ?? 0);
     if (choice.provider !== 'fixture' && cap > 0 && usage.cost_usd >= cap) throw new HttpError(429, 'AI_CAP', `This month's AI budget (US$ ${cap}) is used up. The Admin can raise it in config/site.json, or wait for next month.`);
-    // A note that names another MRN stops here — nothing is sent to the provider, nothing is filled.
-    const other = mrnsInNote(note).filter((m) => m !== rec.meta.mrn);
-    if (other.length) throw new HttpError(409, 'MRN_MISMATCH', `This note names MRN ${other[0]}, but this case is MRN ${rec.meta.mrn}. Nothing was sent or filled. Open the right patient's case.`, { found: other });
+    checkMrn(note, rec);
+    checkMrn(sentText, rec); // someone may have typed another MRN while editing
     // Which procedure the note describes: one of the case's procedures, a new one, or none (case data only).
     const procs = liveRows(rec, 'EP_PROCEDURES').map((p) => p._id);
     const target = b.procedure_id === 'new' ? 'new' : b.procedure_id ? String(b.procedure_id) : null;
     if (target && target !== 'new' && !procs.includes(target)) throw badRequest('Choose one of this case\'s procedures.', { field: 'procedure_id' });
 
-    const fullName = (liveRows(rec, 'PATIENT_IDENTIFIERS')[0]?.full_name as string | undefined) ?? null;
-    const red = redact(note, { mrn: rec.meta.mrn, fullName });
+    // De-identified again here, whatever came back from the browser: this text is what the provider sees and what the quotes are checked against.
+    const red = redact(sentText, { mrn: rec.meta.mrn, fullName: savedName(rec) });
     let raw: RawExtraction;
     let tokens = { input: 0, output: 0 };
     let recognised = true;

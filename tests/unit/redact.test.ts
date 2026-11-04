@@ -45,15 +45,6 @@ describe('redact removes identifiers', () => {
     ['Arabic Iqama', 'رقم الإقامة: 2412345678', '2412345678'],
     ['passport', 'Passport A1234567', 'A1234567'],
     ['ten digits with no label', 'Contact on file 1012345678 only', '1012345678'],
-    ['DOB', 'DOB 12/03/1961', '12/03/1961'],
-    ['D.O.B.', 'D.O.B. 12-03-1961', '12-03-1961'],
-    ['date of birth, words', 'Date of birth: 12 Mar 1961', '12 Mar 1961'],
-    ['date of birth, month first', 'Date of birth March 12, 1961', '1961'],
-    ['born in a year', 'born in 1961', '1961'],
-    ['Arabic birth date', 'تاريخ الميلاد: 12/03/1961', '12/03/1961'],
-    ['Arabic birth date, month word', 'تاريخ الميلاد 12 مارس 1961', 'مارس'],
-    ['Arabic year of birth', 'مواليد 1961', '1961'],
-    ['Hijri birth date', 'تاريخ الميلاد 1382/09/12 هـ', '1382/09/12'],
     ['email', 'Mail salem.t+ep@example.com please', 'example.com'],
     ['Saudi mobile', 'Call 0551234567', '0551234567'],
     ['Saudi mobile, Arabic digits', 'جوال ٠٥٥١٢٣٤٥٦٧', '٠٥٥١٢٣٤٥٦٧'],
@@ -68,20 +59,20 @@ describe('redact removes identifiers', () => {
   });
 
   it('uses placeholders and counts what it removed', () => {
-    const r = redact('Name: Ahmed Zahrani. DOB 12/03/1961. MRN 9990701. National ID 1012345678. Mail a.z@example.com. Mobile 0551234567. Seen by Dr. Salem Testperson. Son Khalid Alharbi informed.', known);
-    expect(r.text).toBe('Name: [NAME]. DOB [DOB]. MRN [MRN]. National ID [ID]. Mail [EMAIL]. Mobile [PHONE]. Seen by Dr. [NAME]. Son [NAME] informed.');
-    expect(r.removed).toEqual({ mrn: 1, id: 1, dob: 1, email: 1, phone: 1, name: 3 });
+    const r = redact('Name: Ahmed Zahrani. MRN 9990701. National ID 1012345678. Mail a.z@example.com. Mobile 0551234567. Seen by Dr. Salem Testperson. Son Khalid Alharbi informed.', known);
+    expect(r.text).toBe('Name: [NAME]. MRN [MRN]. National ID [ID]. Mail [EMAIL]. Mobile [PHONE]. Seen by Dr. [NAME]. Son [NAME] informed.');
+    expect(r.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 1, name: 3 });
   });
 
   it('removes a measured made-up note of every kind', () => {
     const note = [
       'الاسم: أحمد الزهراني',
       'رقم الهوية 1012345678',
-      'Ahmed Zahrani presented with palpitations. DOB 12/03/1961. National ID 1012345678. Iqama 2412345678.',
+      'Ahmed Zahrani presented with palpitations. National ID 1012345678. Iqama 2412345678.',
       'Mail him at ahmed.z@example.com. Seen by Dr. Salem Testperson. Son Khalid Alharbi was informed.',
     ].join('\n');
     const t = out(note, 'أحمد الزهراني');
-    for (const gone of ['أحمد', 'الزهراني', 'Ahmed', 'Zahrani', '1012345678', '2412345678', '12/03/1961', 'example.com', 'Salem', 'Khalid']) expect(t).not.toContain(gone);
+    for (const gone of ['أحمد', 'الزهراني', 'Ahmed', 'Zahrani', '1012345678', '2412345678', 'example.com', 'Salem', 'Khalid']) expect(t).not.toContain(gone);
     expect(t).toContain('palpitations');
   });
 });
@@ -127,6 +118,8 @@ describe('redact keeps clinical content', () => {
     'Father had sudden cardiac death at 45. Mother Died Of Stroke. Brother With AF.',
     'Family history: son has WPW; daughter is well.',
     'DOB not available in the referral. Date of birth not documented.',
+    'DOB 12/03/1961. D.O.B. 12-03-1961. Date of birth: 12 Mar 1961. Born in 1961.',
+    'تاريخ الميلاد: 12/03/1961. مواليد 1961.',
     'Moderate MR. Mild MS. Severe TR.',
     'MR Moderate. MS Severe.',
     'Implanted an Azure DR MRI device; Evia DR.',
@@ -148,6 +141,11 @@ describe('redact keeps clinical content', () => {
     'اسم الدواء: أبيكسابان.',
   ])('%s', (note) => {
     expect(out(note)).toBe(note);
+  });
+
+  it('the name goes and the date of birth stays (owner, 4 Nov)', () => {
+    expect(out('Name: Ahmed Zahrani. DOB 12/03/1961.')).toBe('Name: [NAME]. DOB 12/03/1961.');
+    expect(out('Patient Sara Placeholder, DOB 15/11/1990, female')).toBe('Patient [NAME], DOB 15/11/1990, female');
   });
 
   it('the age stays when the name goes', () => {
@@ -178,7 +176,7 @@ describe('de-identifying twice changes nothing (the server repeats it on the edi
     const once = redact(note, known);
     const twice = redact(once.text, known);
     expect(twice.text).toBe(once.text);
-    expect(twice.removed).toEqual({ mrn: 0, id: 0, dob: 0, email: 0, phone: 0, name: 0 });
+    expect(twice.removed).toEqual({ mrn: 0, id: 0, email: 0, phone: 0, name: 0 });
   });
 });
 

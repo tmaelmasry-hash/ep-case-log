@@ -1,10 +1,11 @@
 // Before a note leaves the server (phase 11; copied from EP Workspace server/ai/redact.ts): find the MRNs it names (a
 // different MRN stops the extraction — O6), then remove what identifies a person: MRN, national ID / Iqama / passport,
-// birth date, email, phone, and names (English and Arabic: after a label, after a title, relatives, a name opening a
-// sentence and followed by an age or an identifier, and the case's saved full name). Clinical numbers, procedure dates
-// and clinical words stay. This is best effort, not a guarantee: the person checks the text before it is sent (the
-// "this is what will be sent" step). redact(redact(x)) = redact(x), because the server de-identifies the edited text
-// again. Workers-safe; the note is never logged or stored.
+// email, phone, and names (English and Arabic: after a label, after a title, relatives, a name opening a sentence and
+// followed by an age or an identifier, and the case's saved full name). The date of birth stays, by the owner's decision
+// (4 Nov 2026), so the AI can fill it; clinical numbers, procedure dates and clinical words stay too. This is best
+// effort, not a guarantee: the person checks the text before it is sent (the "this is what will be sent" step).
+// redact(redact(x)) = redact(x), because the server de-identifies the edited text again. Workers-safe; the note is
+// never logged or stored.
 
 const DIGITS: Record<string, string> = {};
 '٠١٢٣٤٥٦٧٨٩'.split('').forEach((d, i) => { DIGITS[d] = String(i); });
@@ -29,14 +30,6 @@ const ID_LABELLED = new RegExp(
 );
 /** Saudi national IDs start with 1 and Iqama numbers with 2, ten digits: removed even with no label. */
 const ID_BARE = new RegExp(`${B}[12١٢۱۲]${D}{9}${E}`, 'gu');
-
-const MONTHS =
-  'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|يناير|فبراير|مارس|أبريل|ابريل|مايو|يونيو|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|اكتوبر|نوفمبر|ديسمبر|محرم|صفر|ربيع الأول|ربيع الآخر|جمادى الأولى|جمادى الآخرة|رجب|شعبان|رمضان|شوال|ذو القعدة|ذو الحجة';
-const DATE = `(?:${D}{1,4}[/\\-.]${D}{1,2}[/\\-.]${D}{1,4}|${D}{1,2}(?:st|nd|rd|th)?[\\s\\-]+(?:${MONTHS})\\.?,?[\\s\\-]*${D}{2,4}|(?:${MONTHS})\\.?\\s+${D}{1,2}(?:st|nd|rd|th)?,?\\s+${D}{4}|(?:${MONTHS})\\.?\\s+${D}{4}|${D}{4})${E}(?:\\s*(?:هـ|AH)${E})?`;
-const DOB_LABELLED = new RegExp(
-  `${B}(?:date of birth|birth ?date|d\\.?o\\.?b\\.?|born(?: on| in)?|تاريخ الميلاد|تاريخ ميلاد|الميلاد|ميلاد|مواليد|ولد في|ولد بتاريخ|مولود في|مولودة في|مولود|مولودة)${SEP}(?:(?:في|سنة|عام)\\s+)?(${DATE})`,
-  'giu',
-);
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/gu;
 
@@ -124,7 +117,7 @@ const RELATIVE_AR = new RegExp(`${B}(?:ابن|ابنه|ابنها|ابنة|اب�
 const TITLE = new RegExp(`${B}(?:(?:Mr|Mrs|Ms|Miss|Mister|Sheikh|Shaikh|SHEIKH)(?:\\.\\s*|\\s+)|(?:السيد|السيدة|الشيخ|الأستاذ|الاستاذ|الأستاذة|الاستاذة)\\s+)`, 'gu');
 
 // A name opening a sentence, known to be a name only by what follows it: an age or an identifier (or, for two words or more, a verb such as "presented").
-const SENTENCE = String.raw`(?<=^|[.!?؟\n]\s*|\s[—–-]\s*|\[(?:MRN|ID|DOB|PHONE|EMAIL)\][,،]?\s*)`;
+const SENTENCE = String.raw`(?<=^|[.!?؟\n]\s*|\s[—–-]\s*|\[(?:MRN|ID|PHONE|EMAIL)\][,،]?\s*)`;
 const STRICT_AGE = `${D}{1,3}\\s*-?\\s*(?:years?[\\s-]*old|yrs?[\\s-]*old|y[\\s-]*old|yo|y/o|y\\.o\\.?|M|F|male|female|man|woman)${E}`;
 const LOOSE_AGE = `${D}{1,3}\\s*-?\\s*(?:y|yrs?|years?)${E}`;
 const MARK = `(?:(?:\\s*[,،]\\s*|\\s+(?:is|was)\\s+(?:an?\\s+)?|\\s+(?:an?\\s+)?)?${STRICT_AGE}|\\s*[,،]\\s*${LOOSE_AGE}|\\s*[,،]?\\s*\\(?\\s*\\[?(?:MRN|DOB|D\\.O\\.B|ID|Iqama|National ID)${E}|\\s*[,،]?\\s+aged\\s+${D})`;
@@ -132,7 +125,7 @@ const VERB = String.raw`\s+(?:presented|was admitted|admitted|underwent|complain
 const LATIN_NAME = String.raw`\p{Lu}[\p{L}'’-]+(?:\s+(?:(?:bin|ibn|al|el|abu)\s+)?\p{Lu}[\p{L}'’-]+){0,3}`;
 const UNLABELLED = new RegExp(`(?:${SENTENCE}((?:Patient|Pt)\\s+)?|${B}((?:[Pp]atient|Pt)\\s+))(${LATIN_NAME})(?=${MARK}|(${VERB}))`, 'gmu');
 const AR_WORD = String.raw`[\p{Script=Arabic}\p{Mn}]+`;
-const AR_MARK = `\\s*[,،]?\\s*(?:عمره|عمرها|العمر|${D}{1,3}\\s*(?:سنة|سنه|عام)|رقم الملف|الرقم الطبي|رقم الهوية|رقم الهويه|رقم الإقامة|رقم الاقامة|تاريخ الميلاد|\\[MRN\\]|\\[ID\\]|\\[DOB\\])`;
+const AR_MARK = `\\s*[,،]?\\s*(?:عمره|عمرها|العمر|${D}{1,3}\\s*(?:سنة|سنه|عام)|رقم الملف|الرقم الطبي|رقم الهوية|رقم الهويه|رقم الإقامة|رقم الاقامة|تاريخ الميلاد|\\[MRN\\]|\\[ID\\])`;
 const UNLABELLED_AR = new RegExp(`(?:${SENTENCE}((?:المريض|المريضة|المريضه)\\s+)?|${B}((?:المريض|المريضة|المريضه)\\s+))(${AR_WORD}(?:\\s+${AR_WORD}){1,3})(?=${AR_MARK})`, 'gmu');
 
 function unlabelled(t: string, hit: () => void): string {
@@ -182,7 +175,6 @@ export function mrnsInNote(note: string): string[] {
 export interface Removed {
   mrn: number;
   id: number;
-  dob: number;
   email: number;
   phone: number;
   name: number;
@@ -193,7 +185,7 @@ export interface Redaction {
 }
 
 export function redact(note: string, known: { mrn: string; fullName?: string | null }): Redaction {
-  const removed: Removed = { mrn: 0, id: 0, dob: 0, email: 0, phone: 0, name: 0 };
+  const removed: Removed = { mrn: 0, id: 0, email: 0, phone: 0, name: 0 };
   const hitName = () => { removed.name++; };
   let t = note.replace(/\r\n?/g, '\n');
   // Email first: a saved name must never leave "[NAME]@example.com" behind.
@@ -205,7 +197,6 @@ export function redact(note: string, known: { mrn: string; fullName?: string | n
   }
   t = t.replace(ID_LABELLED, (all, num: string) => { removed.id++; return all.replace(num, '[ID]'); });
   t = t.replace(ID_BARE, () => { removed.id++; return '[ID]'; });
-  t = t.replace(DOB_LABELLED, (all, date: string) => { removed.dob++; return all.replace(date, '[DOB]'); });
   t = t.replace(PHONE_LABELLED, (all, num: string) => { removed.phone++; return all.replace(num, '[PHONE]'); });
   t = t.replace(PHONE_INTL, () => { removed.phone++; return '[PHONE]'; });
   t = t.replace(PHONE, (p) => { if ((ascii(p).match(/\d/g) ?? []).length < 9) return p; removed.phone++; return '[PHONE]'; });

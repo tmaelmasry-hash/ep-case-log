@@ -12,8 +12,8 @@ export interface AiField {
 }
 
 /** Never proposed by the AI: identity (the note is de-identified before it is sent). */
-// The research study's own patient ID (M-3 F2) is an identifier too. The birth date is removed from the note, so a person enters it by hand.
-const NEVER = new Set(['PATIENT_IDENTIFIERS.mrn', 'PATIENT_IDENTIFIERS.full_name', 'PATIENT_IDENTIFIERS.date_of_birth', 'PATIENT_IDENTIFIERS.merged_into_patient_id', 'PATIENTS.research_study_patient_id']);
+// The research study's own patient ID (M-3 F2) is an identifier too.
+const NEVER = new Set(['PATIENT_IDENTIFIERS.mrn', 'PATIENT_IDENTIFIERS.full_name', 'PATIENT_IDENTIFIERS.merged_into_patient_id', 'PATIENTS.research_study_patient_id']);
 const NO_TYPES = new Set(['fk', 'fk_polymorphic', 'json_object']);
 
 export interface AiSection {

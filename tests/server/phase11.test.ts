@@ -79,6 +79,105 @@ describe('AI Assistant (Test AI)', () => {
   });
 });
 
+describe('This is what will be sent', () => {
+  const MADE_UP = 'Name: Ahmed Zahrani. DOB 12/03/1961. MRN 9990710. National ID 1012345678. Mail a.z@example.com. Seen by Dr. Salem Testperson. Hypertension on amlodipine.';
+
+  /** A stubbed live Claude that keeps what it was sent, and quotes `evidence`. */
+  async function liveAdmin(evidence: string) {
+    const admin = await as(h, 'admin');
+    await admin.call('POST', '/api/settings/ai', { provider: 'anthropic' });
+    (h.app.ctx.env as { anthropicKey?: string }).anthropicKey = 'sk-test-synthetic';
+    const sent: string[] = [];
+    vi.stubGlobal('fetch', async (_url: string | URL | Request, init?: RequestInit) => {
+      sent.push(String(init?.body));
+      const answer = { proposals: [{ entity: 'CLINICAL_PROFILE_SNAPSHOTS', field: 'hypertension', value: 'YES', row: '', evidence }], conflicts: [], additional_info: [] };
+      return new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(answer) }], stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 10 } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    return { admin, sent };
+  }
+
+  it('returns the de-identified text and counts; no provider is called and nothing is stored', async () => {
+    const { admin, sent } = await liveAdmin('hypertension on amlodipine');
+    const { case_id } = await newCase(admin, '9990710');
+    const log = (await h.store.listActivity()).length;
+    const usage = (await admin.call('GET', '/api/ai/status')).data.usage;
+    const before = (await admin.call('GET', `/api/cases/${case_id}`)).data.meta.row_version;
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/preview`, { note: MADE_UP });
+    expect(r.status).toBe(200);
+    expect(r.data.text).toBe('Name: [NAME]. DOB 12/03/1961. MRN [MRN]. National ID [ID]. Mail [EMAIL]. Seen by Dr. [NAME]. Hypertension on amlodipine.');
+    expect(r.data.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 0, name: 2 });
+    expect(sent).toHaveLength(0);
+    expect(await h.store.listActivity()).toHaveLength(log);
+    expect((await admin.call('GET', '/api/ai/status')).data.usage).toEqual(usage);
+    expect((await admin.call('GET', `/api/cases/${case_id}`)).data.meta.row_version).toBe(before);
+  });
+
+  it('a note naming another MRN stops at the preview; an empty note is refused', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990711');
+    const r = await sara.call('POST', `/api/cases/${case_id}/ai/preview`, { note: 'EP note. MRN 9990799. Hypertension.' });
+    expect(r.status).toBe(409);
+    expect(r.data.error.code).toBe('MRN_MISMATCH');
+    expect((await sara.call('POST', `/api/cases/${case_id}/ai/preview`, { note: '  ' })).status).toBe(400);
+  });
+
+  it('the edited text is de-identified again and is what the provider receives; the date of birth goes through', async () => {
+    const { admin, sent } = await liveAdmin('Hypertension on amlodipine');
+    const { case_id } = await newCase(admin, '9990712');
+    const edited = 'Name: Typed Backin. DOB 12/03/1961. Iqama 2412345678. Hypertension on amlodipine.';
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: MADE_UP.replace('9990710', '9990712'), sent_text: edited });
+    expect(r.status).toBe(200);
+    expect(r.data.summary.filled).toBe(1);
+    expect(r.data.removed).toMatchObject({ name: 1, id: 1 });
+    const body = JSON.parse(sent[0]);
+    const text = JSON.stringify(body.messages);
+    expect(text).toContain('Name: [NAME]. DOB 12/03/1961. Iqama [ID]. Hypertension on amlodipine.');
+    for (const gone of ['Typed', 'Backin', '2412345678', 'Zahrani', 'Salem', '1012345678', 'example.com']) expect(JSON.stringify(body)).not.toContain(gone);
+    // Counts only in the log.
+    const log = JSON.stringify(await h.store.listActivity());
+    expect(log).not.toContain('amlodipine');
+    expect(log).not.toContain('12/03/1961');
+  });
+
+  it('the MRN check reads the original note and also the edited text', async () => {
+    const { admin, sent } = await liveAdmin('Hypertension');
+    const { case_id } = await newCase(admin, '9990713');
+    const a = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'MRN 9990799. Hypertension.', sent_text: 'Hypertension.' });
+    expect(a.data.error.code).toBe('MRN_MISMATCH');
+    const b = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'Hypertension.', sent_text: 'MRN 9990799. Hypertension.' });
+    expect(b.data.error.code).toBe('MRN_MISMATCH');
+    expect(sent).toHaveLength(0);
+  });
+
+  it('a quote only in the original note, deleted while editing, is dropped: quotes are checked against the text sent', async () => {
+    const { admin } = await liveAdmin('Hypertension on amlodipine');
+    const { case_id } = await newCase(admin, '9990714');
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'Hypertension on amlodipine. LVEF 55%.', sent_text: 'LVEF 55%.' });
+    expect(r.data.summary).toMatchObject({ filled: 0, dropped: 1 });
+    expect(r.data.items[0].reason).toBe('the quote is not in the note');
+  });
+
+  it('an empty edited text is refused', async () => {
+    const { admin, sent } = await liveAdmin('x');
+    const { case_id } = await newCase(admin, '9990715');
+    expect((await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'Hypertension.', sent_text: ' ' })).status).toBe(400);
+    expect(sent).toHaveLength(0);
+  });
+
+  it('the AI fills the date of birth from an explicit birth date (owner, 4 Nov)', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '1009315');
+    const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N02', '1009315'), procedure_id: 'new' });
+    expect(r.data.case.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBe('1961-03-02');
+  });
+
+  it('the sample-note list is gone', async () => {
+    const sara = await as(h, 'sara');
+    expect((await sara.call('GET', '/api/ai/status')).data.sample_notes).toBeUndefined();
+    expect((await sara.call('GET', '/api/ai/sample/N01')).status).toBe(404);
+  });
+});
+
 describe('AI Assistant (live provider, stubbed)', () => {
   it('Admin switches to Claude; without a key it says what to add; with a key only de-identified text is sent, with fallbacks on', async () => {
     const admin = await as(h, 'admin');

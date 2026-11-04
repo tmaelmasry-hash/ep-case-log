@@ -1,8 +1,8 @@
 // AI Assistant pipeline (phase 11; ported from EP Workspace server/ai/extract.ts). The note → MRN check (a
 // different MRN stops everything) → de-identification → provider (Test AI on the synthetic sample notes, or a live
 // model) → checks in the server → the draft. Checks: the field is one the AI may fill; the value is a dictionary
-// code / valid type; the quote is really in the de-identified note; no invented time. Date of birth is not a field
-// the AI may fill: it is removed from the note before sending. A value fills an EMPTY field (or replaces an earlier unaccepted AI value) and is marked
+// code / valid type; the quote is really in the de-identified note; date of birth only from an explicit birth
+// date; no invented time. A value fills an EMPTY field (or replaces an earlier unaccepted AI value) and is marked
 // AI — not accepted. A different saved value is never overwritten: it becomes a conflict for a person to resolve.
 // Procedure fields go to the procedure the user chose for this note. The note is never stored or logged.
 import type { AiMark, CaseRecord, StoredRow } from '../../shared/caseTypes.ts';
@@ -191,6 +191,7 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     if (!af) return 'not a field the AI may fill';
     if (af.procedure && !procedureId) return 'procedure field: choose the procedure this note describes';
     if (!grounded(evidence)) return 'the quote is not in the note';
+    if (entity === 'PATIENT_IDENTIFIERS' && field === 'date_of_birth' && !/birth|\bDOB\b|\bborn\b|d\.o\.b/i.test(evidence)) return 'date of birth is never inferred';
     if ((af.field.type === 'date' || af.field.type === 'datetime') && !/\d/.test(evidence)) return 'the quote has no date';
     // A time is never invented: a date alone for a date-and-time field is left for a person to complete.
     if (af.field.type === 'datetime' && /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? '').trim())) return 'the note gives the date but no time — enter it yourself';

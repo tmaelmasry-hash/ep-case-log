@@ -26,7 +26,11 @@ test('patient basics, Done / Not done studies, Holter duration and the device ro
   await expect(cmr.getByRole('radio', { name: 'Not done' })).toHaveAttribute('aria-checked', 'true');
   await cmr.getByRole('radio', { name: 'Done', exact: true }).click();
   const row = page.getByTestId('row-sheet');
-  await expect(row.getByRole('radiogroup', { name: 'Imaging Modality' }).getByRole('radio', { name: 'CMR' })).toHaveAttribute('aria-checked', 'true');
+  // Owner, 3 Nov: the study type is not asked again; the study shows its own questions only (DR-IMG-*).
+  await expect(row.locator('[data-field="ADVANCED_IMAGING.modality_code"]')).toHaveCount(0);
+  await expect(row.locator('[data-field="ADVANCED_IMAGING.lge_scar_present"]')).toBeVisible();
+  await expect(row.locator('[data-field="ADVANCED_IMAGING.pv_anatomy_variant_present"]')).toHaveCount(0);
+  await expect(row.locator('[data-field="ADVANCED_IMAGING.la_laa_thrombus_result"]')).toHaveCount(0);
   await saved(page);
   await row.getByRole('button', { name: 'Done' }).click();
   await expect(cmr.getByRole('radio', { name: 'Done', exact: true })).toHaveAttribute('aria-checked', 'true');

@@ -293,15 +293,18 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
   const row = all[i] ?? null;
   const [child, setChild] = useState<{ entity: string; id: string } | null>(null);
   const fresh = useNewRow(ed, entity, id, def.label.toLowerCase(), onClose);
+  // Owner, 3 Nov: a study added from "Done" already has its type (CMR / Cardiac CT / TEE); it is not asked again.
+  const preset = (DONE_FIRST[entity] ?? []).flatMap((o) => Object.keys(o.values ?? {})).filter((k) => row?.[k] != null && row[k] !== '');
+  const kind = DONE_FIRST[entity]?.find((o) => o.values && Object.entries(o.values).every(([k, v]) => row?.[k] === v))?.label;
   if (child) return <RowSheet ed={ed} entity={child.entity} id={child.id} onClose={() => setChild(null)} />;
   return (
-    <Sheet title={row ? rowTitle(entity, row, i) : def.label} onClose={fresh.cancel} onDone={fresh.done} testId="row-sheet">
+    <Sheet title={kind ?? (row ? rowTitle(entity, row, i) : def.label)} onClose={fresh.cancel} onDone={fresh.done} testId="row-sheet">
       {fresh.dialog}
       {!row ? (
         <p className="muted">This row was removed.</p>
       ) : (
         <>
-          <RowForm ed={ed} entity={entity} rowId={id} row={row} />
+          <RowForm ed={ed} entity={entity} rowId={id} row={row} skip={preset.length ? preset : undefined} />
           <NestedLists ed={ed} parentEntity={entity} parentId={id} onOpen={(e, cid) => setChild({ entity: e, id: cid })} />
           {!ed.readOnly && (
             <button
@@ -312,7 +315,7 @@ function RowSheet({ ed, entity, id, onClose }: { ed: CaseEditor; entity: string;
                 onClose();
               }}
             >
-              <Icon name="trash" size={18} /> Remove {def.label.toLowerCase()}
+              <Icon name="trash" size={18} /> Remove {kind ?? def.label.toLowerCase()}
             </button>
           )}
         </>

@@ -2034,6 +2034,263 @@
      "REDO"
     ]
    }
+  },
+  {
+   "id": "DR-IMG-CMR-cmr_lvef_pct",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.cmr_lvef_pct",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CMR"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-cmr_rvef_pct",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.cmr_rvef_pct",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CMR"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-lge_scar_present",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.lge_scar_present",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CMR"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-active_inflammation_or_infiltration",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.active_inflammation_or_infiltration",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CMR"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-cmr_structural_diagnosis",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.cmr_structural_diagnosis",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CMR"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-scar_pattern",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions); \"C if scar present\"",
+   "target": "ADVANCED_IMAGING.scar_pattern",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "ADVANCED_IMAGING.modality_code",
+      "in": [
+       "CMR"
+      ]
+     },
+     {
+      "field": "ADVANCED_IMAGING.lge_scar_present",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-scar_location",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions); \"C if scar present\"",
+   "target": "ADVANCED_IMAGING.scar_location",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "ADVANCED_IMAGING.modality_code",
+      "in": [
+       "CMR"
+      ]
+     },
+     {
+      "field": "ADVANCED_IMAGING.lge_scar_present",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CMR-scar_locations",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions); \"C if scar present\"",
+   "target": "ADVANCED_IMAGING.scar_locations",
+   "effect": "show_when",
+   "when": {
+    "all": [
+     {
+      "field": "ADVANCED_IMAGING.modality_code",
+      "in": [
+       "CMR"
+      ]
+     },
+     {
+      "field": "ADVANCED_IMAGING.lge_scar_present",
+      "in": [
+       "YES"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CT-pv_anatomy_variant_present",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.pv_anatomy_variant_present",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CARDIAC_CT"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CT-systemic_venous_stenosis_or_occlusion",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.systemic_venous_stenosis_or_occlusion",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CARDIAC_CT"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-CT-lead_vascular_relationship_high_risk",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.lead_vascular_relationship_high_risk",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "CARDIAC_CT"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-TEE-spontaneous_echo_contrast",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.spontaneous_echo_contrast",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "TEE"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-TEE-significant_valve_or_shunt_finding",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.significant_valve_or_shunt_finding",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "TEE"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-TEE-procedure_deferred_due_to_imaging",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions)",
+   "target": "ADVANCED_IMAGING.procedure_deferred_due_to_imaging",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "TEE"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-THROMBUS",
+   "version": 1,
+   "status": "SOURCE_EXPLICIT",
+   "source": "spec Prompt Library v1.6-rc §2.9 Conditional advanced imaging: CMR / Cardiac CT / TEE field tables; owner 3 Nov (Cardiac CT / CMR questions); la_laa_thrombus_result \"CMR: NOT_APPLICABLE; CMR is not an approved thrombus-result source in release 1\"",
+   "target": "ADVANCED_IMAGING.la_laa_thrombus_result",
+   "effect": "show_when",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "TEE",
+     "CARDIAC_CT"
+    ]
+   }
+  },
+  {
+   "id": "DR-IMG-INDICATION-THROMBUS",
+   "version": 1,
+   "status": "OWNER_APPROVED",
+   "source": "owner 4 Nov 2026: not offered for CMR, because the spec (Prompt Library v1.6-rc §2.9) says CMR is not an approved thrombus-result source in release 1",
+   "target": "ADVANCED_IMAGING.indication_code",
+   "effect": "offer_when",
+   "code": "LA_LAA_THROMBUS_EXCLUSION",
+   "when": {
+    "field": "ADVANCED_IMAGING.modality_code",
+    "in": [
+     "TEE",
+     "CARDIAC_CT"
+    ]
+   }
   }
  ]
 }

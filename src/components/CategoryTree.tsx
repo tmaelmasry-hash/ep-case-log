@@ -38,8 +38,8 @@ export function periodPresets(): [string, string, string][] {
   return [
     ['This Month', `${today.slice(0, 7)}-01`, today],
     ['Last 3 Months', todayISO(d), today],
-    ['This year', `${y}-01-01`, today],
-    ['Last year', `${y - 1}-01-01`, `${y - 1}-12-31`],
+    ['This Year', `${y}-01-01`, today],
+    ['Last Year', `${y - 1}-01-01`, `${y - 1}-12-31`],
     ...hijriPresets(),
   ];
 }

@@ -64,7 +64,7 @@ export function hijriPresets(): [string, string, string][] {
   const t = hijriParts(today);
   const out: [string, string, string][] = [];
   const start = monthRange(t.y, 1);
-  if (start) out.push([`Hijri year ${t.y}`, start[0], today]);
+  if (start) out.push([`Hijri Year ${t.y}`, start[0], today]);
   const ram = monthRange(t.m >= 9 ? t.y : t.y - 1, 9);
   if (ram) out.push([`Ramadan ${t.m >= 9 ? t.y : t.y - 1}`, ram[0], ram[1] > today ? today : ram[1]]);
   const hajjYear = t.m === 12 ? t.y : t.y - 1;

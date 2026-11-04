@@ -14,7 +14,7 @@ describe('hijri', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-23T09:00:00'));
     const p = Object.fromEntries(hijriPresets().map(([l, a, b]) => [l, [a, b]]));
-    expect(p['Hijri year 1448']).toEqual(['2026-06-16', '2026-10-23']);
+    expect(p['Hijri Year 1448']).toEqual(['2026-06-16', '2026-10-23']);
     expect(p['Ramadan 1447'][0]).toBe('2026-02-18');
     expect(p['Ramadan 1447'][1]).toBe('2026-03-19');
     expect(p['Dhu al-Hijjah 1447'][0]).toBe('2026-05-18');

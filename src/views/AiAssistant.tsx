@@ -1,5 +1,6 @@
-// AI Assistant (phase 11): paste a clinical note, the AI fills empty fields of this case (marked "AI" until a person
-// accepts them), and lists conflicts with saved values for a person to choose. The note is sent once and never kept.
+// AI Assistant (phase 11): paste a clinical note, read and edit what will be sent (identifiers removed, best effort),
+// then the AI fills empty fields of this case (marked "AI" until a person accepts them) and lists conflicts with saved
+// values for a person to choose. The note is sent once and never kept.
 import { useEffect, useState } from 'react';
 import { displayValue } from '../../shared/dictionary.ts';
 import { decodeValue } from '../../shared/validate.ts';
@@ -17,7 +18,14 @@ interface AiStatus {
   configured: boolean;
   reason: string | null;
   max_note_chars: number;
-  sample_notes: { id: string; title: string }[];
+}
+
+interface Removed {
+  mrn: number;
+  id: number;
+  email: number;
+  phone: number;
+  name: number;
 }
 
 interface RunItem {
@@ -34,9 +42,16 @@ interface RunResult {
   recognised: boolean;
   summary: { filled: number; same: number; conflicts: number; dropped: number; additional: number };
   items: RunItem[];
-  removed: number;
+  removed: Removed;
   procedure_id: string | null;
   case: CaseDetail;
+}
+
+const countOf = (n: number, one: string, many = `${one}s`) => (n ? [`${n} ${n === 1 ? one : many}`] : []);
+/** "4 names · 1 ID number · 1 MRN", or null if nothing was removed. */
+function removedText(r: Removed): string | null {
+  const parts = [...countOf(r.name, 'name'), ...countOf(r.id, 'ID number'), ...countOf(r.mrn, 'MRN'), ...countOf(r.phone, 'phone number'), ...countOf(r.email, 'email')];
+  return parts.length ? parts.join(' · ') : null;
 }
 
 const fieldLabel = (entity: string, field: string) => dict.entities[entity]?.fields.find((f) => f.name === field)?.label ?? field;
@@ -58,10 +73,17 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const [target, setTarget] = useState<string>(procs.length === 1 ? procs[0].id : procs.length ? '' : 'new');
+  // Step 2, "This is what will be sent": null while the person is still on the note. Going back keeps the note.
+  const [preview, setPreview] = useState<{ text: string; removed: Removed } | null>(null);
+  const [sendText, setSendText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [run, setRun] = useState<RunResult | null>(null);
+  // The note goes to the case's latest procedure, or a new one if there is none (owner, 4 Nov: no choice to make here).
+  // The AI values stay marked and show their procedure until a person accepts them.
+  const latest = [...ed.rows('EP_PROCEDURES')].sort((a, b) => String(a.procedure_start_datetime ?? '').localeCompare(String(b.procedure_start_datetime ?? ''))).pop();
+  const target = latest?._id ?? 'new';
+  const targetTitle = procs.length > 1 ? procs.find((p) => p.id === target)?.title : null;
 
   useEffect(() => {
     api<AiStatus>('GET', '/api/ai/status')
@@ -72,21 +94,37 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
   const where = (m: AiMark): string => {
     if (m.entity === 'EP_PROCEDURES') return procs.find((p) => p.id === m.record_id)?.title ?? 'Procedure';
     const row = ed.rows(m.entity).find((r) => r._id === m.record_id);
+    // A device check or a lead's measurements: say which device (and lead) the value went to.
+    const check = m.entity === 'DEVICE_CHECK_CHANNELS' ? ed.rows('DEVICE_INTERROGATIONS').find((r) => r._id === row?.device_check_id) : m.entity === 'DEVICE_INTERROGATIONS' ? row : undefined;
+    if (check) {
+      const device = ed.rows('DEVICES').find((r) => r._id === check.device_id);
+      const lead = m.entity === 'DEVICE_CHECK_CHANNELS' ? ed.rows('DEVICE_LEADS').find((r) => r._id === row?.lead_id) : undefined;
+      const name = device && ['manufacturer', 'current_device_type'].filter((f) => device[f]).map((f) => show('DEVICES', f, device[f])).join(' ');
+      return [name || 'Device', dict.entities[m.entity].label, lead?.lead_location ? show('DEVICE_LEADS', 'lead_location', lead.lead_location) : null].filter(Boolean).join(' · ');
+    }
     const pid = (row?.procedure_id as string | undefined) ?? m.procedure_id;
     const proc = pid ? procs.find((p) => p.id === pid)?.title : null;
     return [proc, dict.entities[m.entity]?.label].filter(Boolean).join(' · ');
   };
 
-  const useSample = async (id: string) => {
-    if (!id) return;
+  const showPreview = async () => {
+    setBusy(true);
+    setError(null);
     try {
-      const s = await api<{ text: string; mrn: string }>('GET', `/api/ai/sample/${id}`);
-      // The sample's made-up MRN becomes this case's MRN, so the "wrong patient" check lets it through.
-      setNote(s.text.split(s.mrn).join(d.meta.mrn));
-      setError(null);
+      const p = await api<{ text: string; removed: Removed }>('POST', `/api/cases/${d.meta.case_id}/ai/preview`, { note });
+      setPreview(p);
+      setSendText(p.text);
+      setRun(null);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
+  };
+
+  const backToNote = () => {
+    setPreview(null);
+    setError(null);
   };
 
   const extract = async () => {
@@ -94,11 +132,11 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
     setError(null);
     try {
       await ed.flush();
-      const r = await api<RunResult>('POST', `/api/cases/${d.meta.case_id}/ai/extract`, { note, procedure_id: target || null });
+      const r = await api<RunResult>('POST', `/api/cases/${d.meta.case_id}/ai/extract`, { note, sent_text: sendText, procedure_id: target });
       ed.replace(r.case);
       setRun(r);
       setNote('');
-      if (target === 'new' && r.procedure_id) setTarget(r.procedure_id);
+      setPreview(null);
     } catch (e) {
       const err = e as ApiError;
       setError(err.message);
@@ -123,14 +161,12 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
 
   const { values, conflicts } = aiPending(d);
   const ready = status?.configured && !ed.readOnly;
-  const procedureFieldsSkipped = run?.items.some((i) => i.status === 'DROPPED' && i.reason?.startsWith('procedure field'));
+  const removedNow = preview && removedText(preview.removed);
+  const removedAgain = run && removedText(run.removed);
 
   return (
     <Sheet title="AI Assistant" onClose={onClose} onDone={onClose} testId="ai-sheet">
-      <p className="muted small">
-        Paste a clinical note about this patient. The AI fills only empty fields of this case and marks them “AI” until you accept them. Names and identifiers are removed before the note is sent; the
-        note is not kept.
-      </p>
+      {!preview && <p className="muted small">Paste a clinical note about this patient. The AI fills only empty fields of this case and marks them “AI” until you accept them. The note is not kept.</p>}
       {statusError && <p className="field-error">{statusError}</p>}
       {status && (
         <p className="small" data-testid="ai-provider">
@@ -140,37 +176,48 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
         </p>
       )}
 
-      {ready && (
+      {ready && preview && (
+        <>
+          <h3 className="sechead">This is what will be sent</h3>
+          <p className="small" data-testid="ai-removed">
+            {removedNow ? `Removed: ${removedNow}` : 'Nothing was found to remove.'}
+          </p>
+          <div className="banner info ai-check-note">
+            <span className="grow small">Removal is automatic and can miss things. Read the text below and delete anything that could identify a person before you send it.</span>
+          </div>
+          <div className="group">
+            <div className="frow stack">
+              <span className="lab">Text to send (you can edit it)</span>
+              <textarea className="ios-text box" rows={11} dir="auto" value={sendText} onChange={(e) => setSendText(e.target.value)} aria-label="Text to send" data-testid="ai-sent-text" />
+              {targetTitle && (
+                <span className="muted small" data-testid="ai-target-line">
+                  Procedure details go to: {targetTitle}
+                </span>
+              )}
+            </div>
+          </div>
+          {error && (
+            <p className="field-error" role="alert" data-testid="ai-error">
+              {error}
+            </p>
+          )}
+          <div className="ai-send-row">
+            <button className="btn" disabled={busy} onClick={backToNote} data-testid="ai-back">
+              Back to the note
+            </button>
+            <button className="btn primary" disabled={busy || !sendText.trim() || sendText.length > status.max_note_chars} onClick={extract} data-testid="ai-send">
+              {busy ? 'Working…' : 'Send and fill'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {ready && !preview && (
         <>
           <div className="group">
             <div className="frow stack">
-              <span className="lab">This note describes</span>
-              <select className="ios-value" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="This note describes" data-testid="ai-target">
-                {procs.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-                <option value="new">A new procedure</option>
-                <option value="">No procedure (patient and history only)</option>
-              </select>
-            </div>
-            {status.sample_notes.length > 0 && (
-              <div className="frow stack">
-                <span className="lab">Test AI: use a sample note (made-up patients)</span>
-                <select className="ios-value" value="" onChange={(e) => useSample(e.target.value)} aria-label="Use a sample note" data-testid="ai-sample">
-                  <option value="">Choose a sample note…</option>
-                  {status.sample_notes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id} · {s.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="frow stack">
               <span className="lab">Clinical note</span>
-              <textarea className="ios-text box" rows={8} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Clinical note" data-testid="ai-note" />
+              <textarea className="ios-text box" rows={8} dir="auto" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Clinical note" data-testid="ai-note" />
               <span className="muted small">
                 {note.length.toLocaleString()} / {status.max_note_chars.toLocaleString()} characters
               </span>
@@ -181,24 +228,24 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
               {error}
             </p>
           )}
-          <button className="btn primary block" disabled={busy || !note.trim() || note.length > status.max_note_chars} onClick={extract} data-testid="ai-extract">
-            {busy ? 'Working…' : 'Extract and fill'}
+          <button className="btn primary block" disabled={busy || !note.trim() || note.length > status.max_note_chars} onClick={showPreview} data-testid="ai-preview">
+            {busy ? 'Working…' : 'Review what will be sent'}
           </button>
         </>
       )}
 
-      {run && (
+      {run && !preview && (
         <div className="banner info" data-testid="ai-run">
           <span className="grow">
             {run.recognised ? '' : 'Test AI knows only its sample notes; nothing was found in this one. '}
             {run.summary.filled} filled · {run.summary.conflicts} conflict{run.summary.conflicts === 1 ? '' : 's'} · {run.summary.same} already the same · {run.summary.additional} additional ·{' '}
             {run.summary.dropped} skipped
-            {procedureFieldsSkipped ? ' (procedure fields: choose the procedure this note describes)' : ''}
+            {removedAgain ? `. Also removed from your edits before sending: ${removedAgain}` : ''}
           </span>
         </div>
       )}
 
-      {(values.length > 0 || conflicts.length > 0) && (
+      {!preview && (values.length > 0 || conflicts.length > 0) && (
         <>
           <h3 className="sechead">To review</h3>
           {values.length > 0 && !ed.readOnly && (
@@ -261,7 +308,7 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
         </>
       )}
 
-      {run && run.items.some((i) => i.status === 'DROPPED') && (
+      {run && !preview && run.items.some((i) => i.status === 'DROPPED') && (
         <details className="ai-dropped">
           <summary className="muted small">Skipped ({run.items.filter((i) => i.status === 'DROPPED').length})</summary>
           <div className="group">

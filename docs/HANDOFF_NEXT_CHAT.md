@@ -1,10 +1,24 @@
-# Handoff for the next chat — KAMC EP Registry (EP Case Log), 31 Oct 2026
+# Handoff for the next chat — KAMC EP Registry (EP Case Log), 4 Nov 2026
 
 Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / R4-* and the 31 Oct answers),
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
-## CONTINUE HERE — 4 Nov 2026: everything is live and checked; nothing open from this round
+## NEXT CHAT: the owner will state new changes
+Do not start anything on your own. Read this file, wait for his request, then work in steps as described below. State on
+4 Nov: `main` pushed to GitHub, working tree clean except the untracked `.claude/`, no side sessions, nothing waiting on a
+deploy. The owner is now using the live site with real cases and collecting notes.
+
+### Deferred by the owner (4 Nov): do these together with his notes after real use, not before
+All are display text only; no data or Sheet change. They still need tests, a review page and "Deploy now".
+1. **`Follow-up` / `Follow-Up` mismatch (introduced 4 Nov):** the buttons `Add Follow-Up Visit` and `Remove This Follow-Up`
+   (`CaseView.tsx`) differ from the section and tab name `Follow-up`. Proposed: use `Follow-up` in the buttons.
+2. **Lowercase abbreviations in sentences:** `No ecg added yet` (`CoreWithoutRows`, `label.toLowerCase()`) and
+   `Discard this new ecg` (`useNewRow` call in `RowSheet`). They should read `ECG`.
+3. **Screens not yet Title Case:** the Dashboard and Bulk Add `Add another list`. The Dashboard was never in his request:
+   ask before changing it.
+
+## Done — 4 Nov 2026: everything is live and checked; nothing open from this round
 **Live Worker `740df03c-955c-4677-9b42-255eb8cf1f2d` (`64ab36d`, deployed on the owner's "Deploy now").** Rollback:
 `node scripts/wrangler.ts rollback 468b4750-73df-4737-9fc6-497421f4e1f0`. No Sheet change. Live JS checked (`index-DCYA_NAb.js`).
 
@@ -30,7 +44,14 @@ Review page: https://claude.ai/artifact/7bXd3XuakPmHaNnBC2DmcR
 - The main Sheet holds real cases the owner entered: never touch them in tests. TEST Sheet accounts: `qa_admin`,
   `qa_member`, `qa_member2`.
 
+- Label page db `label_edits`: 3 documents changed on his yes (4 Nov), see Title Case above. Keep `labels.json` and the db
+  in step if a label changes again, or a later re-apply from the db would undo it.
+
 ### Tool notes from the last chat
+- github.com is sometimes unreachable from this PC (4 Nov: failed 3 times, then the owner's own push worked). After a push, check
+  with `git fetch origin main` and `git status -sb`.
+- `read_terminal` lags during a deploy: wait for the `Current Version ID` line. To see which fields the app sets itself, use a
+  temporary script with `loadConfig` from `server/dictionary.ts`, and delete it after.
 - Bash heredocs can mangle backslashes in scripts: write script files with the Write tool.
 - Source files are CRLF: normalise before matching multi-line text, and restore after.
 
@@ -47,7 +68,7 @@ Review page: https://claude.ai/artifact/7bXd3XuakPmHaNnBC2DmcR
 - Never delete a saved value: when a show rule hides a question, first count real answers it would hide (read only,
   codes and counts only, no MRN) and tell him; the value stays in the Sheet and Excel.
 
-## START HERE — state on 3 Nov 2026
+## State on 3 Nov 2026 (history: the live Worker and `main` are newer, see the top of this file)
 - `main` = `7ae9f84` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
 - **Live Worker `468b4750-73df-4737-9fc6-497421f4e1f0`** (imaging questions by study type, 4 Nov; before: `8e07ee32`
   home screens Title Case, `8e07e84f` menu / case groups / picker, `87c7cc43` labels, `2b3fd05b` speed). Apps Script live = **Version 4**

@@ -11,6 +11,7 @@
     "typecheck": "node scripts/build-config.ts && tsc --noEmit && tsc -p tsconfig.server.json",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:webkit": "playwright test -c playwright.webkit.config.ts",
     "preview:e2e": "node server/main.ts --e2e",
     "build:config": "node scripts/build-config.ts",
     "build:demo": "node scripts/build-demo.ts",

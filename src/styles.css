@@ -2937,6 +2937,12 @@ a.hc-mrn {
   width: auto;
   line-height: 1.3;
 }
+/* An iPhone zooms the page when a list under 16 px is tapped. */
+@supports (-webkit-touch-callout: none) {
+  .filter-chip.select-chip select {
+    font-size: 16px;
+  }
+}
 /* A color per group: a dot on the group tab and on the card. */
 .gdot {
   display: inline-block;

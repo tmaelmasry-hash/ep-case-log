@@ -2,7 +2,7 @@
   "name": "KAMC EP Registry",
   "short_name": "EP Registry",
   "description": "Offline-first case log for electrophysiology procedures.",
-  "start_url": "/#/cases",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f3f6f9",

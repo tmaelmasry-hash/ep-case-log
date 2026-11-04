@@ -4,7 +4,7 @@ Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / 
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
-## NEXT CHAT: the owner will state new changes
+## NEXT CHAT: read `docs/AI_PLATFORM_PLAN.md` (owner decisions and phases for AI, OCR and platforms, 4 Nov); nothing built yet, Phase 1 waits for his go
 Do not start anything on your own. Read this file, wait for his request, then work in steps as described below. State on
 4 Nov: `main` pushed to GitHub, working tree clean except the untracked `.claude/`, no side sessions, nothing waiting on a
 deploy. The owner is now using the live site with real cases and collecting notes.

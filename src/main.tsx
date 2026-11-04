@@ -50,5 +50,7 @@ createRoot(document.getElementById('root')!).render(
 if ('serviceWorker' in navigator && import.meta.env.PROD && !import.meta.env.VITE_DEMO) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((e) => console.warn('Service worker registration failed', e));
+    // Asks the browser not to clear the device copy and its waiting edits when space runs low. The app works if it says no.
+    navigator.storage?.persist?.().catch(() => undefined);
   });
 }

@@ -19,8 +19,8 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 
 ## START HERE — state on 3 Nov 2026
 - `main` = `7ae9f84` + this handoff commit, **pushed** to GitHub. Working tree clean (only the untracked `.claude/`).
-- **Live Worker `8e07ee32-3b10-42f2-8388-8d2898bbcad3`** (Title Case for home screens and New Case, 3 Nov; before:
-  `8e07e84f` menu / case groups / picker, `87c7cc43` labels, `2b3fd05b` speed). Apps Script live = **Version 4**
+- **Live Worker `468b4750-73df-4737-9fc6-497421f4e1f0`** (imaging questions by study type, 4 Nov; before: `8e07ee32`
+  home screens Title Case, `8e07e84f` menu / case groups / picker, `87c7cc43` labels, `2b3fd05b` speed). Apps Script live = **Version 4**
   (3 Nov, `351b6f6`: one-step write; rollback = Version 3). Live save 2.0–3.8 s (target ≤ 4 s met).
 - 3 Nov owner test round (in progress): the 5 old fake cases on the main Sheet were wiped (backup first, numbering
   back to 1); one test case `9990001` (Group 1 No. 1) stays on the main Sheet until the live tests end, then it is
@@ -63,6 +63,7 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 | Q-P1: device pathway tag ICD / Pacemaker / Leads only on case cards, My work, case header (`shared/pathway.ts`) | `5014eae` → `ffc4fd45` |
 | Q-S1: NCDR printed list values (`docs/NCDR_LISTS_Q-S1.md`): Anxiety + Irregular heartbeat (symptoms), Ethanol (energies used), prior AF ablation strategies (11 values, redo only, rule DR-NCDR-3), echo LV hypertrophy + RA size. Product lists are NCDR Master files, not public → model stays text | `ebc281b`, `fa9e60b` → `4787751b` |
 | Speed (3 Nov): `prime` reads users / groups / settings / cohort tags + the case (or every case) in one Sheet call at the start of a request. Fresh server: save 6 → 2 calls, open 5 → 1, new case 6 → 3 | `7ae9f84` → `2b3fd05b` |
+| Imaging (4 Nov): Done on CMR / Cardiac CT / TEE no longer asks Imaging Modality; each study asks its own questions (spec Prompt Library §2.9, rules DR-IMG-*); scar pattern / locations only if LGE = Yes; thrombus result not for CMR; LA LAA Thrombus Exclusion not offered as a CMR indication (owner) | `d8b2b58` → `468b4750` |
 | Title Case (3 Nov): My Work, case list (search, period chips "This Month" / "Last 3 Months" / "Hajj Season" are also keys), + menu, New Case, Add Procedure; sentences stay sentence case, Dashboard not changed | `9c5a016` → `8e07ee32` |
 | Title Case (3 Nov): left menu (31), case page groups (5), procedure parts (2), procedure picker (9) | `7673ffb` → `8e07e84f` |
 | Labels (3 Nov): the owner's 744 display-label edits (Title Case and 25 wording fixes) from his label page | `a86eaab` → `87c7cc43` |

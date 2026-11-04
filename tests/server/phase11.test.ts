@@ -226,13 +226,13 @@ describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '9990731');
     const r = await run(sara, case_id);
-    expect(r.data.summary).toMatchObject({ filled: 9, dropped: 0 });
+    expect(r.data.summary).toMatchObject({ filled: 10, dropped: 0 });
     const [device] = rowsOf(r, 'DEVICES');
     const [check] = rowsOf(r, 'DEVICE_INTERROGATIONS');
     const [channel] = rowsOf(r, 'DEVICE_CHECK_CHANNELS');
     expect(rowsOf(r, 'DEVICES')).toHaveLength(1);
     expect(device).toMatchObject({ manufacturer: 'MEDTRONIC', current_device_type: 'ICD_DUAL' });
-    expect(check).toMatchObject({ device_id: device._id, programmed_mode: 'DDD', lower_rate_bpm: 60, rv_pacing_pct: 3 });
+    expect(check).toMatchObject({ device_id: device._id, check_datetime: '2026-10-12', programmed_mode: 'DDD', lower_rate_bpm: 60, rv_pacing_pct: 3 });
     expect(channel).toMatchObject({ device_check_id: check._id, channel_type: 'PHYSICAL_LEAD', capture_threshold_v: 0.75, sensing_mv: 11, impedance_ohm: 520 });
     expect(channel.lead_id ?? null).toBeNull(); // no lead saved: a person chooses
     expect(Object.values(r.data.case.ai).every((m: any) => m.source === 'AI')).toBe(true);
@@ -291,6 +291,77 @@ describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
     const done = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions });
     expect(rowsOf(done, 'DEVICE_INTERROGATIONS')).toHaveLength(1);
     expect(rowsOf(done, 'DEVICE_CHECK_CHANNELS')[0].sensing_mv).toBe(11);
+  });
+});
+
+describe('Dates only, never a time (owner, 4 Nov)', () => {
+  const dated = [
+    ['COMPLICATIONS', 'event_datetime'],
+    ['DEVICE_INTERROGATIONS', 'check_datetime'],
+    ['DEVICE_INTERROGATIONS', 'review_period_start_datetime'],
+    ['DEVICE_LEAD_CONNECTIONS', 'connected_from_datetime'],
+    ['DEVICE_LEAD_CONNECTIONS', 'connected_to_datetime'],
+    ['ECG_STUDIES', 'ecg_datetime'],
+    ['EP_PROCEDURES', 'procedure_start_datetime'],
+    ['EP_PROCEDURES', 'procedure_end_datetime'],
+    ['RHYTHM_MONITORING', 'start_datetime'],
+    ['RHYTHM_MONITORING', 'end_datetime'],
+    ['TILT_TESTS', 'test_datetime'],
+  ];
+
+  it('no field in the app asks for a time', () => {
+    for (const def of Object.values(config.dict.entities)) for (const f of def.fields) expect(`${def.entity}.${f.name}:${f.type}`).not.toMatch(/:datetime$/);
+    for (const [e, n] of dated) expect(config.dict.entities[e].fields.find((f) => f.name === n)).toMatchObject({ type: 'date', date_only: true });
+  });
+
+  it('a time from an older device is cut; a time already stored shows as the date and is not rewritten', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '9990741');
+    const ecg = `ecg_${crypto.randomUUID()}`;
+    const made = await sara.call('PATCH', `/api/cases/${case_id}`, { creates: [{ entity: 'ECG_STUDIES', id: ecg, values: { ecg_datetime: '2026-03-02T10:00' } }] });
+    expect(made.data.results[0].ok).toBe(true);
+    const rec = (await h.store.getCase(case_id))!;
+    expect(rec.rows.ECG_STUDIES[0].ecg_datetime).toBe('2026-03-02');
+    // A row saved before this change.
+    const base = structuredClone(rec);
+    rec.rows.ECG_STUDIES[0].ecg_datetime = '2026-03-02T10:00';
+    await h.store.putCase(rec, base);
+    expect((await h.store.getCase(case_id))!.rows.ECG_STUDIES[0].ecg_datetime).toBe('2026-03-02T10:00');
+    const seen = (await sara.call('GET', `/api/cases/${case_id}`)).data.rows.ECG_STUDIES[0];
+    expect(seen.ecg_datetime).toBe('2026-03-02');
+    expect((await h.store.getCase(case_id))!.rows.ECG_STUDIES[0].ecg_datetime).toBe('2026-03-02T10:00');
+  });
+
+  /** A stubbed live Claude answering `answer`. */
+  async function liveWith(answer: object) {
+    const admin = await as(h, 'admin');
+    await admin.call('POST', '/api/settings/ai', { provider: 'anthropic' });
+    (h.app.ctx.env as { anthropicKey?: string }).anthropicKey = 'sk-test-synthetic';
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(answer) }], stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 10 } }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    return admin;
+  }
+
+  it('the AI fills a date with no time; two ECGs become two rows with their own dates', async () => {
+    const admin = await liveWith({
+      proposals: [
+        { entity: 'ECG_STUDIES', field: 'ecg_datetime', value: '2026-01-12', row: 'ecg-1', evidence: 'ECG 12 Jan 2026' },
+        { entity: 'ECG_STUDIES', field: 'ecg_datetime', value: '2026-03-03', row: 'ecg-2', evidence: 'ECG 3 Mar 2026' },
+      ],
+      conflicts: [],
+      additional_info: [],
+    });
+    const { case_id } = await newCase(admin, '9990742');
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'ECG 12 Jan 2026: sinus. ECG 3 Mar 2026: SVT.' });
+    expect(r.data.summary.filled).toBe(2);
+    expect(r.data.case.rows.ECG_STUDIES.map((x: { ecg_datetime: string }) => x.ecg_datetime).sort()).toEqual(['2026-01-12', '2026-03-03']);
+  });
+
+  it('a lab with no date in the note fills its values and leaves the date empty for a person', async () => {
+    const admin = await liveWith({ proposals: [{ entity: 'LAB_RESULTS', field: 'inr', value: '2.4', row: 'lab-1', evidence: 'INR 2.4' }], conflicts: [], additional_info: [] });
+    const { case_id } = await newCase(admin, '9990743');
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'INR 2.4.' });
+    expect(r.data.summary.filled).toBe(1);
+    expect(r.data.case.rows.LAB_RESULTS[0].lab_date ?? null).toBeNull();
   });
 });
 

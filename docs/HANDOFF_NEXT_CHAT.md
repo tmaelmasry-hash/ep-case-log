@@ -11,16 +11,16 @@ Do not start anything on your own: tell him where things stand in Egyptian Arabi
 The owner has no iPhone or Mac: members may use them. Real-device trial page for a member after the next deploy (he must Share it):
 https://claude.ai/artifact/Gsj4SGQgHitUQLRVkKkrZN. Audit: https://claude.ai/artifact/7hyfgRw7xsFs7JRaZaBFCD.
 
-**First thing to check: the last full test run was not reviewed.** It started on the Phase 3 code in the Terminal tab of the old chat. When this
-was written `step6.spec.ts:27` "Admin moves a case to another group" had failed on desktop Chromium at the 1-minute timeout, and it passed in every earlier run.
-Unknown yet whether that is real: the Phase 3 code and tests are committed without a clean full run. Rerun `npm run build; npm test; npm run e2e; npm run e2e:worker; npm run e2e:webkit`,
-one after another, and look at that test first. The last clean results before Phase 3 (`3efe5ae`): unit 534, Chromium 112/112, WebKit 107 + 1 skipped on purpose.
+**Full test run on the Phase 3 code (`e135453`, 5 Nov): clean.** Build OK; unit 562 passed, 14 skipped; Chromium 112/112; `e2e:worker` 112/112; WebKit 107 + 1 skipped on purpose.
+`step6.spec.ts:27` "Admin moves a case to another group", which failed once on desktop Chromium at the 1-minute timeout in the old chat's run, passed in all three suites and both profiles (2.5 s to 9.2 s, no retries configured).
+Not reproduced; the cause of that one failure is unknown (its log is gone). Rerun `npm run build; npm test; npm run e2e; npm run e2e:worker; npm run e2e:webkit` before any deploy,
+one after another. The run took about 35 minutes.
 
-**Decision open: the default AI model.** He chose Workers AI (no key) as default with Groq as an alternative, then asked to compare the models before choosing.
+**Decided 5 Nov: Groq `openai/gpt-oss-120b` is the default AI model** (`config/site.json`), after the comparison below. Before deploying it: `docs/AI_PLATFORM_PLAN.md` → Phase 3 status lists what it needs.
 Measured on made-up notes, numbers in `docs/AI_PLATFORM_PLAN.md`: Llama 3.3 obeyed the trap in note N12 (proposed LVEF 10%), found 55% of written values, 17 s a note;
 Nemotron 120b did not obey it and found 15 of 18, but only 2 notes so far, 80 s a note, about 7 full notes a day free. Groq `gpt-oss-120b`, one section at a time: about 3 s, did not obey the trap;
-**a whole note gets 413** (over its 8,000 tokens a minute; `procedure` alone is about 7,000 tokens at the measured 2.7 characters a token). So on Groq's free plan only the section route works.
-Next: run Nemotron on the remaining notes with `scripts/ai-trial/eval.mjs` (see its header; Workers AI quota was used up on 5 Nov, resets 03:00 Riyadh), show him the three models, ask with AskUserQuestion, then set `config/site.json` (Llama sits there only as a placeholder).
+**a whole note gets 413** (over its 8,000 tokens a minute; `procedure` alone is about 7,000 tokens at the measured 2.7 characters a token). So on Groq's free plan only the section route works. Groq on all 17 notes by section (5 Nov, `scripts/ai-trial/eval-sections.mjs`): 140 of 202 (69%), with 6 of 15 `procedure` requests failing; full numbers and faults in `docs/AI_PLATFORM_PLAN.md`.
+Nemotron's remaining notes were not measured (`AI_QUOTA_DAY` on 5 Nov) and he did not ask for them after choosing Groq. Llama stays only as the Workers AI entry in `site.json`.
 Never deploy with Llama as default.
 
 **Phase 3, still to build:** a guard against instructions written inside a note (before any real note), the small AI icon in each case section (**show him a preview first**), passing `sections` from the screen (the server already takes it). Groq's `max_completion_tokens` is a guess until measured on a whole section.

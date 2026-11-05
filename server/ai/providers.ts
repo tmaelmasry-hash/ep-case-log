@@ -26,9 +26,9 @@ export interface AiChoice { provider: ProviderId; model: string | null; label: s
 /** Which provider runs: Settings (Admin) over config/site.json; a live provider needs its key in the environment. */
 export function choose(cfg: AppConfig, env: Env, setting: { provider?: string; model?: string } | null): AiChoice {
   const ai = cfg.site.ai;
-  // Workers AI exists only on the deployed Worker. A local or test server has no binding and keeps the Test AI by default.
+  // A local or test server has no Worker binding and keeps the Test AI by default, even with a key in .env; the Admin can still choose a live provider.
   const wanted = setting?.provider ?? ai.provider;
-  const provider = (!setting?.provider && wanted === 'workers_ai' && !env.aiBinding ? 'fixture' : wanted) as ProviderId;
+  const provider = (!setting?.provider && (wanted === 'workers_ai' || wanted === 'groq') && !env.aiBinding ? 'fixture' : wanted) as ProviderId;
   if (!(provider in LABEL)) return { provider: 'off', model: null, label: LABEL.off, configured: false, reason: 'Unknown AI provider in Settings.' };
   if (provider === 'off') return { provider, model: null, label: LABEL.off, configured: false, reason: 'The AI Assistant is switched off in Settings.' };
   if (provider === 'fixture') return { provider, model: null, label: LABEL.fixture, configured: true, reason: null };

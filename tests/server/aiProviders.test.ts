@@ -1,4 +1,4 @@
-// Workers AI (the default provider) and Groq, stubbed. Made-up notes only: nothing leaves this computer.
+// Groq (the default provider) and Workers AI, stubbed. Made-up notes only: nothing leaves this computer.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { aiFields, aiSections } from '../../server/ai/catalogue.ts';
 import { RETRY_DELAYS_MS } from '../../server/ai/providers.ts';
@@ -31,10 +31,31 @@ function bind(run: (model: string, inputs: any) => unknown) {
   return calls;
 }
 
-describe('Workers AI', () => {
-  it('is the default where the Worker has its binding; a server without it keeps the Test AI', async () => {
+describe('default provider', () => {
+  it('is Groq on the Worker; a server without the binding keeps the Test AI, even with a key', async () => {
     const admin = await as(h, 'admin');
+    env().groqKey = 'gsk-test-synthetic';
     expect((await admin.call('GET', '/api/ai/status')).data).toMatchObject({ provider: 'fixture', configured: true });
+    bind(() => ({ response: answer }));
+    expect((await admin.call('GET', '/api/ai/status')).data).toMatchObject({ provider: 'groq', configured: true, model: 'openai/gpt-oss-120b' });
+  });
+
+  it('on the Worker without the key, it says what is missing and does not fall back to the Test AI', async () => {
+    const admin = await as(h, 'admin');
+    bind(() => ({ response: answer }));
+    const st = (await admin.call('GET', '/api/ai/status')).data;
+    expect(st).toMatchObject({ provider: 'groq', configured: false });
+    expect(st.reason).toContain('GROQ_API_KEY');
+  });
+});
+
+describe('Workers AI', () => {
+  beforeEach(async () => {
+    await (await as(h, 'admin')).call('POST', '/api/settings/ai', { provider: 'workers_ai' });
+  });
+
+  it('needs no key where the Worker has its binding', async () => {
+    const admin = await as(h, 'admin');
     bind(() => ({ response: answer }));
     const st = (await admin.call('GET', '/api/ai/status')).data;
     expect(st).toMatchObject({ provider: 'workers_ai', configured: true, model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast' });
@@ -142,6 +163,7 @@ describe('Workers AI', () => {
 
   it('the Test AI follows the same section limit', async () => {
     const admin = await as(h, 'admin');
+    await admin.call('POST', '/api/settings/ai', { provider: 'fixture' });
     const { case_id } = await newCase(admin, MRN);
     const fields = aiFields(config.dict);
     const section = fields.get('CLINICAL_PROFILE_SNAPSHOTS.hypertension')!.section;

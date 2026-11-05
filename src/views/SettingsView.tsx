@@ -104,7 +104,7 @@ interface AiStatus {
   providers: { id: string; model: string | null; key_set: boolean | null }[];
 }
 
-const PROVIDER_LABEL: Record<string, string> = { fixture: 'Test AI (sample notes only)', anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)', openai: 'OpenAI', off: 'Off' };
+const PROVIDER_LABEL: Record<string, string> = { workers_ai: 'Workers AI (Cloudflare)', groq: 'Groq', fixture: 'Test AI (sample notes only)', anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)', openai: 'OpenAI', off: 'Off' };
 
 /** Admin: which AI provider the AI Assistant uses. Keys live only in the server's secrets, never here. */
 function AiSection() {

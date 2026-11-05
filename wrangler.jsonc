@@ -12,5 +12,8 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": true
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Workers AI: the default AI provider. Bindings are not inherited, so the "e2e" environment (npm run e2e:worker) has no AI.
+  "ai": { "binding": "AI" },
+  "env": { "e2e": {} }
 }

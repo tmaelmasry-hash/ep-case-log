@@ -4,10 +4,38 @@ Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / 
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
-## NEXT CHAT: read `docs/AI_PLATFORM_PLAN.md` (owner decisions and phases for AI, OCR and platforms, 4 Nov); nothing built yet, Phase 1 waits for his go
-Do not start anything on your own. Read this file, wait for his request, then work in steps as described below. State on
-4 Nov: `main` pushed to GitHub, working tree clean except the untracked `.claude/`, no side sessions, nothing waiting on a
-deploy. The owner is now using the live site with real cases and collecting notes.
+## NEXT CHAT (written 5 Nov): AI, OCR and platform work is in progress. Read this block, then `docs/AI_PLATFORM_PLAN.md`
+Do not start anything on your own: tell him where things stand in Egyptian Arabic and wait for his word. **Nothing below is live.**
+
+**State.** Live Worker is still `740df03c`. Local `main` is ahead of GitHub (not pushed) and holds Phase 1, Phase 2 and the Phase 3 work so far.
+The owner has no iPhone or Mac: members may use them. Real-device trial page for a member after the next deploy (he must Share it):
+https://claude.ai/artifact/Gsj4SGQgHitUQLRVkKkrZN. Audit: https://claude.ai/artifact/7hyfgRw7xsFs7JRaZaBFCD.
+
+**First thing to check: the last full test run was not reviewed.** It started on the Phase 3 code in the Terminal tab of the old chat. When this
+was written `step6.spec.ts:27` "Admin moves a case to another group" had failed on desktop Chromium at the 1-minute timeout, and it passed in every earlier run.
+Unknown yet whether that is real: the Phase 3 code and tests are committed without a clean full run. Rerun `npm run build; npm test; npm run e2e; npm run e2e:worker; npm run e2e:webkit`,
+one after another, and look at that test first. The last clean results before Phase 3 (`3efe5ae`): unit 534, Chromium 112/112, WebKit 107 + 1 skipped on purpose.
+
+**Decision open: the default AI model.** He chose Workers AI (no key) as default with Groq as an alternative, then asked to compare the models before choosing.
+Measured on made-up notes, numbers in `docs/AI_PLATFORM_PLAN.md`: Llama 3.3 obeyed the trap in note N12 (proposed LVEF 10%), found 55% of written values, 17 s a note;
+Nemotron 120b did not obey it and found 15 of 18, but only 2 notes so far, 80 s a note, about 7 full notes a day free. Groq `gpt-oss-120b`, one section at a time: about 3 s, did not obey the trap;
+**a whole note gets 413** (over its 8,000 tokens a minute; `procedure` alone is about 7,000 tokens at the measured 2.7 characters a token). So on Groq's free plan only the section route works.
+Next: run Nemotron on the remaining notes with `scripts/ai-trial/eval.mjs` (see its header; Workers AI quota was used up on 5 Nov, resets 03:00 Riyadh), show him the three models, ask with AskUserQuestion, then set `config/site.json` (Llama sits there only as a placeholder).
+Never deploy with Llama as default.
+
+**Phase 3, still to build:** a guard against instructions written inside a note (before any real note), the small AI icon in each case section (**show him a preview first**), passing `sections` from the screen (the server already takes it). Groq's `max_completion_tokens` is a guess until measured on a whole section.
+**Phase 4 (his decision, not built):** nothing from the AI is written before a person accepts it, and accepting must be fast (instant on the device, then one save). Today values go to the Sheet marked AI at extract.
+**Later phases:** in `docs/AI_PLATFORM_PLAN.md`. Before any deploy that includes dates-only: read-only count of old values with a time on the main Sheet (counts only, no MRN), and show him.
+
+**Side sessions (both idle, no running work; he decides when to archive them):**
+- [privacy-phase2](local_bfcd0cc5-3c6c-46f4-8338-70c7727b2e26): branch fully merged into `main`. He added in that session: date of birth stays in the sent text, Device Interrogation filled by the AI, dates only across the app.
+- [ocr-trial](local_be65a2b5-e226-4300-be2f-caeba52de236): branch `refs/heads/claude/ocr-trial-0e01bd`, **not merged**. He narrowed OCR to **English only** there (the plan's "Arabic and English" is out of date). Findings in `docs/ocr-trial/README.md` on that branch: works with an image recipe (96.9% of numbers right on a PC, lost decimal points are the main danger). A separate test page is at https://ep-ocr-phone-trial.pages.dev/; it waits for him to print made-up sheets, photograph them and report. Not checked by me: which Cloudflare account that Pages project is on.
+
+**Keys and accounts.** His Groq account exists; the key is only in local `.env` as `GROQ_API_KEY` (git-ignored, never print it), not a Worker secret. Before real use: Zero Data Retention on in Groq's Data Controls. No real note goes to any provider yet. Told to him and open: real cases sit on a personal Gmail Sheet, and `docs/` records no institutional approval.
+
+**Test notes.** `npm run e2e:webkit` runs WebKit (see the top of `playwright.webkit.config.ts` for what it leaves out). `npm run e2e:worker` now uses Wrangler's `e2e` environment, which has no AI binding, and the warnings about it are expected. Do not run two e2e suites at once. Do not use `python` in Bash here (the Store alias hangs).
+
+Earlier state, 4 Nov: the owner is using the live site with real cases and collecting notes.
 
 ### Deferred by the owner (4 Nov): do these together with his notes after real use, not before
 All are display text only; no data or Sheet change. They still need tests, a review page and "Deploy now".

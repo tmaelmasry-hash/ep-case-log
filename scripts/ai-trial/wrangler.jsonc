@@ -1,0 +1,8 @@
+// Local bridge for the accuracy trial. Use only with `wrangler dev`; never deploy it.
+{
+  "name": "ep-ai-trial-local",
+  "account_id": "cfcaa4bff2f03acf68325881dcfd76f4",
+  "main": "proxy.js",
+  "compatibility_date": "2026-10-01",
+  "ai": { "binding": "AI" }
+}

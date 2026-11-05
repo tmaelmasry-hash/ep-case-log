@@ -4,6 +4,7 @@
 import raw from '../server/generated/raw-config.json' with { type: 'json' };
 import { buildRouter, handleApi } from '../server/api.ts';
 import { buildAppConfig, type RawConfig } from '../server/appconfig.ts';
+import type { AiBinding } from '../server/config.ts';
 import { makeContext } from '../server/context.ts';
 import { PAGE_HEADERS } from '../server/headers.ts';
 import type { Router } from '../server/http.ts';
@@ -20,6 +21,9 @@ export interface WorkerEnv {
   ANTHROPIC_API_KEY?: string;
   GEMINI_API_KEY?: string;
   OPENAI_API_KEY?: string;
+  GROQ_API_KEY?: string;
+  /** Workers AI (wrangler.jsonc "ai"): no key. Not bound in the local test environment. */
+  AI?: AiBinding;
 }
 
 // One app per isolate, so the short users/groups cache lives across requests.
@@ -31,7 +35,7 @@ function app(env: WorkerEnv): Router {
   const config = buildAppConfig(raw as unknown as RawConfig);
   const store = new SheetsStore(config, new AppsScriptGateway(env.APPS_SCRIPT_URL, env.GATEWAY_SECRET, env.SHEETS_TARGET === 'test' ? 'test' : 'main'));
   router = buildRouter(
-    makeContext({ sessionSecret: env.SESSION_SECRET ?? '', secureCookies: true, anthropicKey: env.ANTHROPIC_API_KEY, geminiKey: env.GEMINI_API_KEY, openaiKey: env.OPENAI_API_KEY }, store, config),
+    makeContext({ sessionSecret: env.SESSION_SECRET ?? '', secureCookies: true, anthropicKey: env.ANTHROPIC_API_KEY, geminiKey: env.GEMINI_API_KEY, openaiKey: env.OPENAI_API_KEY, groqKey: env.GROQ_API_KEY, aiBinding: env.AI }, store, config),
   );
   return router;
 }

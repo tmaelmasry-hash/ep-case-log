@@ -80,10 +80,21 @@
   }
  },
  "ai": {
-  "provider": "fixture",
+  "provider": "workers_ai",
   "passes": 1,
   "_passes": "1 = one request per note with all sections (owner, 16 Oct: stays within a free daily quota, e.g. Gemini free tier 20 requests/day); 2 = pass 1 finds the sections, pass 2 extracts (two requests, fewer tokens each).",
-  "_providers": "fixture (test AI, the 15 sample notes) | anthropic | gemini | openai | off. The Admin switches it in Settings; keys live only in Cloudflare environment variables.",
+  "_providers": "workers_ai (owner, 4 Nov: the default; Worker binding, no key; a local or test server has no binding and uses the Test AI) | groq (the ready alternative) | fixture (test AI, the sample notes) | anthropic | gemini | openai | off. The Admin switches it in Settings; keys live only in Cloudflare environment variables.",
+  "workers_ai": {
+   "api_key_env": null,
+   "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+   "price_usd_per_mtok": null
+  },
+  "groq": {
+   "api_key_env": "GROQ_API_KEY",
+   "model": "openai/gpt-oss-120b",
+   "price_usd_per_mtok": null,
+   "passes": 2
+  },
   "anthropic": {
    "api_key_env": "ANTHROPIC_API_KEY",
    "model": "claude-opus-5-5",

@@ -16,13 +16,14 @@ test('Admin opens Data completeness from Admin; the new case is a row; MRN opens
   await expect(v).toContainText('Core answered counts recorded + not available with a reason.');
   // Rows go by group, then No.: with cases in later groups the new case need not be on the last page, so look through the pages.
   const next = v.getByTestId('cm-next');
-  const pager = v.getByTestId('cm-pager');
   const row = v.getByTestId('cm-row').filter({ hasText: m });
-  await expect(v.getByTestId('cm-row').first()).toBeVisible();
+  const first = v.getByTestId('cm-row').first();
+  await expect(first).toBeVisible();
   while (!(await row.count()) && (await next.isEnabled())) {
-    const before = await pager.innerText();
+    // Wait for the rows of the next page. textContent, not innerText: columns hidden on a phone would make them differ at once.
+    const before = (await first.textContent()) ?? '';
     await next.click();
-    await expect(pager).not.toHaveText(before);
+    await expect(first).not.toHaveText(before);
   }
   await expect(row).toHaveCount(1);
   // A new case has no procedure: nothing required under Procedure.

@@ -1,7 +1,8 @@
 // AI Assistant (phase 11; ported from EP Workspace routes/ai.ts): status, the "what will be sent" preview, extract &
 // autofill inside one case only, review, and the Admin's provider choice. The note travels only in the request body, is never stored or logged,
 // and only its de-identified text is sent to the provider.
-import { aiRunSummary, applyExtraction, applyToNewProcedure, fixtureExtract, llmExtract, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
+import { aiSections } from '../ai/catalogue.ts';
+import { aiRunSummary, applyExtraction, applyToNewProcedure, fixtureExtract, llmExtract, onlySections, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
 import { AiError, choose, llm, type ProviderId } from '../ai/providers.ts';
 import { mrnsInNote, redact } from '../ai/redact.ts';
 import { liveRows, toDetail, type Actor } from '../domain/cases.ts';
@@ -20,7 +21,9 @@ interface AiUsage {
   cost_usd: number;
 }
 
-const PROVIDERS: ProviderId[] = ['fixture', 'anthropic', 'gemini', 'openai', 'off'];
+const PROVIDERS: ProviderId[] = ['workers_ai', 'groq', 'fixture', 'anthropic', 'gemini', 'openai', 'off'];
+/** Providers with no key to set. */
+const NO_KEY: ProviderId[] = ['workers_ai', 'fixture', 'off'];
 
 export function aiRoutes(app: Router) {
   const { ctx } = app;
@@ -64,7 +67,7 @@ export function aiRoutes(app: Router) {
       max_note_chars: ai.max_note_chars ?? 20000,
       usage,
       monthly_cost_cap_usd: ai.monthly_cost_cap_usd ?? null,
-      providers: PROVIDERS.map((p) => ({ id: p, model: p === 'fixture' || p === 'off' ? null : (ai[p]?.model ?? null), key_set: p === 'fixture' || p === 'off' ? null : choose(config, env, { provider: p }).configured })),
+      providers: PROVIDERS.map((p) => ({ id: p, model: p === 'fixture' || p === 'off' ? null : (ai[p]?.model ?? null), key_set: NO_KEY.includes(p) ? null : choose(config, env, { provider: p }).configured })),
     };
   });
 
@@ -114,6 +117,10 @@ export function aiRoutes(app: Router) {
     const procs = liveRows(rec, 'EP_PROCEDURES').map((p) => p._id);
     const target = b.procedure_id === 'new' ? 'new' : b.procedure_id ? String(b.procedure_id) : null;
     if (target && target !== 'new' && !procs.includes(target)) throw badRequest('Choose one of this case\'s procedures.', { field: 'procedure_id' });
+    // Opened from one section: only that section's fields are asked for and kept.
+    const known = aiSections(config.dict).map((s) => s.id);
+    const only = Array.isArray(b.sections) ? (b.sections as unknown[]).map(String) : [];
+    if (only.some((s) => !known.includes(s))) throw badRequest('Unknown section.', { field: 'sections' });
 
     // De-identified again here, whatever came back from the browser: this text is what the provider sees and what the quotes are checked against.
     const red = redact(sentText, { mrn: rec.meta.mrn, fullName: savedName(rec) });
@@ -124,9 +131,10 @@ export function aiRoutes(app: Router) {
       const fx = fixtureExtract(config, red.text);
       recognised = !!fx;
       raw = fx?.raw ?? { proposals: [], conflicts: [], additional_info: [] };
+      if (only.length) raw = onlySections(config, raw, only);
     } else {
       try {
-        const r = await llmExtract(config, llm(config, env, choice), red.text);
+        const r = await llmExtract(config, llm(config, env, choice), red.text, only);
         raw = r.raw;
         tokens = { input: r.inputTokens, output: r.outputTokens };
       } catch (e) {
@@ -147,7 +155,7 @@ export function aiRoutes(app: Router) {
     // Counts only: never the note or its text.
     await store.appendActivity([{ actor: u.userId, action: 'ai.extract', detail: { case_id: rec.meta.case_id, provider: choice.provider, model: choice.model, ...s, removed: red.removed, note_chars: note.length, tokens } }]);
     if (choice.provider !== 'fixture') {
-      const price = ai[choice.provider as 'anthropic' | 'gemini' | 'openai']?.price_usd_per_mtok;
+      const price = ai[choice.provider as 'workers_ai' | 'groq' | 'anthropic' | 'gemini' | 'openai']?.price_usd_per_mtok;
       const cost = price ? (tokens.input * price.input + tokens.output * price.output) / 1e6 : 0;
       await store.setSetting(
         'ai_usage',
@@ -193,7 +201,7 @@ export function aiRoutes(app: Router) {
     const u = requireCap(req, 'settings.manage');
     const b = req.body ?? {};
     if (!PROVIDERS.includes(b.provider)) throw badRequest(`provider must be one of ${PROVIDERS.join(', ')}`);
-    if (b.model !== undefined && b.model !== null && b.model !== '' && !/^[A-Za-z0-9._:\-/]{3,80}$/.test(String(b.model))) throw badRequest('Model id looks wrong.');
+    if (b.model !== undefined && b.model !== null && b.model !== '' && !/^[A-Za-z0-9._:@\-/]{3,80}$/.test(String(b.model))) throw badRequest('Model id looks wrong.');
     const value: AiSetting = { provider: b.provider, ...(b.model ? { model: String(b.model) } : {}) };
     await store.setSetting('ai', value, u.userId);
     await store.appendActivity([{ actor: u.userId, action: 'settings.ai', detail: value }]);

@@ -4,59 +4,148 @@
 // Keys come only from Cloudflare environment variables; they never reach the browser or the Sheet.
 import Anthropic from '@anthropic-ai/sdk';
 import type { AppConfig } from '../appconfig.ts';
-import type { Env } from '../config.ts';
+import type { AiBinding, Env } from '../config.ts';
 
-export type ProviderId = 'fixture' | 'anthropic' | 'gemini' | 'openai' | 'off';
+export type ProviderId = 'workers_ai' | 'groq' | 'fixture' | 'anthropic' | 'gemini' | 'openai' | 'off';
 
 export interface JsonCall { name: string; system: string; cacheable: string; user: string; schema: Record<string, unknown> }
 export interface JsonResult { json: any; inputTokens: number; outputTokens: number }
 
-export interface LlmProvider { id: Exclude<ProviderId, 'fixture' | 'off'>; model: string; label: string; json(call: JsonCall): Promise<JsonResult> }
+/** Two requests per whole note when the provider's limit is too small for every section at once (see extract.ts). */
+export interface LlmProvider { id: Exclude<ProviderId, 'fixture' | 'off'>; model: string; label: string; passes?: 1 | 2; json(call: JsonCall): Promise<JsonResult> }
 
 export class AiError extends Error {
   code: string; status: number;
   constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code; }
 }
 
-const LABEL: Record<ProviderId, string> = { fixture: 'Test AI (fixture)', anthropic: 'Claude', gemini: 'Gemini', openai: 'OpenAI', off: 'Off' };
+const LABEL: Record<ProviderId, string> = { workers_ai: 'Workers AI', groq: 'Groq', fixture: 'Test AI (fixture)', anthropic: 'Claude', gemini: 'Gemini', openai: 'OpenAI', off: 'Off' };
 
 export interface AiChoice { provider: ProviderId; model: string | null; label: string; configured: boolean; reason: string | null }
 
 /** Which provider runs: Settings (Admin) over config/site.json; a live provider needs its key in the environment. */
 export function choose(cfg: AppConfig, env: Env, setting: { provider?: string; model?: string } | null): AiChoice {
   const ai = cfg.site.ai;
-  const provider = (setting?.provider ?? ai.provider) as ProviderId;
+  // Workers AI exists only on the deployed Worker. A local or test server has no binding and keeps the Test AI by default.
+  const wanted = setting?.provider ?? ai.provider;
+  const provider = (!setting?.provider && wanted === 'workers_ai' && !env.aiBinding ? 'fixture' : wanted) as ProviderId;
   if (!(provider in LABEL)) return { provider: 'off', model: null, label: LABEL.off, configured: false, reason: 'Unknown AI provider in Settings.' };
   if (provider === 'off') return { provider, model: null, label: LABEL.off, configured: false, reason: 'The AI Assistant is switched off in Settings.' };
   if (provider === 'fixture') return { provider, model: null, label: LABEL.fixture, configured: true, reason: null };
+  if (provider === 'workers_ai') {
+    const m = setting?.model || ai.workers_ai?.model || null;
+    return { provider, model: m, label: `${LABEL.workers_ai} (${m})`, configured: !!env.aiBinding, reason: env.aiBinding ? null : 'Workers AI runs only on the deployed Cloudflare Worker, not on this computer.' };
+  }
   const model = setting?.model || ai[provider]?.model || null;
   const key = keyOf(env, provider);
   return {
     provider, model, label: `${LABEL[provider]} (${model})`, configured: !!key,
-    reason: key ? null : `${LABEL[provider]} has no API key yet. The owner adds ${ai[provider]?.api_key_env ?? 'the key'} as a secret of the ep-case-log Worker (npx wrangler secret put ${ai[provider]?.api_key_env ?? 'NAME'}), or in .env when running on this computer.`,
+    reason: key ? null : `${LABEL[provider]} has no API key yet. The owner adds ${ai[provider]?.api_key_env ?? 'the key'} as a secret of the ep-case-log Worker (node scripts/wrangler.ts secret put ${ai[provider]?.api_key_env ?? 'NAME'}), or in .env when running on this computer.`,
   };
 }
 
 function keyOf(env: Env, p: ProviderId): string | undefined {
-  return p === 'anthropic' ? env.anthropicKey : p === 'gemini' ? env.geminiKey : p === 'openai' ? env.openaiKey : undefined;
+  return p === 'anthropic' ? env.anthropicKey : p === 'gemini' ? env.geminiKey : p === 'openai' ? env.openaiKey : p === 'groq' ? env.groqKey : undefined;
 }
 
 export function llm(cfg: AppConfig, env: Env, choice: AiChoice, fetchFn: typeof fetch = fetch): LlmProvider {
+  const timeout = (cfg.site.ai.timeout_seconds ?? 120) * 1000;
+  if (choice.provider === 'workers_ai') {
+    if (!env.aiBinding || !choice.model) throw new AiError(503, 'AI_NOT_CONFIGURED', choice.reason ?? 'AI is not configured.');
+    const binding = env.aiBinding;
+    const m = choice.model;
+    return { model: m, label: choice.label, id: 'workers_ai', json: (c) => workersAiJson(binding, m, timeout, c) };
+  }
   const key = keyOf(env, choice.provider);
   if (!key || !choice.model) throw new AiError(503, 'AI_NOT_CONFIGURED', choice.reason ?? 'AI is not configured.');
-  const timeout = (cfg.site.ai.timeout_seconds ?? 120) * 1000;
   const model = choice.model;
   const base = { model, label: choice.label };
   if (choice.provider === 'anthropic') {
     const client = new Anthropic({ apiKey: key, timeout, maxRetries: 1, fetch: fetchFn });
     return { ...base, id: 'anthropic', json: (c) => anthropicJson(client, model, c) };
   }
+  if (choice.provider === 'groq') return { ...base, id: 'groq', passes: cfg.site.ai.groq?.passes ?? 2, json: (c) => groqJson(fetchFn, key, model, timeout, c) };
   if (choice.provider === 'gemini') return { ...base, id: 'gemini', json: (c) => geminiJson(fetchFn, key, model, timeout, c) };
   return { ...base, id: 'openai', json: (c) => openaiJson(fetchFn, key, model, timeout, c) };
 }
 
 function parse(text: string, who: string): any {
   try { return JSON.parse(text); } catch { throw new AiError(502, 'AI_BAD_ANSWER', `${who} answered something that is not the expected data. Try again.`); }
+}
+
+// ── Cloudflare Workers AI (Worker binding: no key; Cloudflare states no retention and no training on this content) ──
+/** The answer may be cut at max_tokens (the model's default is only 256). */
+const WORKERS_AI_MAX_TOKENS = 8000;
+
+/** An empty example of the answer, built from its JSON schema, to show the model the shape. */
+function shapeOf(s: any): unknown {
+  if (s?.type === 'object') return Object.fromEntries(Object.entries(s.properties ?? {}).map(([k, v]) => [k, shapeOf(v)]));
+  if (s?.type === 'array') return [shapeOf(s.items)];
+  return '';
+}
+
+async function workersAiJson(ai: AiBinding, model: string, timeout: number, c: JsonCall): Promise<JsonResult> {
+  const who = 'Workers AI';
+  // The model can fail to meet the requested JSON: one more try, then a clear message.
+  for (let attempt = 0; ; attempt++) {
+    let res: any;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      res = await Promise.race([
+        // Not response_format: measured on 5 Nov, Llama 3.3 in JSON mode answered empty lists for a note full of facts.
+        ai.run(model, {
+          messages: [{ role: 'system', content: `${c.system}\n\n${c.cacheable}\n\nReturn only one JSON object, with no other text, in exactly this shape: ${JSON.stringify(shapeOf(c.schema))}` }, { role: 'user', content: c.user }],
+          max_tokens: WORKERS_AI_MAX_TOKENS,
+          temperature: 0,
+        }),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new AiError(504, 'AI_TIMEOUT', `${who} took too long. Try again, or a shorter note.`)), timeout); }),
+      ]);
+    } catch (e) {
+      if (e instanceof AiError) throw e;
+      const msg = String((e as Error)?.message ?? '');
+      if (/json mode/i.test(msg)) {
+        if (attempt < 1) continue;
+        throw new AiError(502, 'AI_BAD_ANSWER', `${who} answered something that is not the expected data. Try again, or a shorter note.`);
+      }
+      if (/neuron|daily free allocation|\b4006\b/i.test(msg)) throw new AiError(429, 'AI_QUOTA_DAY', `${who}'s daily free quota is used up. It resets at 00:00 UTC (03:00 Riyadh).`);
+      if (/capacity|too many requests|rate limit|\b3040\b/i.test(msg)) throw new AiError(429, 'AI_BUSY', `${who} is busy right now. Try again in a minute.`);
+      if (/no such model|not found|\b5007\b/i.test(msg)) throw new AiError(502, 'AI_MODEL_NOT_FOUND', `${who} does not know this model id. The Admin checks the model in Settings → AI Assistant.`);
+      throw new AiError(502, 'AI_ERROR', `${who} could not process the note. Try again.`);
+    } finally {
+      clearTimeout(timer);
+    }
+    // Models answer in either shape: { response } or OpenAI's { choices }.
+    const r = res?.response ?? res?.choices?.[0]?.message?.content;
+    let json: unknown = r;
+    if (typeof r === 'string') {
+      try {
+        // Models sometimes wrap the object in a code fence or a sentence.
+        json = JSON.parse(r.slice(r.indexOf('{'), r.lastIndexOf('}') + 1));
+      } catch {
+        json = null;
+      }
+    }
+    if (json && typeof json === 'object') return { json, inputTokens: res?.usage?.prompt_tokens ?? 0, outputTokens: res?.usage?.completion_tokens ?? 0 };
+    if (attempt < 1) continue;
+    throw new AiError(502, 'AI_BAD_ANSWER', `${who} answered something that is not the expected data. Try again, or a shorter note.`);
+  }
+}
+
+// ── Groq (chat completions, strict JSON schema) ──
+/** Kept small: Groq's free limit is 8,000 tokens a minute. To be checked against a real key. */
+const GROQ_MAX_TOKENS = 3000;
+
+async function groqJson(f: typeof fetch, key: string, model: string, timeout: number, c: JsonCall): Promise<JsonResult> {
+  const res = await http(f, 'https://api.groq.com/openai/v1/chat/completions', timeout, 'Groq', { Authorization: `Bearer ${key}` }, {
+    model,
+    messages: [{ role: 'system', content: `${c.system}\n\n${c.cacheable}` }, { role: 'user', content: c.user }],
+    response_format: { type: 'json_schema', json_schema: { name: c.name, strict: true, schema: c.schema } },
+    max_completion_tokens: GROQ_MAX_TOKENS,
+    temperature: 0,
+  });
+  const choice = res.choices?.[0];
+  if (choice?.finish_reason === 'length') throw new AiError(502, 'AI_TOO_LONG', 'The answer was cut off. Try a shorter note.');
+  return { json: parse(choice?.message?.content ?? '', 'Groq'), inputTokens: res.usage?.prompt_tokens ?? 0, outputTokens: res.usage?.completion_tokens ?? 0 };
 }
 
 // ── Claude (Messages API, structured output) ──
@@ -128,6 +217,8 @@ async function openaiJson(f: typeof fetch, key: string, model: string, timeout: 
 
 /** Waits between retries when the provider says it is overloaded (503) — common on free tiers. Tests set 0. */
 export const RETRY_DELAYS_MS = [3000, 8000];
+/** A longer wait than this is shown to the person instead of holding the request. */
+const MAX_RETRY_AFTER_SECONDS = 20;
 
 async function http(f: typeof fetch, url: string, timeout: number, who: string, headers: Record<string, string>, body: unknown): Promise<any> {
   let res: Response;
@@ -137,6 +228,12 @@ async function http(f: typeof fetch, url: string, timeout: number, who: string, 
     } catch (e) {
       if ((e as Error)?.name === 'TimeoutError') throw new AiError(504, 'AI_TIMEOUT', `${who} took too long. Try again, or a shorter note.`);
       throw new AiError(502, 'AI_UNREACHABLE', `${who} could not be reached. Try again.`);
+    }
+    // 429 with a short Retry-After (a per-minute limit): wait as the provider asks, once. Nothing was saved.
+    const seconds = res.status === 429 && attempt === 0 ? Number(res.headers.get('retry-after') ?? NaN) : NaN;
+    if (seconds >= 0 && seconds <= MAX_RETRY_AFTER_SECONDS) {
+      await new Promise((r) => setTimeout(r, seconds * 1000));
+      continue;
     }
     // 503 = the provider is overloaded for a moment: wait and ask again (the same request; nothing was saved).
     if (res.status !== 503 || attempt >= RETRY_DELAYS_MS.length) break;
@@ -153,6 +250,7 @@ async function http(f: typeof fetch, url: string, timeout: number, who: string, 
       : daily ? `${who}'s daily free quota is used up. It resets at midnight Pacific time (10:00 Riyadh). ${why}`.trim()
         : `${who} is busy (rate limit or free quota). Try again in a minute. ${why}`.trim());
   }
+  if (res.status === 413) throw new AiError(413, 'AI_TOO_LONG', `This note is too large for ${who}'s limit. Use a shorter note, or open the AI Assistant from one section.`);
   if (res.status === 404) throw new AiError(502, 'AI_MODEL_NOT_FOUND', `${who} does not know this model id. The Admin checks the model in Settings → AI Assistant.`);
   if (!res.ok) throw new AiError(502, 'AI_ERROR', `${who} could not process the note (${res.status}). Try again.`);
   return res.json();

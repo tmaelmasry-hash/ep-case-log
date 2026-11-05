@@ -13,7 +13,7 @@ export default defineConfig({
   webServer: [
     { command: `node tests/e2e/fakeAppsScriptServer.ts ${FAKE} ${GW} ${PASS}`, port: FAKE, reuseExistingServer: false, timeout: 20_000 },
     {
-      command: `npx wrangler dev --port ${PORT} --ip 127.0.0.1 --var SESSION_SECRET:e2e-worker-session-secret-0123456789abcdef --var APPS_SCRIPT_URL:http://127.0.0.1:${FAKE}/exec --var GATEWAY_SECRET:${GW}`,
+      command: `npx wrangler dev --env e2e --port ${PORT} --ip 127.0.0.1 --var SESSION_SECRET:e2e-worker-session-secret-0123456789abcdef --var APPS_SCRIPT_URL:http://127.0.0.1:${FAKE}/exec --var GATEWAY_SECRET:${GW}`,
       url: `http://127.0.0.1:${PORT}/api/health`,
       reuseExistingServer: false,
       timeout: 90_000,

@@ -17,13 +17,18 @@ export interface Site {
 }
 
 export interface AiProviderConfig {
-  api_key_env: string;
+  /** null: no key (Workers AI uses the Worker's binding). */
+  api_key_env: string | null;
   model: string;
   price_usd_per_mtok: { input: number; output: number } | null;
+  /** 2 = one request to pick the sections, one to extract (a provider with a small limit). */
+  passes?: 1 | 2;
 }
 export interface AiConfig {
   provider: string;
   passes?: 1 | 2;
+  workers_ai: AiProviderConfig;
+  groq: AiProviderConfig;
   anthropic: AiProviderConfig;
   gemini: AiProviderConfig;
   openai: AiProviderConfig;

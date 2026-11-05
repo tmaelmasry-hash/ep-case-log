@@ -7,6 +7,11 @@ export const SITE: SiteConfig = {
   auth: { session_hours: 12, remember_days: 30, lockout_after_failed: 10 },
 };
 
+/** Cloudflare's Workers AI binding (env.AI on the Worker). */
+export interface AiBinding {
+  run(model: string, inputs: Record<string, unknown>): Promise<unknown>;
+}
+
 export interface Env {
   /** ≥ 32 characters; signs session cookies. Never sent to the browser. */
   sessionSecret: string;
@@ -16,4 +21,7 @@ export interface Env {
   anthropicKey?: string;
   geminiKey?: string;
   openaiKey?: string;
+  groqKey?: string;
+  /** Present only on the deployed Worker. */
+  aiBinding?: AiBinding;
 }

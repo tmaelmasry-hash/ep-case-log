@@ -58,7 +58,7 @@ describe('Workers AI', () => {
     const admin = await as(h, 'admin');
     bind(() => ({ response: answer }));
     const st = (await admin.call('GET', '/api/ai/status')).data;
-    expect(st).toMatchObject({ provider: 'workers_ai', configured: true, model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast' });
+    expect(st).toMatchObject({ provider: 'workers_ai', configured: true, model: '@cf/nvidia/nemotron-3-120b-a12b' });
     expect(st.providers.find((p: { id: string }) => p.id === 'workers_ai').key_set).toBeNull();
   });
 

@@ -1,6 +1,8 @@
 // Phase 11: AI Assistant (EP Workspace P5) on the synthetic sample notes (Test AI) and a stubbed live provider.
 // Synthetic data only; the note is never stored or logged.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { applyExtraction, fixtureExtract } from '../../server/ai/extract.ts';
+import { redact } from '../../server/ai/redact.ts';
 import { expectedSlot } from '../../server/domain/cases.ts';
 import { as, config, edit, harness, newCase, type Harness } from './harness.ts';
 
@@ -17,32 +19,59 @@ const sample = (id: string, mrn: string) => {
   return fx.text.join('\n').split(fx.identifiers.mrn).join(mrn);
 };
 
+type Client = Awaited<ReturnType<typeof as>>;
+type Item = { status: string; entity: string; field: string; row?: string; value?: unknown; evidence?: string };
+/** What the device sends when a person accepts: every proposed value, or those `only` picks. */
+const accept = (c: Client, id: string, r: { data: { target: string | null; items: Item[] } }, only: (i: Item) => boolean = () => true, rowIds: Record<string, string> = {}) =>
+  c.call('POST', `/api/cases/${id}/ai/apply`, {
+    procedure_id: r.data.target,
+    row_ids: rowIds,
+    values: r.data.items.filter((i) => i.status === 'FILLED' && only(i)).map((i) => ({ entity: i.entity, field: i.field, row: i.row, value: i.value, evidence: i.evidence })),
+    additional: r.data.items.filter((i) => i.status === 'ADDITIONAL' && only(i)).map((i) => ({ text: i.value, evidence: i.evidence })),
+  });
+/** AI values waiting in the Sheet, as older versions saved them at extract. */
+async function savedAsBefore(id: string, note: string, mrn: string) {
+  const rec = (await h.store.getCase(id))!;
+  const base = structuredClone(rec);
+  const red = redact(note, { mrn });
+  applyExtraction(config.dict, rec, fixtureExtract(config, red.text)!.raw, red.text, null, { userId: 'old', now: '2026-10-01T00:00:00Z' });
+  await h.store.putCase(rec, base);
+  return rec;
+}
+
 describe('AI Assistant (Test AI)', () => {
-  it('fills empty fields as AI values (not accepted), procedure fields into the chosen procedure; completion waits for review', async () => {
+  it('extract saves nothing; accepted values go in, procedure fields into a new procedure, with no AI marks left', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '1184420');
+    const before = (await sara.call('GET', `/api/cases/${case_id}`)).data;
     const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N01', '1184420'), procedure_id: 'new' });
     expect(r.status).toBe(200);
     expect(r.data.recognised).toBe(true);
     expect(r.data.summary.filled).toBeGreaterThan(20);
     expect(r.data.removed.name).toBeGreaterThan(0); // the name was taken out before anything was matched/sent
-    const d = r.data.case;
-    const pid = r.data.procedure_id;
+    // Nothing reached the store, so nothing can reach the Sheet, Excel or the Dashboard.
+    const still = (await sara.call('GET', `/api/cases/${case_id}`)).data;
+    expect(still.meta.row_version).toBe(before.meta.row_version);
+    expect(still.rows.EP_PROCEDURES ?? []).toEqual([]);
+    expect(still.ai).toEqual({});
+    expect(still.rows.CLINICAL_PROFILE_SNAPSHOTS?.[0]?.hypertension ?? null).toBeNull();
+    expect((await sara.call('GET', `/api/cases/${case_id}/history`)).data.items.some((x: { text: string }) => x.text.includes('AI'))).toBe(false);
+
+    // Reject one by not sending it; accept the rest, in one save.
+    const saves = vi.spyOn(h.store, 'putCase');
+    const done = await accept(sara, case_id, r, (i) => i.field !== 'diabetes');
+    expect(done.status).toBe(200);
+    expect(saves).toHaveBeenCalledTimes(1);
+    const d = done.data.case;
+    const pid = done.data.procedure_id;
     expect(d.rows.EP_PROCEDURES.map((p: { _id: string }) => p._id)).toEqual([pid]);
     expect(d.rows.AF_ABLATIONS[0]).toMatchObject({ procedure_id: pid, af_energy_source: 'PFA', acute_af_endpoint: 'COMPLETE_PVI_OR_REISOLATION' });
-    expect(d.rows.CLINICAL_PROFILE_SNAPSHOTS[0]).toMatchObject({ hypertension: 'YES', diabetes: 'NO' });
+    expect(d.rows.CLINICAL_PROFILE_SNAPSHOTS[0].hypertension).toBe('YES');
+    expect(d.rows.CLINICAL_PROFILE_SNAPSHOTS[0].diabetes ?? null).toBeNull();
     expect(d.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBeNull(); // never inferred from "67-year-old"
-    expect(Object.values(d.ai).every((m: any) => m.source === 'AI')).toBe(true);
-    // Completion is blocked until the values are accepted.
-    expect((await sara.call('POST', `/api/cases/${case_id}/complete`, {})).data.error.code).toBe('NOT_READY');
+    expect(d.ai).toEqual({});
     const hist = (await sara.call('GET', `/api/cases/${case_id}/history`)).data.items;
-    expect(hist.some((x: { text: string }) => x.text.includes('(AI, to review)'))).toBe(true);
-    // Reject one, accept the rest.
-    const key = Object.keys(d.ai).find((k) => k.startsWith('CLINICAL_PROFILE_SNAPSHOTS|') && k.endsWith('|diabetes'))!;
-    const rej = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions: [{ key, action: 'reject' }] });
-    expect(rej.data.case.rows.CLINICAL_PROFILE_SNAPSHOTS[0].diabetes).toBeNull();
-    const all = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { accept_all: true });
-    expect(Object.keys(all.data.case.ai).filter((k) => !k.endsWith('|*'))).toEqual([]);
+    expect(hist.some((x: { text: string }) => x.text.includes('(AI, accepted)'))).toBe(true);
     // The activity log holds counts only, never the note.
     const log = JSON.stringify(await h.store.listActivity());
     expect(log).not.toContain('apixaban');
@@ -67,9 +96,70 @@ describe('AI Assistant (Test AI)', () => {
     expect(r.data.items.filter((i: { reason?: string }) => i.reason?.startsWith('procedure field')).length).toBeGreaterThan(5);
     const conflict = r.data.items.find((i: { status: string; field: string }) => i.status === 'CONFLICT' && i.field === 'sex_at_birth');
     expect(conflict).toMatchObject({ value: 'FEMALE', proposed: ['MALE'] });
-    expect(r.data.case.rows.PATIENTS[0].sex_at_birth).toBe('FEMALE'); // never overwritten
-    const used = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions: [{ key: conflict.key, action: 'use', choice: 0 }] });
+    // Never overwritten without a person's choice, not even by accepting the same value as a plain one.
+    const plain = await sara.call('POST', `/api/cases/${case_id}/ai/apply`, { procedure_id: null, values: [{ entity: 'PATIENTS', field: 'sex_at_birth', row: '', value: 'MALE', evidence: conflict.evidence }] });
+    expect(plain.data.case.rows.PATIENTS[0].sex_at_birth).toBe('FEMALE');
+    const used = await sara.call('POST', `/api/cases/${case_id}/ai/apply`, { procedure_id: null, values: [{ entity: 'PATIENTS', field: 'sex_at_birth', row: '', value: 'MALE', evidence: conflict.evidence, overwrite: true }] });
     expect(used.data.case.rows.PATIENTS[0].sex_at_birth).toBe('MALE');
+    expect(used.data.case.ai).toEqual({});
+  });
+
+  it('values accepted in two goes land in one row, and a procedure made by the first go is used by the second', async () => {
+    const admin = await as(h, 'admin');
+    const { case_id } = await newCase(admin, '1184420');
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N01', '1184420'), procedure_id: 'new' });
+    const items: Item[] = r.data.items;
+    const echo = items.filter((i) => i.status === 'FILLED' && i.entity === 'ECHO_STUDIES');
+    expect(echo.length).toBeGreaterThan(1);
+    const first = await accept(admin, case_id, r, (i) => i === echo[0]);
+    const second = await accept(admin, case_id, r, (i) => i === echo[1], first.data.row_ids);
+    expect(second.data.case.rows.ECHO_STUDIES).toHaveLength(1);
+    expect(second.data.case.rows.ECHO_STUDIES[0][echo[0].field]).toBeTruthy();
+    expect(second.data.case.rows.ECHO_STUDIES[0][echo[1].field]).toBeTruthy();
+
+    const p1 = await accept(admin, case_id, r, (i) => i.entity === 'AF_ABLATIONS');
+    const pid = p1.data.procedure_id;
+    expect(pid).toBeTruthy();
+    const p2 = await accept(admin, case_id, { data: { ...r.data, target: pid } }, (i) => i.entity === 'EP_PROCEDURES');
+    expect(p2.data.case.rows.EP_PROCEDURES).toHaveLength(1);
+  });
+
+  it('a value that is not valid for the dictionary is refused at accept, and an edited value is taken', async () => {
+    const admin = await as(h, 'admin');
+    const { case_id } = await newCase(admin, '9990705');
+    const bad = await admin.call('POST', `/api/cases/${case_id}/ai/apply`, { procedure_id: null, values: [{ entity: 'PATIENTS', field: 'sex_at_birth', row: '', value: 'NOT_A_CODE', evidence: '' }] });
+    expect(bad.data.items[0].status).toBe('DROPPED');
+    expect(bad.data.case.rows.PATIENTS[0].sex_at_birth ?? null).toBeNull();
+    const yes = await admin.call('POST', `/api/cases/${case_id}/ai/apply`, { procedure_id: null, values: [{ entity: 'PATIENTS', field: 'sex_at_birth', row: '', value: 'FEMALE', evidence: 'typed over' }] });
+    expect(yes.data.case.rows.PATIENTS[0].sex_at_birth).toBe('FEMALE');
+    expect((await admin.call('POST', `/api/cases/${case_id}/ai/apply`, { values: [] })).status).toBe(400);
+  });
+
+  it('a note about a cancelled procedure flags its module values, not the status itself', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '1009315');
+    const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N02', '1009315'), procedure_id: 'new' });
+    const items: (Item & { flag?: string })[] = r.data.items;
+    expect(items.find((i) => i.field === 'procedure_status')).toMatchObject({ value: expect.stringContaining('CANCEL') });
+    expect(items.find((i) => i.field === 'procedure_status')?.flag).toBeUndefined();
+    const af = items.filter((i) => i.entity === 'AF_ABLATIONS' && i.status === 'FILLED');
+    expect(af.length).toBeGreaterThan(0);
+    expect(af.every((i) => i.flag === 'procedure_cancelled')).toBe(true);
+    expect(items.find((i) => i.entity === 'CLINICAL_PROFILE_SNAPSHOTS')?.flag).toBeUndefined();
+  });
+
+  it('AI values saved by an older version stay readable and can still be reviewed; completion waits for them', async () => {
+    const sara = await as(h, 'sara');
+    const { case_id } = await newCase(sara, '1184420');
+    await savedAsBefore(case_id, sample('N01', '1184420'), '1184420');
+    const d = (await sara.call('GET', `/api/cases/${case_id}`)).data;
+    expect(Object.values(d.ai).every((m: any) => m.source === 'AI')).toBe(true);
+    expect((await sara.call('POST', `/api/cases/${case_id}/complete`, {})).data.error.code).toBe('NOT_READY');
+    const key = Object.keys(d.ai).find((k) => k.startsWith('CLINICAL_PROFILE_SNAPSHOTS|') && k.endsWith('|diabetes'))!;
+    const rej = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions: [{ key, action: 'reject' }] });
+    expect(rej.data.case.rows.CLINICAL_PROFILE_SNAPSHOTS[0].diabetes).toBeNull();
+    const all = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { accept_all: true });
+    expect(Object.keys(all.data.case.ai).filter((k) => !k.endsWith('|*'))).toEqual([]);
   });
 
   it('a completed case refuses the Assistant; a note not in the samples fills nothing', async () => {
@@ -169,7 +259,7 @@ describe('This is what will be sent', () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '1009315');
     const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N02', '1009315'), procedure_id: 'new' });
-    expect(r.data.case.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBe('1961-03-02');
+    expect((await accept(sara, case_id, r)).data.case.rows.PATIENT_IDENTIFIERS[0].date_of_birth).toBe('1961-03-02');
   });
 
   it('a new procedure is made only if the note really fills one (owner, 4 Nov)', async () => {
@@ -180,8 +270,9 @@ describe('This is what will be sent', () => {
     const a = (await newCase(admin, '9990716')).case_id;
     const r = await admin.call('POST', `/api/cases/${a}/ai/extract`, { note: 'Hypertension on amlodipine.', procedure_id: 'new' });
     expect(r.data.summary.filled).toBe(1);
-    expect(r.data.procedure_id).toBeNull();
-    expect(r.data.case.rows.CLINICAL_PROFILE_SNAPSHOTS[0].hypertension).toBe('YES');
+    const saved = await accept(admin, a, r);
+    expect(saved.data.procedure_id).toBeNull();
+    expect(saved.data.case.rows.CLINICAL_PROFILE_SNAPSHOTS[0].hypertension).toBe('YES');
     expect(await procs(a)).toHaveLength(0);
 
     // Nothing found: nothing changes.
@@ -196,7 +287,7 @@ describe('This is what will be sent', () => {
   it('procedure details make the new procedure, and fill it', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '1184420');
-    const r = await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N01', '1184420'), procedure_id: 'new' });
+    const r = await accept(sara, case_id, await sara.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample('N01', '1184420'), procedure_id: 'new' }));
     expect(r.data.procedure_id).toBeTruthy();
     expect(r.data.case.rows.EP_PROCEDURES.map((p: { _id: string }) => p._id)).toEqual([r.data.procedure_id]);
     expect(r.data.case.rows.AF_ABLATIONS[0].procedure_id).toBe(r.data.procedure_id);
@@ -212,7 +303,8 @@ describe('This is what will be sent', () => {
 describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
   const NOTE = sample('N16', '9990731');
   const rowsOf = (r: { data: { case: { rows: Record<string, Record<string, unknown>[]> } } }, e: string) => r.data.case.rows[e] ?? [];
-  const run = async (c: Awaited<ReturnType<typeof as>>, id: string) => c.call('POST', `/api/cases/${id}/ai/extract`, { note: NOTE });
+  const extract = async (c: Client, id: string, note = NOTE) => c.call('POST', `/api/cases/${id}/ai/extract`, { note });
+  const run = async (c: Client, id: string, note = NOTE) => accept(c, id, await extract(c, id, note));
 
   /** A saved row, by the same route the case page uses. */
   async function addRow(c: Awaited<ReturnType<typeof as>>, id: string, entity: string, rowId: string, values: Record<string, unknown>) {
@@ -222,7 +314,7 @@ describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
   }
   const leadId = () => `lead_${crypto.randomUUID()}`;
 
-  it('no device in the case: makes the device, the check and the channel, linked, all waiting for review', async () => {
+  it('no device in the case: accepting makes the device, the check and the channel, linked', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '9990731');
     const r = await run(sara, case_id);
@@ -235,18 +327,17 @@ describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
     expect(check).toMatchObject({ device_id: device._id, check_datetime: '2026-10-12', programmed_mode: 'DDD', lower_rate_bpm: 60, rv_pacing_pct: 3 });
     expect(channel).toMatchObject({ device_check_id: check._id, channel_type: 'PHYSICAL_LEAD', capture_threshold_v: 0.75, sensing_mv: 11, impedance_ohm: 520 });
     expect(channel.lead_id ?? null).toBeNull(); // no lead saved: a person chooses
-    expect(Object.values(r.data.case.ai).every((m: any) => m.source === 'AI')).toBe(true);
-    const all = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { accept_all: true });
-    expect(rowsOf(all, 'DEVICE_INTERROGATIONS')[0].programmed_mode).toBe('DDD');
+    expect(r.data.case.ai).toEqual({});
   });
 
   it('the same note twice adds no second check or channel', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '9990731');
     await run(sara, case_id);
-    const r = await run(sara, case_id);
-    expect(r.data.summary.filled).toBe(0);
-    for (const e of ['DEVICES', 'DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS']) expect(rowsOf(r, e)).toHaveLength(1);
+    const again = await extract(sara, case_id);
+    expect(again.data.summary.filled).toBe(0);
+    const d = await sara.call('GET', `/api/cases/${case_id}`);
+    for (const e of ['DEVICES', 'DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS']) expect(d.data.rows[e]).toHaveLength(1);
   });
 
   it('one saved device: the check goes to it, with no new device', async () => {
@@ -270,24 +361,24 @@ describe('Device Interrogation filled by the AI (owner, 4 Nov)', () => {
     const two = (await newCase(admin, '9990732')).case_id;
     await addRow(admin, two, 'DEVICE_LEADS', leadId(), { lead_location: 'RV' });
     await addRow(admin, two, 'DEVICE_LEADS', leadId(), { lead_location: 'RV' });
-    const r = await admin.call('POST', `/api/cases/${two}/ai/extract`, { note: sample('N16', '9990732') });
+    const r = await run(admin, two, sample('N16', '9990732'));
     expect(rowsOf(r, 'DEVICE_CHECK_CHANNELS')[0].lead_id ?? null).toBeNull();
   });
 
-  it('rejecting every AI value removes the channel, the check and the device the AI made', async () => {
+  it('older AI values: rejecting them all removes the channel, the check and the device the AI made', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '9990731');
-    const r = await run(sara, case_id);
-    const actions = Object.entries(r.data.case.ai as Record<string, { field: string }>).filter(([, m]) => m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
+    const rec = await savedAsBefore(case_id, NOTE, '9990731');
+    const actions = Object.entries(rec.ai as Record<string, { field: string }>).filter(([, m]) => m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
     const done = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions });
     for (const e of ['DEVICES', 'DEVICE_INTERROGATIONS', 'DEVICE_CHECK_CHANNELS']) expect(rowsOf(done, e)).toHaveLength(0);
   });
 
-  it('rejecting only the check values keeps the check while a channel value still waits', async () => {
+  it('older AI values: rejecting only the check values keeps the check while a channel value still waits', async () => {
     const sara = await as(h, 'sara');
     const { case_id } = await newCase(sara, '9990731');
-    const r = await run(sara, case_id);
-    const actions = Object.entries(r.data.case.ai as Record<string, { entity: string; field: string }>).filter(([, m]) => m.entity === 'DEVICE_INTERROGATIONS' && m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
+    const rec = await savedAsBefore(case_id, NOTE, '9990731');
+    const actions = Object.entries(rec.ai as Record<string, { entity: string; field: string }>).filter(([, m]) => m.entity === 'DEVICE_INTERROGATIONS' && m.field !== '*').map(([key]) => ({ key, action: 'reject' }));
     const done = await sara.call('POST', `/api/cases/${case_id}/ai/review`, { actions });
     expect(rowsOf(done, 'DEVICE_INTERROGATIONS')).toHaveLength(1);
     expect(rowsOf(done, 'DEVICE_CHECK_CHANNELS')[0].sensing_mv).toBe(11);
@@ -353,7 +444,7 @@ describe('Dates only, never a time (owner, 4 Nov)', () => {
     const { case_id } = await newCase(admin, '9990742');
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'ECG 12 Jan 2026: sinus. ECG 3 Mar 2026: SVT.' });
     expect(r.data.summary.filled).toBe(2);
-    expect(r.data.case.rows.ECG_STUDIES.map((x: { ecg_datetime: string }) => x.ecg_datetime).sort()).toEqual(['2026-01-12', '2026-03-03']);
+    expect((await accept(admin, case_id, r)).data.case.rows.ECG_STUDIES.map((x: { ecg_datetime: string }) => x.ecg_datetime).sort()).toEqual(['2026-01-12', '2026-03-03']);
   });
 
   it('a lab with no date in the note fills its values and leaves the date empty for a person', async () => {
@@ -361,7 +452,7 @@ describe('Dates only, never a time (owner, 4 Nov)', () => {
     const { case_id } = await newCase(admin, '9990743');
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: 'INR 2.4.' });
     expect(r.data.summary.filled).toBe(1);
-    expect(r.data.case.rows.LAB_RESULTS[0].lab_date ?? null).toBeNull();
+    expect((await accept(admin, case_id, r)).data.case.rows.LAB_RESULTS[0].lab_date ?? null).toBeNull();
   });
 });
 

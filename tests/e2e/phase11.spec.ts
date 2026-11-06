@@ -40,27 +40,46 @@ test('AI Assistant fills from a note after the review step; values wait for revi
   await sheet.getByTestId('ai-preview').click();
 
   await sheet.getByTestId('ai-send').click();
-  await expect(sheet.getByTestId('ai-run')).toContainText('filled');
+  await expect(sheet.getByTestId('ai-run')).toContainText('to review');
   expect(await sheet.getByTestId('ai-value').count()).toBeGreaterThan(5);
   await expect(sheet.getByTestId('ai-value').filter({ hasText: 'Hypertension' })).toContainText('hypertension on amlodipine');
   await sheet.getByRole('button', { name: 'Done' }).click();
 
-  // On the case: a procedure was made, values carry the AI tag, and the banner holds Complete back.
-  await expect(page.getByTestId('procedure-row')).toHaveCount(1);
+  // On the case: nothing is in it yet. The banner holds Complete back.
+  await expect(page.getByTestId('procedure-row')).toHaveCount(0);
   await expect(page.getByTestId('ai-banner')).toContainText('AI value');
   await page.getByTestId('section-risk').click();
-  await expect(page.getByTestId('ai-tag').first()).toBeVisible();
+  await expect(page.getByTestId('ai-tag')).toHaveCount(0);
   await page.getByRole('button', { name: 'Done' }).click();
 
-  // Reject one, accept the rest.
+  // They wait on this device: a reload keeps them.
+  await page.reload();
+  await expect(page.getByTestId('ai-banner')).toContainText('AI value');
+
+  // Reject one, take one back, change one, accept the rest.
   await page.getByTestId('ai-banner').getByRole('button', { name: 'Review' }).click();
   const before = await sheet.getByTestId('ai-value').count();
   await sheet.getByRole('button', { name: 'Reject Diabetes' }).click();
   await expect(sheet.getByTestId('ai-value')).toHaveCount(before - 1);
+  await sheet.getByRole('button', { name: 'Accept Hypertension' }).click();
+  await expect(sheet.getByTestId('ai-value')).toHaveCount(before - 2); // at once, with no wait for the Sheet
+  await sheet.getByTestId('ai-accepted').filter({ hasText: 'Hypertension' }).getByRole('button', { name: 'Undo' }).click();
+  await expect(sheet.getByTestId('ai-value')).toHaveCount(before - 1);
+  await sheet.getByRole('button', { name: 'Edit Sex' }).click();
+  await sheet.getByTestId('ai-edit-input').selectOption('FEMALE');
+  await sheet.getByTestId('ai-edit-accept').click();
   await sheet.getByTestId('ai-accept-all').click();
   await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
+  await expect(sheet.getByTestId('ai-save')).toContainText('Saved', { timeout: 15_000 });
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('ai-banner')).toHaveCount(0);
+  await expect(page.getByTestId('procedure-row')).toHaveCount(1);
+
+  // In the case now, as ordinary values, and still after a reload.
+  await page.reload();
+  await page.getByTestId('section-patient').click();
+  await expect(page.getByTestId('section-sheet')).toContainText('Female');
+  await expect(page.getByTestId('ai-tag')).toHaveCount(0);
 });
 
 test('a device check note fills Device Interrogation; the review list names the device and the case page shows it', async ({ page }, info) => {
@@ -72,7 +91,7 @@ test('a device check note fills Device Interrogation; the review list names the 
   await sheet.getByTestId('ai-note').fill(sampleNote('N16', m));
   await sheet.getByTestId('ai-preview').click();
   await sheet.getByTestId('ai-send').click();
-  await expect(sheet.getByTestId('ai-run')).toContainText('10 filled');
+  await expect(sheet.getByTestId('ai-run')).toContainText('10 to review');
   const mode = sheet.getByTestId('ai-value').filter({ hasText: 'Programmed Mode' });
   await expect(mode).toContainText('Medtronic');
   await expect(mode).toContainText('Device Interrogation');
@@ -81,6 +100,26 @@ test('a device check note fills Device Interrogation; the review list names the 
   await expect(sheet.getByTestId('ai-value')).toHaveCount(0);
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('section-devices')).not.toContainText('Add');
+});
+
+test('a note about a cancelled procedure flags its values, and Accept All leaves them for a person', async ({ page }, info) => {
+  await open(page);
+  const m = mrn(info, 7_370_000);
+  await createCase(page, m);
+  await page.getByTestId('ai-row').click();
+  const sheet = page.getByTestId('ai-sheet');
+  await sheet.getByTestId('ai-note').fill(sampleNote('N02', m));
+  await sheet.getByTestId('ai-preview').click();
+  await sheet.getByTestId('ai-send').click();
+  await expect(sheet.getByTestId('ai-run')).toBeVisible();
+  const flagged = sheet.getByTestId('ai-flag');
+  const n = await flagged.count();
+  expect(n).toBeGreaterThan(0);
+  await sheet.getByTestId('ai-accept-all').click();
+  await expect(sheet.getByTestId('ai-accepted').first()).toBeVisible();
+  // Still waiting: every flagged value. (A study with no date in the note waits too, for its date.)
+  await expect(flagged).toHaveCount(n);
+  await expect(sheet.getByTestId('ai-value').filter({ has: page.getByTestId('ai-flag') })).toHaveCount(n);
 });
 
 test('a study with no date in the note asks for the date before its values can be accepted', async ({ page }, info) => {

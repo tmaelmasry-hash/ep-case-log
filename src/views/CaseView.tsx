@@ -19,6 +19,7 @@ import { bmi } from '../../shared/derive.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
 import { AiLine, AiSheet, aiPending, type AiScope } from './AiAssistant';
 import { aiSectionOf } from '../../shared/aiSections.ts';
+import { useAiPending } from '../lib/aiPending';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { MoveCaseSheet } from '../components/MoveCaseSheet';
 import { caseEnv, consequences, evaluate, fieldRules, type Consequence } from '../../shared/rules.ts';
@@ -1486,6 +1487,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   // The pasted note survives moving between sections and is gone on leaving the case (owner, 4 Nov). Memory only.
   const [aiNote, setAiNote] = useState('');
   useEffect(() => setAiNote(''), [id]);
+  const aiValues = useAiPending(id, me?.username, { flushEdits: () => ed.flush(), replace: (c) => ed.replace(c), onError: (message) => toast({ message, kind: 'error' }) });
   const d = ed.detail;
 
   // Owner step 8: deleted at once, with Undo (the person who deleted it may restore it within a minute).
@@ -1603,8 +1605,14 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   };
 
   const complete = async () => {
+    if (aiValues.waiting.length) {
+      toast({ message: `${aiValues.waiting.length} AI value${aiValues.waiting.length === 1 ? '' : 's'} still wait for review on this device.`, kind: 'error' });
+      setSheet({ kind: 'ai' });
+      return;
+    }
     setBusy(true);
     try {
+      await aiValues.flush();
       await ed.flush();
       const r = await api<{ case: CaseDetail }>('POST', `/api/cases/${d.meta.case_id}/complete`, { row_version: ed.detail?.meta.row_version });
       ed.replace(r.case);
@@ -1762,12 +1770,12 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           </div>
         )}
 
-        {!completed && (aiWaiting.values.length > 0 || aiWaiting.conflicts.length > 0) && (
+        {!completed && (aiWaiting.values.length > 0 || aiWaiting.conflicts.length > 0 || aiValues.waiting.length > 0) && (
           <div className="banner info" data-testid="ai-banner">
             <Icon name="extract" size={18} />
             <span className="grow">
               {[
-                aiWaiting.values.length ? `${aiWaiting.values.length} AI value${aiWaiting.values.length === 1 ? '' : 's'} to review` : '',
+                aiWaiting.values.length + aiValues.waiting.length ? `${aiWaiting.values.length + aiValues.waiting.length} AI value${aiWaiting.values.length + aiValues.waiting.length === 1 ? '' : 's'} to review` : '',
                 aiWaiting.conflicts.length ? `${aiWaiting.conflicts.length} conflict${aiWaiting.conflicts.length === 1 ? '' : 's'}` : '',
               ]
                 .filter(Boolean)
@@ -1920,7 +1928,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             onClose={() => setSheet(null)}
           />
         )}
-        {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} scope={sheet.scope} note={aiNote} setNote={setAiNote} onClose={() => setSheet(sheet.back ?? null)} />}
+        {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} scope={sheet.scope} note={aiNote} setNote={setAiNote} pending={aiValues} onClose={() => { void aiValues.flush(); setSheet(sheet.back ?? null); }} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'move' && (
           <MoveCaseSheet caseId={d.meta.case_id} mrn={d.meta.mrn} groupId={d.meta.group_id} seq={d.meta.group_seq} onMoved={() => Promise.all([ed.reload(), refreshCases()])} onClose={() => setSheet(null)} />

@@ -2,8 +2,8 @@
 // different MRN stops everything) → de-identification → provider (Test AI on the synthetic sample notes, or a live
 // model) → checks in the server → the draft. Checks: the field is one the AI may fill; the value is a dictionary
 // code / valid type; the quote is really in the de-identified note; date of birth only from an explicit birth
-// date. A value fills an EMPTY field (or replaces an earlier unaccepted AI value) and is marked
-// AI — not accepted. A different saved value is never overwritten: it becomes a conflict for a person to resolve.
+// date. Extract saves nothing (owner, 4 Nov): its result waits on the person's device, and /ai/apply saves what they accept.
+// A value fills an EMPTY field. A different saved value is never overwritten: it becomes a conflict for a person to resolve.
 // Procedure fields go to the procedure the user chose for this note. The note is never stored or logged.
 import type { AiMark, CaseRecord, StoredRow } from '../../shared/caseTypes.ts';
 import type { Dictionary, FormField } from '../../shared/dictionary.ts';
@@ -21,6 +21,8 @@ export interface RawProposal {
   value: unknown;
   row: string;
   evidence: string;
+  /** A person chose this over a different saved value. Only from /ai/apply. */
+  overwrite?: boolean;
 }
 export interface RawConflict {
   entity: string;
@@ -47,6 +49,16 @@ export interface ReviewItem {
   evidence: string | null;
   evidences?: string[];
   reason?: string;
+  /** The row label from the model, so values of one event stay together when they are accepted later. */
+  row?: string;
+  /** The note says the procedure was cancelled: a person checks this value one by one. */
+  flag?: 'procedure_cancelled';
+}
+
+/** How a person's accepted values go in: the quote checks were done at extract, and the rows made so far are reused. */
+export interface ApplyOptions {
+  trusted?: boolean;
+  rowIds?: Map<string, string>;
 }
 
 // ── prompts and schemas (the same for every live provider) ──
@@ -189,16 +201,26 @@ function rawOf(j: unknown): RawExtraction {
 
 function coerce(f: FormField, v: unknown): unknown {
   if (v === null || v === undefined) return null;
-  if (f.type === 'lookup_array')
+  if (f.type === 'lookup_array') {
+    // A value already checked once comes back from the device in its stored form.
+    if (typeof v === 'string' && v.trim().startsWith('[')) {
+      try {
+        const list = JSON.parse(v);
+        if (Array.isArray(list)) return list.map(String);
+      } catch {
+        /* not a stored list: read it as text below */
+      }
+    }
     return Array.isArray(v)
       ? v.map(String)
       : String(v)
           .split(',')
           .map((x) => x.trim())
           .filter(Boolean);
+  }
   if (f.type === 'boolean') {
     const s = String(v).trim().toLowerCase();
-    return s === 'true' || s === 'yes' ? true : s === 'false' || s === 'no' ? false : s;
+    return s === 'true' || s === 'yes' || s === '1' ? true : s === 'false' || s === 'no' || s === '0' ? false : s;
   }
   return typeof v === 'number' ? v : String(v).trim();
 }
@@ -212,6 +234,7 @@ interface Checked {
   af: AiField;
   value: unknown;
   evidence: string;
+  overwrite?: boolean;
 }
 
 export const aiKey = (entity: string, id: string, field: string) => `${entity}|${id}|${field}`;
@@ -232,7 +255,7 @@ export function readMonthFirst(value: unknown, evidence: string): boolean {
 }
 
 /** Applies a checked extraction to the case. `procedureId` = the procedure the note describes (null = none chosen). */
-export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtraction, redactedNote: string, procedureId: string | null, a: Actor): ReviewItem[] {
+export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtraction, redactedNote: string, procedureId: string | null, a: Actor, opts: ApplyOptions = {}): ReviewItem[] {
   const fields = aiFields(dict);
   const note = normalizeForQuote(redactedNote);
   const marks = (rec.ai ??= {});
@@ -245,10 +268,12 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     const af = fields.get(`${entity}.${field}`);
     if (!af) return 'not a field the AI may fill';
     if (af.procedure && !procedureId) return 'procedure field: choose the procedure this note describes';
-    if (!grounded(evidence)) return 'the quote is not in the note';
-    if (entity === 'PATIENT_IDENTIFIERS' && field === 'date_of_birth' && !/birth|\bDOB\b|\bborn\b|d\.o\.b/i.test(evidence)) return 'date of birth is never inferred';
-    if ((af.field.type === 'date' || af.field.type === 'datetime') && !/\d/.test(evidence)) return 'the quote has no date';
-    if ((af.field.type === 'date' || af.field.type === 'datetime') && readMonthFirst(value, evidence)) return 'the date was read month first; dates here are day first';
+    if (!opts.trusted) {
+      if (!grounded(evidence)) return 'the quote is not in the note';
+      if (entity === 'PATIENT_IDENTIFIERS' && field === 'date_of_birth' && !/birth|\bDOB\b|\bborn\b|d\.o\.b/i.test(evidence)) return 'date of birth is never inferred';
+      if ((af.field.type === 'date' || af.field.type === 'datetime') && !/\d/.test(evidence)) return 'the quote has no date';
+      if ((af.field.type === 'date' || af.field.type === 'datetime') && readMonthFirst(value, evidence)) return 'the date was read month first; dates here are day first';
+    }
     try {
       const enc = encodeValue({ ...af.field, parent_map: undefined }, coerce(af.field, value));
       return enc === null ? 'empty value' : { af, value: enc };
@@ -269,7 +294,7 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     const row = r.af.multi ? String(p.row || `${p.entity}-0`) : '';
     const k = `${p.entity}|${row}|${p.field}`;
     const list = groups.get(k) ?? [];
-    if (!list.some((x) => sameValue(x.value, r.value))) list.push({ entity: r.af.entity, field: r.af.field.name, row, af: r.af, value: r.value, evidence: String(p.evidence) });
+    if (!list.some((x) => sameValue(x.value, r.value))) list.push({ entity: r.af.entity, field: r.af.field.name, row, af: r.af, value: r.value, evidence: String(p.evidence), overwrite: p.overwrite === true });
     groups.set(k, list);
   }
   const conflicts: { entity: string; field: string; row: string; af: AiField; values: unknown[]; evidences: string[] }[] = [];
@@ -301,7 +326,7 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
   // 2. Rows: one-per-scope rows are found or made; each repeatable row label is a new row, unless an existing live
   //    row already holds exactly these values (running the same note twice adds nothing).
   const scopeOf = (af: AiField) => (af.procedure ? procedureId : null);
-  const rowIds = new Map<string, string>();
+  const rowIds = opts.rowIds ?? new Map<string, string>();
   const depth = (e: string): number => (dict.entities[e].nest_under ? 1 + depth(dict.entities[e].nest_under!.entity) : 0);
   const labels = [...new Set([...proposals, ...conflicts].filter((x) => x.af.multi).map((x) => `${x.entity}|${x.row}`))].sort((x, y) => depth(x.split('|')[0]) - depth(y.split('|')[0]));
   const aiRow = (entity: string, parentId?: string, af?: AiField) => {
@@ -330,6 +355,9 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
   const linkLeads: { row: StoredRow; location: string }[] = [];
   for (const label of labels) {
     const [entity, rowLabel] = [label.slice(0, label.indexOf('|')), label.slice(label.indexOf('|') + 1)];
+    // Accepted earlier from the same note: the same row, not a new one.
+    const made = rowIds.get(label);
+    if (made && findLive(rec, entity, made)) continue;
     const fk = dict.entities[entity].nest_under?.fk;
     const mine = proposals.filter((x) => `${x.entity}|${x.row}` === label);
     if (!mine.length && !fk) continue; // a conflict alone does not make a row; choosing a value makes it. A nested row needs its parent, so it is made here.
@@ -374,17 +402,17 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     }
     const cur = row[x.field];
     if (sameValue(cur, x.value)) {
-      items.push({ key: prior?.source === 'AI' ? key : null, entity: x.entity, field: x.field, record_id: row._id, status: 'SAME', value: x.value, evidence: x.evidence });
+      items.push({ key: prior?.source === 'AI' ? key : null, entity: x.entity, field: x.field, record_id: row._id, status: 'SAME', value: x.value, evidence: x.evidence, row: x.row });
       continue;
     }
-    if (cur === null || cur === undefined || prior?.source === 'AI') {
+    if (cur === null || cur === undefined || prior?.source === 'AI' || x.overwrite) {
       row[x.field] = x.value;
       afterChange(dict.entities[x.entity], row, x.field);
       row._updated_at = a.now;
       row._updated_by = a.userId;
       marks[key] = mark({ source: 'AI', entity: x.entity, record_id: row._id, field: x.field, evidence: x.evidence });
-      addHistory(rec, { kind: 'edit', entity: x.entity, row_id: row._id, field: x.field, text: 'ai', where: whereText(placeOf(dict, rec, x.entity, row)), old: cur ?? null, new: x.value }, a);
-      items.push({ key, entity: x.entity, field: x.field, record_id: row._id, status: 'FILLED', value: x.value, evidence: x.evidence });
+      addHistory(rec, { kind: 'edit', entity: x.entity, row_id: row._id, field: x.field, text: opts.trusted ? 'ai_accepted' : 'ai', where: whereText(placeOf(dict, rec, x.entity, row)), old: cur ?? null, new: x.value }, a);
+      items.push({ key, entity: x.entity, field: x.field, record_id: row._id, status: 'FILLED', value: x.value, evidence: x.evidence, row: x.row });
     } else {
       conflicts.push({ entity: x.entity, field: x.field, row: x.row, af: x.af, values: [x.value], evidences: [x.evidence] });
     }
@@ -403,14 +431,14 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
     // No row yet (a repeatable row whose only value is in conflict): the key names the row label so two such rows stay apart.
     const key = `${aiKey(c.entity, id || `new:${c.row}`, c.field)}#ai`;
     marks[key] = mark({ source: 'AI_CONFLICT', entity: c.entity, record_id: id, field: c.field, evidence: c.evidences[0] ?? null, proposed: c.values, evidences: c.evidences, ...(id ? {} : { procedure_id: scopeOf(c.af) }) });
-    items.push({ key, entity: c.entity, field: c.field, record_id: id || null, status: 'CONFLICT', value: row?.[c.field] ?? null, proposed: c.values, evidence: c.evidences[0] ?? null, evidences: c.evidences });
+    items.push({ key, entity: c.entity, field: c.field, record_id: id || null, status: 'CONFLICT', value: row?.[c.field] ?? null, proposed: c.values, evidence: c.evidences[0] ?? null, evidences: c.evidences, row: c.row });
   }
 
   // 5. Facts with no dictionary field → Additional clinical information (never a new field).
   for (const x of raw.additional_info ?? []) {
     const text = String(x.text ?? '').trim().slice(0, 2000);
     if (!text) continue;
-    if (x.evidence && !grounded(x.evidence)) {
+    if (!opts.trusted && x.evidence && !grounded(x.evidence)) {
       items.push({ key: null, entity: 'ADDITIONAL', field: 'text', record_id: null, status: 'DROPPED', evidence: x.evidence, value: text, reason: 'the quote is not in the note' });
       continue;
     }
@@ -424,13 +452,37 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
 
 /** For a case with no procedure to use: a new procedure is made only if the note really fills one. A note with labs or
  *  an echo only leaves no empty procedure behind. Tried on a copy, so the case is untouched if the procedure goes. */
-export function applyToNewProcedure(dict: Dictionary, rec: CaseRecord, raw: RawExtraction, redactedNote: string, a: Actor): { rec: CaseRecord; procedureId: string | null; items: ReviewItem[] } {
+export function applyToNewProcedure(dict: Dictionary, rec: CaseRecord, raw: RawExtraction, redactedNote: string, a: Actor, opts: ApplyOptions = {}): { rec: CaseRecord; procedureId: string | null; items: ReviewItem[] } {
   const trial = structuredClone(rec);
   const procedureId = addNewRow(dict, trial, 'EP_PROCEDURES', null, a)._id;
-  const items = applyExtraction(dict, trial, raw, redactedNote, procedureId, a);
+  const tried = new Map(opts.rowIds ?? []);
+  const items = applyExtraction(dict, trial, raw, redactedNote, procedureId, a, { ...opts, rowIds: tried });
   const fields = aiFields(dict);
-  if (items.some((i) => i.status !== 'DROPPED' && fields.get(`${i.entity}.${i.field}`)?.procedure)) return { rec: trial, procedureId, items };
-  return { rec, procedureId: null, items: applyExtraction(dict, rec, raw, redactedNote, null, a) };
+  if (items.some((i) => i.status !== 'DROPPED' && fields.get(`${i.entity}.${i.field}`)?.procedure)) {
+    for (const [k, v] of tried) opts.rowIds?.set(k, v);
+    return { rec: trial, procedureId, items };
+  }
+  return { rec, procedureId: null, items: applyExtraction(dict, rec, raw, redactedNote, null, a, opts) };
+}
+
+/** What a person accepted goes in as ordinary saved values: no "AI, not accepted" marks are left behind. */
+export function applyAccepted(dict: Dictionary, rec: CaseRecord, target: string | null, raw: RawExtraction, rowIds: Map<string, string>, a: Actor): { rec: CaseRecord; procedureId: string | null; items: ReviewItem[] } {
+  const before = new Set(Object.keys(rec.ai ?? {}));
+  const opts: ApplyOptions = { trusted: true, rowIds };
+  const done = target === 'new' ? applyToNewProcedure(dict, rec, raw, '', a, opts) : { rec, procedureId: target, items: applyExtraction(dict, rec, raw, '', target, a, opts) };
+  const marks = done.rec.ai ?? {};
+  for (const k of Object.keys(marks)) if (!before.has(k)) delete marks[k];
+  for (const i of done.items) if (i.status === 'FILLED' && i.key) delete marks[i.key];
+  return done;
+}
+
+/** A note that says the procedure was cancelled: the module's values (planned, not performed) need a person's eye, one by one. */
+export function flagCancelled(dict: Dictionary, rec: CaseRecord, target: string | null, items: ReviewItem[]): ReviewItem[] {
+  const fields = aiFields(dict);
+  const said = items.some((i) => i.entity === 'EP_PROCEDURES' && i.field === 'procedure_status' && /CANCEL/.test(String(i.value ?? '')));
+  const saved = target && target !== 'new' && /CANCEL/.test(String(findLive(rec, 'EP_PROCEDURES', target)?.procedure_status ?? ''));
+  if (!said && !saved) return items;
+  return items.map((i) => (['FILLED', 'CONFLICT'].includes(i.status) && i.entity !== 'EP_PROCEDURES' && fields.get(`${i.entity}.${i.field}`)?.procedure ? { ...i, flag: 'procedure_cancelled' as const } : i));
 }
 
 // ── review: accept / reject a filled value, choose for a conflict ──

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, ApiError, hasCsrf, onSessionEnded } from './lib/api';
+import { clearAiPending } from './lib/aiPending';
 
 export interface Me {
   id: string;
@@ -101,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // The case copy stays on the device (owner R3-4); opening offline needs a new sign-in first.
       remember(null);
+      // AI values nobody accepted do not stay behind (owner, 6 Nov).
+      clearAiPending();
       setState({ status: 'signedOut' });
     }
   }, []);

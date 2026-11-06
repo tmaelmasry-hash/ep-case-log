@@ -3272,6 +3272,24 @@ a.hc-mrn {
 .ai-line + .proc-bar {
   margin-top: 0;
 }
+.ai-item.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ai-item.ai-good {
+  background: var(--ok-soft, transparent);
+  color: var(--ok);
+  font-weight: 600;
+  align-items: center;
+}
+.ai-item.ai-gone {
+  color: var(--muted);
+  align-items: center;
+}
+.ai-edit {
+  width: 100%;
+}
 .tools-row .tool:disabled {
   opacity: 0.45;
 }

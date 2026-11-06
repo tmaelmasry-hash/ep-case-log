@@ -10,6 +10,7 @@ import { api, ApiError } from '../lib/api';
 import { useStore } from '../store';
 import { Sheet } from '../components/ui';
 import { Icon } from '../components/Icon';
+import { plainWaiting, type AiPending, type AiServerItem, type PendingItem } from '../lib/aiPending';
 import type { CaseEditor } from '../caseEditor';
 
 interface AiStatus {
@@ -30,23 +31,13 @@ interface Removed {
   instruction: number;
 }
 
-interface RunItem {
-  key: string | null;
-  entity: string;
-  field: string;
-  status: 'FILLED' | 'SAME' | 'CONFLICT' | 'DROPPED' | 'ADDITIONAL';
-  value?: unknown;
-  reason?: string;
-}
-
 interface RunResult {
   provider: string;
   recognised: boolean;
   summary: { filled: number; same: number; conflicts: number; dropped: number; additional: number };
-  items: RunItem[];
+  items: AiServerItem[];
   removed: Removed;
-  procedure_id: string | null;
-  case: CaseDetail;
+  target: string | null;
 }
 
 const countOf = (n: number, one: string, many = `${one}s`) => (n ? [`${n} ${n === 1 ? one : many}`] : []);
@@ -87,7 +78,206 @@ export function AiLine({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: CaseEditor; procs: { id: string; title: string }[]; scope?: AiScope; note: string; setNote: (s: string) => void; onClose: () => void }) {
+/** A person's own value in place of the proposed one. Lists of several codes are changed in the section itself, after accepting. */
+function EditValue({ entity, field, value, onDone, onCancel }: { entity: string; field: string; value: unknown; onDone: (v: unknown) => void; onCancel: () => void }) {
+  const f = fieldOf(entity, field);
+  const [text, setText] = useState(String(value ?? ''));
+  const label = `Edit ${fieldLabel(entity, field)}`;
+  const props = { className: 'ios-value ai-edit', 'aria-label': label, value: text, 'data-testid': 'ai-edit-input' };
+  let input;
+  if (f?.codes?.length) {
+    input = (
+      <select {...props} onChange={(e) => setText(e.target.value)}>
+        {f.codes.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.label}
+          </option>
+        ))}
+      </select>
+    );
+  } else if (f?.type === 'boolean') {
+    input = (
+      <select {...props} onChange={(e) => setText(e.target.value)}>
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+    );
+  } else {
+    input = <input {...props} type={f?.type === 'date' || f?.type === 'datetime' ? 'date' : f?.type === 'integer' || f?.type === 'decimal' ? 'number' : 'text'} onChange={(e) => setText(e.target.value)} />;
+  }
+  return (
+    <>
+      {input}
+      <span className="ai-actions">
+        <button className="btn small primary" disabled={!text.trim()} onClick={() => onDone(text)} data-testid="ai-edit-accept">
+          Accept Edit
+        </button>
+        <button className="btn small" onClick={onCancel}>
+          Cancel
+        </button>
+      </span>
+    </>
+  );
+}
+
+/** Values waiting on this device: nothing here is in the case until it is accepted. */
+function PendingList({ ed, procs, pending }: { ed: CaseEditor; procs: { id: string; title: string }[]; pending: AiPending }) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const items = pending.items;
+  const dateFieldOf = (entity: string) => (dict.entities[entity]?.cardinality === 'multi' ? dict.entities[entity].fields.find((f) => f.type === 'date' && f.req === 'R') : undefined);
+  // Rows the note gives no date for: a person gives the date before their values can be accepted; it is never guessed.
+  const seen = new Set<string>();
+  const undated = items.flatMap((i) => {
+    const field = i.kind === 'value' && i.st !== 'no' ? dateFieldOf(i.entity) : undefined;
+    const id = `${i.run}|${i.entity}|${i.row}`;
+    if (!field || seen.has(id)) return [];
+    seen.add(id);
+    const dated = items.some((x) => x.run === i.run && x.entity === i.entity && x.row === i.row && x.field === field.name && x.st !== 'no');
+    const rowId = pending.rowIdOf(i.run, i.entity, i.row);
+    if (dated || (rowId && hasValue(ed.rows(i.entity).find((r) => r._id === rowId)?.[field.name]))) return [];
+    return [{ id, item: i, field }];
+  });
+  const needsDate = (i: PendingItem) => undated.some((u) => u.id === `${i.run}|${i.entity}|${i.row}`);
+  const all = pending.waiting.filter((i) => plainWaiting(i) && !needsDate(i));
+
+  const device = (run: string) => {
+    const got = ['manufacturer', 'current_device_type'].map((f) => items.find((x) => x.run === run && x.entity === 'DEVICES' && x.field === f && x.st !== 'no')?.value ?? ed.rows('DEVICES')[0]?.[f]);
+    return ['manufacturer', 'current_device_type'].flatMap((f, n) => (got[n] ? [show('DEVICES', f, got[n])] : [])).join(' ') || 'Device';
+  };
+  const group = (i: PendingItem): string => {
+    if (i.kind === 'additional') return 'Additional Information';
+    const def = dict.entities[i.entity];
+    if (i.entity === 'EP_PROCEDURES' || def?.scope === 'procedure') return procs.find((p) => p.id === pending.targetOf(i.run))?.title ?? 'New Procedure';
+    const row = dict.layout.groups.flatMap((g) => g.rows).find((r) => r.entities.includes(i.entity));
+    return row ? (row.title ?? row.label) : (def?.label ?? i.entity);
+  };
+  const place = (i: PendingItem) => (i.entity === 'DEVICE_INTERROGATIONS' || i.entity === 'DEVICE_CHECK_CHANNELS' ? `${device(i.run)} · ${dict.entities[i.entity].label}` : (dict.entities[i.entity]?.label ?? ''));
+  const name = (i: PendingItem) => (i.kind === 'additional' ? 'Additional Information' : fieldLabel(i.entity, i.field));
+  const text = (i: PendingItem, v: unknown) => (i.kind === 'additional' ? String(v) : show(i.entity, i.field, v));
+
+  const groups = [...new Set(items.map(group))];
+  if (!items.length) return null;
+  const line = { idle: 'Nothing is saved until you accept it.', waiting: 'Saving when you stop…', saving: 'Saving…', saved: `Saved ${pending.savedCount} value${pending.savedCount === 1 ? '' : 's'}.`, failed: 'Not saved yet. It will be sent when the connection is back.' }[pending.saving];
+
+  return (
+    <>
+      <h3 className="sechead">To Review</h3>
+      <p className="muted small" role="status" data-testid="ai-save">
+        {line}
+      </p>
+      {!ed.readOnly && (
+        <button className="btn block" disabled={!all.length} onClick={() => pending.accept(all.map((i) => i.id))} data-testid="ai-accept-all">
+          {all.length ? `Accept All ${all.length}` : 'Nothing Left for Accept All'}
+        </button>
+      )}
+      {groups.map((g) => (
+        <div key={g}>
+          <h3 className="sechead">{g}</h3>
+          <div className="group" data-testid="ai-review">
+            {undated
+              .filter((u) => group(u.item) === g)
+              .map((u) => (
+                <div key={u.id} className="frow stack" data-testid="ai-date-missing">
+                  <span className="lab">
+                    {place(u.item)} <span className="ai-tag conflict">Date missing</span>
+                  </span>
+                  {u.item.evidence && <span className="sub ai-quote">Note: “{u.item.evidence}”</span>}
+                  <input className="ios-value" type="date" aria-label={`${u.field.label} for ${place(u.item)}`} value="" onChange={(e) => e.target.value && pending.addDate(u.item.run, u.item.entity, u.field.name, u.item.row, e.target.value)} />
+                  <span className="muted small">The note gives no date for this. Enter it to accept these values.</span>
+                </div>
+              ))}
+            {items
+              .filter((i) => group(i) === g)
+              .map((i) => {
+                if (i.st !== 'wait') {
+                  const end = i.st === 'keep' ? 'saved value kept' : i.st === 'no' ? 'rejected' : text(i, i.value);
+                  const good = i.st === 'ok' || i.st === 'sent';
+                  return (
+                    <div key={i.id} className={`grow-row ai-item ${good ? 'ai-good' : 'ai-gone'}`} data-testid={good ? 'ai-accepted' : 'ai-rejected'}>
+                      <span className="grow">
+                        {good ? '✓ ' : ''}
+                        {name(i)}: {end}
+                      </span>
+                      {i.st !== 'sent' && !ed.readOnly && (
+                        <button className="link" onClick={() => pending.undo(i.id)}>
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+                return (
+                  <div key={i.id} className="grow-row ai-item stacked" data-testid={i.kind === 'conflict' ? 'ai-conflict' : 'ai-value'}>
+                    <span className="line1">
+                      {name(i)}
+                      {i.kind !== 'conflict' && (
+                        <>
+                          : <b>{text(i, i.value)}</b>
+                        </>
+                      )}
+                      {i.kind === 'conflict' && <span className="ai-tag conflict">Differs</span>}
+                      {i.flag && <span className="ai-tag conflict" data-testid="ai-flag">Procedure cancelled: check</span>}
+                    </span>
+                    {i.kind === 'conflict' ? <span className="sub">{place(i)} · Saved now: {i.saved === null || i.saved === undefined ? '—' : text(i, i.saved)}</span> : <span className="sub">{place(i)} · Now empty</span>}
+                    {(i.kind === 'conflict' ? (i.evidences ?? []) : i.evidence ? [i.evidence] : []).map((q, n) => (
+                      <span key={n} className="sub ai-quote">
+                        Note: “{q}”
+                      </span>
+                    ))}
+                    {i.error && <span className="field-error">{i.error}</span>}
+                    {!ed.readOnly && editing === i.id && (
+                      <EditValue
+                        entity={i.entity}
+                        field={i.field}
+                        value={i.value}
+                        onCancel={() => setEditing(null)}
+                        onDone={(v) => {
+                          setEditing(null);
+                          pending.acceptEdited(i.id, v);
+                        }}
+                      />
+                    )}
+                    {!ed.readOnly && editing !== i.id && (
+                      <span className="ai-actions">
+                        {i.kind === 'conflict' ? (
+                          <>
+                            {(i.proposed ?? []).map((v, n) => (
+                              <button key={n} className="btn small" onClick={() => pending.use(i.id, v)}>
+                                Use {text(i, v)}
+                              </button>
+                            ))}
+                            <button className="btn small" onClick={() => pending.keep(i.id)}>
+                              Keep Saved
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="btn small" disabled={needsDate(i)} onClick={() => pending.accept([i.id])} aria-label={`Accept ${name(i)}`}>
+                              Accept
+                            </button>
+                            <button className="btn small danger-text" onClick={() => pending.reject(i.id)} aria-label={`Reject ${name(i)}`}>
+                              Reject
+                            </button>
+                            {i.kind === 'value' && fieldOf(i.entity, i.field)?.type !== 'lookup_array' && (
+                              <button className="btn small" disabled={needsDate(i)} onClick={() => setEditing(i.id)} aria-label={`Edit ${name(i)}`}>
+                                Edit
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function AiSheet({ ed, procs, scope, note, setNote, pending, onClose }: { ed: CaseEditor; procs: { id: string; title: string }[]; scope?: AiScope; note: string; setNote: (s: string) => void; pending: AiPending; onClose: () => void }) {
   const { toast } = useStore();
   const d = ed.detail!;
   const [status, setStatus] = useState<AiStatus | null>(null);
@@ -152,7 +342,7 @@ export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: Case
     try {
       await ed.flush();
       const r = await api<RunResult>('POST', `/api/cases/${d.meta.case_id}/ai/extract`, { note, sent_text: sendText, procedure_id: target, ...(scope ? { sections: [scope.section] } : {}) });
-      ed.replace(r.case);
+      pending.addRun(r.target, r.items);
       setRun(r);
       setNote('');
       setPreview(null);
@@ -199,7 +389,7 @@ export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: Case
           Only {scope.title} is filled from this note.
         </p>
       )}
-      {!preview && <p className="muted small">Paste a clinical note about this patient. The AI fills only empty fields of this case and marks them “AI” until you accept them. The note is not kept.</p>}
+      {!preview && !pending.items.length && <p className="muted small">Paste a clinical note about this patient. Nothing is saved until you accept it. The note is not kept.</p>}
       {statusError && <p className="field-error">{statusError}</p>}
       {status && (
         <p className="small" data-testid="ai-provider">
@@ -208,6 +398,17 @@ export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: Case
           {!status.configured && status.reason ? <span className="field-error"> — {status.reason}</span> : null}
         </p>
       )}
+
+      {run && !preview && (
+        <div className="banner info" data-testid="ai-run">
+          <span className="grow">
+            {run.recognised ? '' : 'Test AI knows only its sample notes; nothing was found in this one. '}
+            {run.summary.filled} to review · {run.summary.conflicts} differ{run.summary.conflicts === 1 ? 's' : ''} from saved · {run.summary.same} already the same · {run.summary.additional} additional · {run.summary.dropped} skipped
+            {removedAgain ? `. Also removed from your edits before sending: ${removedAgain}` : ''}
+          </span>
+        </div>
+      )}
+      {!preview && <PendingList ed={ed} procs={procs} pending={pending} />}
 
       {ready && preview && (
         <>
@@ -267,20 +468,9 @@ export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: Case
         </>
       )}
 
-      {run && !preview && (
-        <div className="banner info" data-testid="ai-run">
-          <span className="grow">
-            {run.recognised ? '' : 'Test AI knows only its sample notes; nothing was found in this one. '}
-            {run.summary.filled} filled · {run.summary.conflicts} conflict{run.summary.conflicts === 1 ? '' : 's'} · {run.summary.same} already the same · {run.summary.additional} additional ·{' '}
-            {run.summary.dropped} skipped
-            {removedAgain ? `. Also removed from your edits before sending: ${removedAgain}` : ''}
-          </span>
-        </div>
-      )}
-
       {!preview && (values.length > 0 || conflicts.length > 0 || undated.length > 0) && (
         <>
-          <h3 className="sechead">To review</h3>
+          <h3 className="sechead">Waiting From Before</h3>
           {acceptable.length > 0 && !ed.readOnly && (
             <button
               className="btn block"

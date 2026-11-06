@@ -543,7 +543,7 @@ export function historyItems(dict: Dictionary, rec: CaseRecord, nameOf: (id: str
       const def = h.entity ? dict.entities[h.entity] : undefined;
       const flabel = def?.fields.find((x) => x.name === h.field)?.label ?? h.field ?? '';
       const prefix = h.where ? `${h.where} · ` : '';
-      if (h.kind === 'edit' && h.text === 'ai' && def) return { ...base, kind: 'ai' as const, text: `${prefix}${flabel} (AI, to review)`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
+      if (h.kind === 'edit' && (h.text === 'ai' || h.text === 'ai_accepted') && def) return { ...base, kind: 'ai' as const, text: `${prefix}${flabel} (AI, ${h.text === 'ai' ? 'to review' : 'accepted'})`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
       if (h.kind === 'edit' && h.text === 'other') return { ...base, text: `${prefix}${flabel}: Other — specify`, old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };
       if (h.kind === 'edit' && def) return { ...base, text: `${prefix}${flabel}`, old: show(h.entity, h.field, h.old), new: show(h.entity, h.field, h.new) };
       if (h.kind === 'edit') return { ...base, text: h.text ?? 'Changed', old: show(undefined, undefined, h.old), new: show(undefined, undefined, h.new) };

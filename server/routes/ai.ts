@@ -2,7 +2,7 @@
 // autofill inside one case only, review, and the Admin's provider choice. The note travels only in the request body, is never stored or logged,
 // and only its de-identified text is sent to the provider.
 import { aiSections } from '../ai/catalogue.ts';
-import { aiRunSummary, applyExtraction, applyToNewProcedure, fixtureExtract, llmExtract, onlySections, pendingKeys, reviewAi, type RawExtraction, type ReviewAction } from '../ai/extract.ts';
+import { aiRunSummary, applyAccepted, applyExtraction, applyToNewProcedure, fixtureExtract, flagCancelled, llmExtract, onlySections, pendingKeys, reviewAi, type RawExtraction, type RawProposal, type ReviewAction } from '../ai/extract.ts';
 import { AiError, choose, llm, type ProviderId } from '../ai/providers.ts';
 import { mrnsInNote, redact } from '../ai/redact.ts';
 import { liveRows, toDetail, type Actor } from '../domain/cases.ts';
@@ -150,15 +150,12 @@ export function aiRoutes(app: Router) {
       }
     }
 
-    const base = structuredClone(rec);
+    // Tried on a copy: nothing reaches the Sheet until a person accepts it (owner, 4 Nov).
+    const copy = structuredClone(rec);
     const a: Actor = { userId: u.userId, now: ctx.now().toISOString() };
-    const { rec: done, procedureId, items } = target === 'new' ? applyToNewProcedure(config.dict, rec, raw, red.text, a) : { rec, procedureId: target, items: applyExtraction(config.dict, rec, raw, red.text, target, a) };
+    const tried = target === 'new' ? applyToNewProcedure(config.dict, copy, raw, red.text, a).items : applyExtraction(config.dict, copy, raw, red.text, target, a);
+    const items = flagCancelled(config.dict, rec, target, tried);
     const s = aiRunSummary(items);
-    if (s.filled || s.conflicts || s.additional) {
-      Object.assign(done.meta, { updated_at: a.now, updated_by: a.userId, row_version: done.meta.row_version + 1 });
-      done.meta.collector_user_id ??= a.userId;
-      await store.putCase(done, base);
-    }
     // Counts only: never the note or its text.
     await store.appendActivity([{ actor: u.userId, action: 'ai.extract', detail: { case_id: rec.meta.case_id, provider: choice.provider, model: choice.model, ...s, removed: red.removed, note_chars: note.length, tokens } }]);
     if (choice.provider !== 'fixture') {
@@ -170,7 +167,33 @@ export function aiRoutes(app: Router) {
         u.userId,
       );
     }
-    return { provider: choice.label, recognised, summary: s, items, removed: red.removed, procedure_id: procedureId, case: await detail(done) };
+    return { provider: choice.label, recognised, summary: s, items, removed: red.removed, target };
+  });
+
+  /** Saves what a person accepted from a note, in one save. row_ids keeps rows made by an earlier batch from the same note. */
+  app.post('/api/cases/:id/ai/apply', async (req) => {
+    const u = requireCap(req, 'case.edit');
+    const b = req.body ?? {};
+    const values: RawProposal[] = Array.isArray(b.values) ? b.values : [];
+    const additional: { text: string; evidence: string }[] = Array.isArray(b.additional) ? b.additional : [];
+    if (values.length + additional.length < 1 || values.length + additional.length > 500) throw badRequest('values must be a list of 1–500 items.');
+    for (const v of values) if (typeof v?.entity !== 'string' || typeof v?.field !== 'string') throw badRequest('Each value needs an entity and a field.');
+    const rec = await requireOpenCase(req);
+    const procs = liveRows(rec, 'EP_PROCEDURES').map((p) => p._id);
+    const target = b.procedure_id === 'new' ? 'new' : b.procedure_id ? String(b.procedure_id) : null;
+    if (target && target !== 'new' && !procs.includes(target)) throw badRequest('This procedure is no longer in the case.', { field: 'procedure_id' });
+    const rowIds = new Map<string, string>(Object.entries(b.row_ids ?? {}).map(([k, v]) => [k, String(v)]));
+    const base = structuredClone(rec);
+    const a: Actor = { userId: u.userId, now: ctx.now().toISOString() };
+    const raw: RawExtraction = { proposals: values.map((v) => ({ entity: v.entity, field: v.field, value: v.value, row: String(v.row ?? ''), evidence: String(v.evidence ?? ''), overwrite: v.overwrite === true })), conflicts: [], additional_info: additional };
+    const { rec: done, procedureId, items } = applyAccepted(config.dict, rec, target, raw, rowIds, a);
+    const s = aiRunSummary(items);
+    if (s.filled || s.additional) {
+      Object.assign(done.meta, { updated_at: a.now, updated_by: a.userId, row_version: done.meta.row_version + 1 });
+      done.meta.collector_user_id ??= a.userId;
+      await store.putCase(done, base, [{ actor: u.userId, action: 'ai.review', detail: { case_id: done.meta.case_id, done: s.filled + s.additional } }]);
+    }
+    return { procedure_id: procedureId, row_ids: Object.fromEntries(rowIds), summary: s, items, case: await detail(done) };
   });
 
   /** Accept / reject AI values, or choose for a conflict. accept_all = accept every value still waiting. */

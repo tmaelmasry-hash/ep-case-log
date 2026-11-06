@@ -34,7 +34,7 @@ test('Fill From a Note fills only its section; the note stays between sections; 
   await page.getByTestId('section-sheet').getByTestId('ai-line').click();
   await sheet.getByTestId('ai-preview').click();
   await sheet.getByTestId('ai-send').click();
-  await expect(sheet.getByTestId('ai-run')).toContainText('filled');
+  await expect(sheet.getByTestId('ai-run')).toContainText('to review');
   await expect(sheet.getByTestId('ai-value').filter({ hasText: 'Hypertension' })).toBeVisible();
   // N01 also has a diagnosis and a procedure: neither was filled from this section.
   await expect(sheet.getByTestId('ai-value').filter({ hasText: 'Primary EP Diagnosis' })).toHaveCount(0);

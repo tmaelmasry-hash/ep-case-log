@@ -83,10 +83,10 @@
   "provider": "groq",
   "passes": 1,
   "_passes": "1 = one request per note with all sections (owner, 16 Oct: stays within a free daily quota, e.g. Gemini free tier 20 requests/day); 2 = pass 1 finds the sections, pass 2 extracts (two requests, fewer tokens each).",
-  "_providers": "groq (owner, 5 Nov: the default, after the model comparison; one section at a time on the free plan; a local or test server has no Worker binding and uses the Test AI) | workers_ai (Worker binding, no key; its model below is not the owner's choice) | fixture (test AI, the sample notes) | anthropic | gemini | openai | off. The Admin switches it in Settings; keys live only in Cloudflare environment variables.",
+  "_providers": "groq (owner, 5 Nov: the default, after the model comparison; one section at a time on the free plan; a local or test server has no Worker binding and uses the Test AI) | workers_ai (Worker binding, no key; Nemotron, since Llama 3.3 obeyed the instruction in sample note N12) | fixture (test AI, the sample notes) | anthropic | gemini | openai | off. The Admin switches it in Settings; keys live only in Cloudflare environment variables.",
   "workers_ai": {
    "api_key_env": null,
-   "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+   "model": "@cf/nvidia/nemotron-3-120b-a12b",
    "price_usd_per_mtok": null
   },
   "groq": {

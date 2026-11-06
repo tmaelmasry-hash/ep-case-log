@@ -106,7 +106,7 @@ describe('This is what will be sent', () => {
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/preview`, { note: MADE_UP });
     expect(r.status).toBe(200);
     expect(r.data.text).toBe('Name: [NAME]. DOB 12/03/1961. MRN [MRN]. National ID [ID]. Mail [EMAIL]. Seen by Dr. [NAME]. Hypertension on amlodipine.');
-    expect(r.data.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 0, name: 2 });
+    expect(r.data.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 0, name: 2, instruction: 0 });
     expect(sent).toHaveLength(0);
     expect(await h.store.listActivity()).toHaveLength(log);
     expect((await admin.call('GET', '/api/ai/status')).data.usage).toEqual(usage);

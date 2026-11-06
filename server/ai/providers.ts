@@ -134,14 +134,21 @@ async function workersAiJson(ai: AiBinding, model: string, timeout: number, c: J
 // ── Groq (chat completions, strict JSON schema) ──
 /** Kept small: Groq's free limit is 8,000 tokens a minute. To be checked against a real key. */
 const GROQ_MAX_TOKENS = 3000;
+/** How long to wait before one more try after 413. Measured 5 Nov: `procedure` got 413 during a busy minute and passed after a quiet one. Tests set 0. */
+export const TOO_LARGE_WAIT_MS = [60_000];
 
 async function groqJson(f: typeof fetch, key: string, model: string, timeout: number, c: JsonCall): Promise<JsonResult> {
-  const res = await http(f, 'https://api.groq.com/openai/v1/chat/completions', timeout, 'Groq', { Authorization: `Bearer ${key}` }, {
+  const ask = () => http(f, 'https://api.groq.com/openai/v1/chat/completions', timeout, 'Groq', { Authorization: `Bearer ${key}` }, {
     model,
     messages: [{ role: 'system', content: `${c.system}\n\n${c.cacheable}` }, { role: 'user', content: c.user }],
     response_format: { type: 'json_schema', json_schema: { name: c.name, strict: true, schema: c.schema } },
     max_completion_tokens: GROQ_MAX_TOKENS,
     temperature: 0,
+  });
+  const res = await ask().catch(async (e) => {
+    if (!(e instanceof AiError) || e.status !== 413) throw e;
+    await new Promise((r) => setTimeout(r, TOO_LARGE_WAIT_MS[0]));
+    return ask();
   });
   const choice = res.choices?.[0];
   if (choice?.finish_reason === 'length') throw new AiError(502, 'AI_TOO_LONG', 'The answer was cut off. Try a shorter note.');

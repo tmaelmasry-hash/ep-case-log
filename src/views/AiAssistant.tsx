@@ -26,6 +26,7 @@ interface Removed {
   email: number;
   phone: number;
   name: number;
+  instruction: number;
 }
 
 interface RunItem {
@@ -50,7 +51,7 @@ interface RunResult {
 const countOf = (n: number, one: string, many = `${one}s`) => (n ? [`${n} ${n === 1 ? one : many}`] : []);
 /** "4 names · 1 ID number · 1 MRN", or null if nothing was removed. */
 function removedText(r: Removed): string | null {
-  const parts = [...countOf(r.name, 'name'), ...countOf(r.id, 'ID number'), ...countOf(r.mrn, 'MRN'), ...countOf(r.phone, 'phone number'), ...countOf(r.email, 'email')];
+  const parts = [...countOf(r.name, 'name'), ...countOf(r.id, 'ID number'), ...countOf(r.mrn, 'MRN'), ...countOf(r.phone, 'phone number'), ...countOf(r.email, 'email'), ...countOf(r.instruction, 'instruction to the AI', 'instructions to the AI')];
   return parts.length ? parts.join(' · ') : null;
 }
 

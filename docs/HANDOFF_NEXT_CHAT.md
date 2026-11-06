@@ -23,7 +23,7 @@ Nemotron 120b did not obey it and found 15 of 18, but only 2 notes so far, 80 s 
 Nemotron's remaining notes were not measured (`AI_QUOTA_DAY` on 5 Nov) and he did not ask for them after choosing Groq. Llama stays only as the Workers AI entry in `site.json`.
 Never deploy with Llama as default.
 
-**Phase 3, still to build:** a guard against instructions written inside a note (before any real note), the small AI icon in each case section (**show him a preview first**), passing `sections` from the screen (the server already takes it). Groq's `max_completion_tokens` is a guess until measured on a whole section.
+**Phase 3, still to build:** making the `procedure` request small enough for Groq's free plan (open decision, numbers in `docs/AI_PLATFORM_PLAN.md`), the small AI icon in each case section (**show him a preview first**), passing `sections` from the screen (the server already takes it). Built 6 Nov: removing instructions inside a note, day-first dates, one wait and retry on 413. The PC sleeps once a session goes idle and that hangs e2e: keep a foreground wait running during long suites.
 **Phase 4 (his decision, not built):** nothing from the AI is written before a person accepts it, and accepting must be fast (instant on the device, then one save). Today values go to the Sheet marked AI at extract.
 **Later phases:** in `docs/AI_PLATFORM_PLAN.md`. Before any deploy that includes dates-only: read-only count of old values with a time on the main Sheet (counts only, no MRN), and show him.
 

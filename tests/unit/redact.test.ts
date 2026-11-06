@@ -61,7 +61,7 @@ describe('redact removes identifiers', () => {
   it('uses placeholders and counts what it removed', () => {
     const r = redact('Name: Ahmed Zahrani. MRN 9990701. National ID 1012345678. Mail a.z@example.com. Mobile 0551234567. Seen by Dr. Salem Testperson. Son Khalid Alharbi informed.', known);
     expect(r.text).toBe('Name: [NAME]. MRN [MRN]. National ID [ID]. Mail [EMAIL]. Mobile [PHONE]. Seen by Dr. [NAME]. Son [NAME] informed.');
-    expect(r.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 1, name: 3 });
+    expect(r.removed).toEqual({ mrn: 1, id: 1, email: 1, phone: 1, name: 3, instruction: 0 });
   });
 
   it('removes a measured made-up note of every kind', () => {
@@ -176,7 +176,7 @@ describe('de-identifying twice changes nothing (the server repeats it on the edi
     const once = redact(note, known);
     const twice = redact(once.text, known);
     expect(twice.text).toBe(once.text);
-    expect(twice.removed).toEqual({ mrn: 0, id: 0, email: 0, phone: 0, name: 0 });
+    expect(twice.removed).toEqual({ mrn: 0, id: 0, email: 0, phone: 0, name: 0, instruction: 0 });
   });
 });
 

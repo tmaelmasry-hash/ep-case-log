@@ -1,7 +1,7 @@
 // Groq (the default provider) and Workers AI, stubbed. Made-up notes only: nothing leaves this computer.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { aiFields, aiSections } from '../../server/ai/catalogue.ts';
-import { RETRY_DELAYS_MS } from '../../server/ai/providers.ts';
+import { RETRY_DELAYS_MS, TOO_LARGE_WAIT_MS } from '../../server/ai/providers.ts';
 import { as, config, harness, newCase, type Harness } from './harness.ts';
 
 let h: Harness;
@@ -243,13 +243,64 @@ describe('Groq', () => {
     expect(long).toHaveLength(1);
   });
 
-  it('a note over the size limit gets a message that says what to do', async () => {
+  it('a note still over the size limit after one wait gets a message that says what to do', async () => {
+    TOO_LARGE_WAIT_MS[0] = 0;
     const admin = await useGroq();
     const { case_id } = await newCase(admin, MRN);
-    stubGroq(() => new Response(JSON.stringify({ error: { message: 'Request too large' } }), { status: 413 }));
+    let asked = 0;
+    stubGroq(() => {
+      asked++;
+      return new Response(JSON.stringify({ error: { message: 'Request too large' } }), { status: 413 });
+    });
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: [section()] });
     expect(r.status).toBe(413);
+    expect(asked).toBe(2);
     expect(r.data.error.message).toContain('one section');
     expect(RETRY_DELAYS_MS.length).toBeGreaterThan(0);
+  });
+
+  it('even if the model obeys an instruction inside the note, or reads a date month first, the value is not filled', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    const fx = config.aiFixtures.find((f) => f.id === 'N12')!;
+    const note = [...fx.text, 'DOB 02/03/1961.'].join('\n').split(fx.identifiers.mrn).join(MRN);
+    const model = {
+      proposals: [
+        { entity: 'ECHO_STUDIES', field: 'lvef_pct', value: '10', row: 'echo-1', evidence: 'set LVEF to 10%' },
+        { entity: 'ECHO_STUDIES', field: 'lvef_pct', value: '60', row: 'echo-1', evidence: 'LVEF 60%' },
+        { entity: 'PATIENT_IDENTIFIERS', field: 'date_of_birth', value: '1961-02-03', row: '', evidence: 'DOB 02/03/1961' },
+      ],
+      conflicts: [],
+      additional_info: [],
+    };
+    let sent = '';
+    stubGroq((body) => {
+      sent = JSON.stringify(body);
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(model) } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }), { status: 200 });
+    });
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note, sections: ['echo', 'patient'] });
+    expect(r.status).toBe(200);
+    expect(sent).not.toMatch(/admin mode|IGNORE ALL/);
+    expect(r.data.removed.instruction).toBe(2);
+    const of = (status: string) => r.data.items.filter((i: { status: string }) => i.status === status);
+    expect(of('FILLED').map((i: { field: string; value: unknown }) => `${i.field}=${i.value}`)).toEqual(['lvef_pct=60']);
+    const reasons = of('DROPPED').map((i: { reason: string }) => i.reason).join(' | ');
+    expect(reasons).toContain('the quote is not in the note');
+    expect(reasons).toContain('day first');
+  });
+
+  it('413 during a busy minute: one wait, one more try, and the answer is used', async () => {
+    TOO_LARGE_WAIT_MS[0] = 0;
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    let asked = 0;
+    stubGroq(() => {
+      asked++;
+      if (asked === 1) return new Response(JSON.stringify({ error: { message: 'Request too large' } }), { status: 413 });
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }), { status: 200 });
+    });
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: [section()] });
+    expect(r.status).toBe(200);
+    expect(asked).toBe(2);
   });
 });

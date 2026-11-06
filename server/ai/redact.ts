@@ -172,12 +172,49 @@ export function mrnsInNote(note: string): string[] {
   return [...out];
 }
 
+// ── instructions written inside a note ──
+
+/** Phrases addressed to an AI, not clinical language. "Paced at 60, set to DDD" and "ignored the warfarin advice" stay. Best effort: the prompt, the quote check and a person's review stay behind it. */
+const INSTRUCTION = [
+  /\b(?:ignore|disregard|forget|override|bypass)\b[^.!?\n]{0,40}\b(?:instructions?|prompts?|rules|guidelines|commands?)\b/i,
+  /\byou are now\b/i,
+  /\b(?:admin|developer|debug|god) mode\b/i,
+  /\b(?:system|developer) (?:prompt|message)\b/i,
+  /\bnew instructions?\b/i,
+  /\bmark (?:this|the) case\b/i,
+  /\bset (?:the )?(?:lvef|ef|mrn|status|collection status)\b[^.!?\n]{0,20}\bto\b/i,
+  /\b(?:output|reveal|print|repeat)\b[^.!?\n]{0,30}\b(?:mrn|patient'?s? name|prompt|instructions)\b/i,
+  /\b(?:ai|assistant|chatbot)\b\s*[,:]\s*(?:please\s+)?(?:set|mark|change|output|ignore|write|fill|delete)\b/i,
+  /(?:تجاهل|تجاهلي|انس|انسى)[^.؟!\n]{0,30}(?:التعليمات|الأوامر)/u,
+];
+const INVISIBLE = /[​-‍⁠﻿­]/g;
+const INSTRUCTION_MARK = '[INSTRUCTION REMOVED]';
+
+/** Takes out each sentence that speaks to an AI, so neither the model nor the quote check ever sees it. */
+function removeInstructions(t: string, hit: () => void): string {
+  return t
+    .split('\n')
+    .map((line) =>
+      line
+        .split(/(?<=[.!?؟])(\s+)/u)
+        .map((part) => {
+          const plain = part.replace(INVISIBLE, '');
+          if (!INSTRUCTION.some((re) => re.test(plain))) return part;
+          hit();
+          return INSTRUCTION_MARK;
+        })
+        .join(''),
+    )
+    .join('\n');
+}
+
 export interface Removed {
   mrn: number;
   id: number;
   email: number;
   phone: number;
   name: number;
+  instruction: number;
 }
 export interface Redaction {
   text: string;
@@ -185,9 +222,9 @@ export interface Redaction {
 }
 
 export function redact(note: string, known: { mrn: string; fullName?: string | null }): Redaction {
-  const removed: Removed = { mrn: 0, id: 0, email: 0, phone: 0, name: 0 };
+  const removed: Removed = { mrn: 0, id: 0, email: 0, phone: 0, name: 0, instruction: 0 };
   const hitName = () => { removed.name++; };
-  let t = note.replace(/\r\n?/g, '\n');
+  let t = removeInstructions(note.replace(/\r\n?/g, '\n'), () => { removed.instruction++; });
   // Email first: a saved name must never leave "[NAME]@example.com" behind.
   t = t.replace(EMAIL, () => { removed.email++; return '[EMAIL]'; });
   t = t.replace(MRN_LABELLED, (all, num: string) => { removed.mrn++; return all.replace(num, '[MRN]'); });

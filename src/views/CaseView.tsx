@@ -17,7 +17,8 @@ import { api, ApiError } from '../lib/api';
 import { cha2ds2vasc, chaRelevant, type ChaResult } from '../../shared/cha.ts';
 import { bmi } from '../../shared/derive.ts';
 import { CaseReport, PrintPortal } from './CaseReport';
-import { AiSheet, aiPending } from './AiAssistant';
+import { AiLine, AiSheet, aiPending, type AiScope } from './AiAssistant';
+import { aiSectionOf } from '../../shared/aiSections.ts';
 import { CaseCohortsSheet } from '../components/CaseCohortsSheet';
 import { MoveCaseSheet } from '../components/MoveCaseSheet';
 import { caseEnv, consequences, evaluate, fieldRules, type Consequence } from '../../shared/rules.ts';
@@ -414,13 +415,14 @@ function DoneFirst({ ed, entity, options, onOpen }: { ed: CaseEditor; entity: st
 }
 
 /** A layout row (e.g. "Patient", "ECG", "Devices"): one-per-case sections as forms, repeatable ones as lists. */
-function SectionSheet({ ed, title, entities, values, focus, cha, onClose }: { ed: CaseEditor; title: string; entities: string[]; values?: Record<string, string>; focus?: string; cha?: ChaResult | null; onClose: () => void }) {
+function SectionSheet({ ed, title, entities, values, focus, cha, onAi, onClose }: { ed: CaseEditor; title: string; entities: string[]; values?: Record<string, string>; focus?: string; cha?: ChaResult | null; onAi?: () => void; onClose: () => void }) {
   const [open, setOpen] = useState<{ entity: string; id: string } | null>(null);
   const caseId = ed.detail!.meta.case_id;
   useFocusField(focus);
   if (open) return <RowSheet ed={ed} entity={open.entity} id={open.id} onClose={() => setOpen(null)} />;
   return (
     <Sheet title={title} onClose={onClose} onDone={onClose} testId="section-sheet">
+      {onAi && <AiLine onClick={onAi} />}
       {entities.map((entity) => {
         const def = dict.entities[entity];
         if (def.cardinality === 'single') {
@@ -651,7 +653,7 @@ function NextMissing({ items, parts, partOf, openPart }: { items: CoreCheck[]; p
 /** One procedure: its EP_PROCEDURES fields, components, the modules they call for, and its complications.
  *  Owner, 28 Oct (step 4): tabs General · each type · Complications that jump to their part; the "Done" row and the
  *  tabs stay on top while scrolling; each part opens and closes and shows what is missing. */
-function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string; focus?: string; onClose: () => void }) {
+function ProcedureSheet({ ed, id, focus, onAi, onClose }: { ed: CaseEditor; id: string; focus?: string; onAi?: () => void; onClose: () => void }) {
   const c = useCase();
   useFocusField(focus);
   const procs = ed.rows('EP_PROCEDURES');
@@ -754,6 +756,7 @@ function ProcedureSheet({ ed, id, focus, onClose }: { ed: CaseEditor; id: string
   return (
     <Sheet title={name} onClose={fresh.cancel} onDone={fresh.done} testId="procedure-sheet">
       {fresh.dialog}
+      {onAi && <AiLine onClick={onAi} />}
       <div className="proc-bar" data-testid="proc-bar">
         <div className="proc-sub small">
           {date ? fmtDate(date) : 'No date'} · {left ? <span className="missing">{left} missing</span> : <span className="ok-text">✓ Nothing missing</span>}
@@ -1465,7 +1468,7 @@ type OpenSheet =
   | { kind: 'ready' }
   | { kind: 'completeness' }
   | { kind: 'history' }
-  | { kind: 'ai' }
+  | { kind: 'ai'; scope?: AiScope; back?: OpenSheet }
   | { kind: 'cohorts' }
   | { kind: 'move' }
   | null;
@@ -1480,6 +1483,9 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const [na, setNa] = useState<{ entity: string; field: string; pid: string | null } | null>(null);
   const [reopening, setReopening] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The pasted note survives moving between sections and is gone on leaving the case (owner, 4 Nov). Memory only.
+  const [aiNote, setAiNote] = useState('');
+  useEffect(() => setAiNote(''), [id]);
   const d = ed.detail;
 
   // Owner step 8: deleted at once, with Undo (the person who deleted it may restore it within a minute).
@@ -1551,6 +1557,8 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
   const localOnly = sync.isLocalOnly(d.meta.case_id);
   const serverCase = online && !localOnly;
   const aiWaiting = aiPending(d);
+  // The first line of a section opens the AI for that section; closing it goes back to the section.
+  const aiFrom = (scope: AiScope | null) => (can('ai.extract') && !completed && me?.features?.ai !== false && serverCase && scope ? () => setSheet({ kind: 'ai', scope, back: sheet }) : undefined);
   const addProcedure = () => setSheet({ kind: 'addproc' });
   const countOf = (r: LayoutRow) => {
     let n = 0;
@@ -1701,16 +1709,16 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
               <span>AI</span>
             </button>
           )}
+          <button className="tool" onClick={() => setSheet({ kind: 'completeness' })} data-testid="completeness-row" aria-label="Completeness by section">
+            <Icon name="bars" size={22} />
+            <span>Completeness</span>
+          </button>
           {(cohorts.length > 0 || can('cohorts.manage')) && (
             <button className="tool" onClick={() => setSheet({ kind: 'cohorts' })} data-testid="cohorts-row" disabled={!serverCase}>
               <Icon name="patients" size={22} />
               <span>Cohorts{(d.summary.cohorts ?? []).length ? ` (${(d.summary.cohorts ?? []).length})` : ''}</span>
             </button>
           )}
-          <button className="tool" onClick={() => setSheet({ kind: 'completeness' })} data-testid="completeness-row" aria-label="Completeness by section">
-            <Icon name="bars" size={22} />
-            <span>Completeness</span>
-          </button>
           <button className="tool" onClick={() => setSheet({ kind: 'history' })} data-testid="history-row" title={`${d.history_count} change${d.history_count === 1 ? '' : 's'}`}>
             <Icon name="cal" size={22} />
             <span>History</span>
@@ -1893,8 +1901,11 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
           </div>
         )}
 
-        {sheet?.kind === 'procedure' && <ProcedureSheet ed={ed} id={sheet.id} focus={sheet.focus} onClose={() => setSheet(null)} />}
-        {sheet?.kind === 'section' && <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} values={sheet.values} focus={sheet.focus} cha={cha} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'procedure' && <ProcedureSheet ed={ed} id={sheet.id} focus={sheet.focus} onAi={aiFrom({ section: 'procedure', title: procHeading(ed, sheet.id), procedureId: sheet.id })} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'section' && (() => {
+          const section = aiSectionOf(dict, sheet.entities);
+          return <SectionSheet ed={ed} title={sheet.title} entities={sheet.entities} values={sheet.values} focus={sheet.focus} cha={cha} onAi={aiFrom(section ? { section, title: sheet.title } : null)} onClose={() => setSheet(null)} />;
+        })()}
         {sheet?.kind === 'addproc' && <AddProcedureSheet ed={ed} onClose={() => setSheet(null)} onNext={(pid) => setSheet({ kind: 'procedure', id: pid })} />}
         {sheet?.kind === 'additional' && <AdditionalSheet ed={ed} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'followup' && <FollowUpSheet ed={ed} onClose={() => setSheet(null)} />}
@@ -1909,7 +1920,7 @@ export function CaseView({ id, nav, wide }: { id: string; nav: (p: string) => vo
             onClose={() => setSheet(null)}
           />
         )}
-        {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} onClose={() => setSheet(null)} />}
+        {sheet?.kind === 'ai' && <AiSheet ed={ed} procs={procs.map((p) => ({ id: p._id, title: procHeading(ed, p._id) }))} scope={sheet.scope} note={aiNote} setNote={setAiNote} onClose={() => setSheet(sheet.back ?? null)} />}
         {sheet?.kind === 'history' && <HistorySheet caseId={d.meta.case_id} onClose={() => setSheet(null)} />}
         {sheet?.kind === 'move' && (
           <MoveCaseSheet caseId={d.meta.case_id} mrn={d.meta.mrn} groupId={d.meta.group_id} seq={d.meta.group_seq} onMoved={() => Promise.all([ed.reload(), refreshCases()])} onClose={() => setSheet(null)} />

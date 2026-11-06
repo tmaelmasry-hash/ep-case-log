@@ -9,6 +9,7 @@ import { dict, fieldOf } from '../lib/dict';
 import { api, ApiError } from '../lib/api';
 import { useStore } from '../store';
 import { Sheet } from '../components/ui';
+import { Icon } from '../components/Icon';
 import type { CaseEditor } from '../caseEditor';
 
 interface AiStatus {
@@ -68,12 +69,29 @@ export function aiPending(d: CaseDetail | null): { values: [string, AiMark][]; c
   return { values: all.filter(([, m]) => m.source === 'AI' && m.field !== '*'), conflicts: all.filter(([, m]) => m.source === 'AI_CONFLICT') };
 }
 
-export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: string; title: string }[]; onClose: () => void }) {
+/** Opened from one section: only its fields are read from the note. Without it (the AI button at the top), all sections. */
+export interface AiScope {
+  section: string;
+  title: string;
+  procedureId?: string;
+}
+
+/** The first line of a case section: opens the AI Assistant for this section. */
+export function AiLine({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="ai-line" onClick={onClick} data-testid="ai-line">
+      <Icon name="sparkle" size={20} />
+      <span className="grow">Fill From a Note</span>
+      <span className="muted small">AI</span>
+    </button>
+  );
+}
+
+export function AiSheet({ ed, procs, scope, note, setNote, onClose }: { ed: CaseEditor; procs: { id: string; title: string }[]; scope?: AiScope; note: string; setNote: (s: string) => void; onClose: () => void }) {
   const { toast } = useStore();
   const d = ed.detail!;
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [note, setNote] = useState('');
   // Step 2, "This is what will be sent": null while the person is still on the note. Going back keeps the note.
   const [preview, setPreview] = useState<{ text: string; removed: Removed } | null>(null);
   const [sendText, setSendText] = useState('');
@@ -83,7 +101,7 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
   // The note goes to the case's latest procedure, or a new one if there is none (owner, 4 Nov: no choice to make here).
   // The AI values stay marked and show their procedure until a person accepts them.
   const latest = [...ed.rows('EP_PROCEDURES')].sort((a, b) => String(a.procedure_start_datetime ?? '').localeCompare(String(b.procedure_start_datetime ?? ''))).pop();
-  const target = latest?._id ?? 'new';
+  const target = scope?.procedureId ?? latest?._id ?? 'new';
   const targetTitle = procs.length > 1 ? procs.find((p) => p.id === target)?.title : null;
 
   useEffect(() => {
@@ -133,7 +151,7 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
     setError(null);
     try {
       await ed.flush();
-      const r = await api<RunResult>('POST', `/api/cases/${d.meta.case_id}/ai/extract`, { note, sent_text: sendText, procedure_id: target });
+      const r = await api<RunResult>('POST', `/api/cases/${d.meta.case_id}/ai/extract`, { note, sent_text: sendText, procedure_id: target, ...(scope ? { sections: [scope.section] } : {}) });
       ed.replace(r.case);
       setRun(r);
       setNote('');
@@ -176,6 +194,11 @@ export function AiSheet({ ed, procs, onClose }: { ed: CaseEditor; procs: { id: s
 
   return (
     <Sheet title="AI Assistant" onClose={onClose} onDone={onClose} testId="ai-sheet">
+      {scope && (
+        <p className="small strong" data-testid="ai-scope">
+          Only {scope.title} is filled from this note.
+        </p>
+      )}
       {!preview && <p className="muted small">Paste a clinical note about this patient. The AI fills only empty fields of this case and marks them “AI” until you accept them. The note is not kept.</p>}
       {statusError && <p className="field-error">{statusError}</p>}
       {status && (

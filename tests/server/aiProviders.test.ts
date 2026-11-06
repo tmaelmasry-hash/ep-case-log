@@ -289,14 +289,15 @@ describe('Groq', () => {
     expect(reasons).toContain('day first');
   });
 
-  it('asks only about the procedure type: the procedure\'s own, or the screen\'s; none known means all', async () => {
+  it('asks only about the procedure type: the screen\'s, or the one a small first request names', async () => {
     const admin = await useGroq();
     const { case_id } = await newCase(admin, MRN);
     const empty = { proposals: [], conflicts: [], additional_info: [] };
     const asked: string[] = [];
     stubGroq((body) => {
       asked.push(String(body.messages[0].content));
-      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(empty) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 });
+      const content = body.response_format.json_schema.name === 'sections' ? { sections: ['procedure'], procedure_types: ['FLUTTER'] } : empty;
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(content) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 });
     });
     const go = (extra: object) => admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: ['procedure'], ...extra });
     expect((await go({ component_types: ['AF'] })).status).toBe(200);
@@ -305,9 +306,11 @@ describe('Groq', () => {
     expect(asked[0]).toContain('### COMPLICATIONS');
     expect(asked[0]).not.toContain('### DEVICE_IMPLANTS');
     expect(asked[0]).not.toContain('### SVT_ABLATIONS');
+    // No type known: the first request names it, and the second has only that type's tables.
     expect((await go({})).status).toBe(200);
-    expect(asked[1]).toContain('### DEVICE_IMPLANTS');
-    expect(asked[0].length).toBeLessThan(asked[1].length / 2);
+    expect(asked[1]).toContain('You sort');
+    expect(asked[2]).toContain('### FLUTTER_ABLATIONS');
+    expect(asked[2]).not.toContain('### DEVICE_IMPLANTS');
     expect((await go({ component_types: ['NOT_A_TYPE'] })).status).toBe(400);
   });
 
@@ -321,6 +324,25 @@ describe('Groq', () => {
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note, procedure_id: 'new', sections: ['procedure'], component_types: ['AF'] });
     expect(r.status).toBe(200);
     expect(r.data.items).toEqual([]);
+  });
+
+  it('a whole note from the top button: the second request has the sections and procedure type the first one named', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    const empty = { proposals: [], conflicts: [], additional_info: [] };
+    const asked: string[] = [];
+    stubGroq((body) => {
+      asked.push(String(body.messages[0].content));
+      const content = body.response_format.json_schema.name === 'sections' ? { sections: ['risk', 'procedure'], procedure_types: ['AF'] } : empty;
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(content) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 });
+    });
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), procedure_id: 'new' });
+    expect(r.status).toBe(200);
+    expect(asked).toHaveLength(2);
+    expect(asked[1]).toContain('## Section risk');
+    expect(asked[1]).toContain('### AF_ABLATIONS');
+    expect(asked[1]).not.toContain('### DEVICE_IMPLANTS');
+    expect(asked[1]).not.toContain('## Section echo');
   });
 
   it('another error shows the provider\'s code and never its message, which can quote the note', async () => {

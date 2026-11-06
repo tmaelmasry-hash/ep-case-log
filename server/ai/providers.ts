@@ -254,7 +254,7 @@ async function http(f: typeof fetch, url: string, timeout: number, who: string, 
     const daily = /per ?day|PerDay|daily/i.test(why);
     throw new AiError(429, daily ? 'AI_QUOTA_DAY' : 'AI_BUSY', res.status === 503
       ? `${who} is overloaded right now (503). Try again in a minute.`
-      : daily ? `${who}'s daily free quota is used up. It resets at midnight Pacific time (10:00 Riyadh). ${why}`.trim()
+      : daily ? `${who}'s free quota for the last 24 hours is used up. It comes back little by little. ${why}`.trim()
         : `${who} is busy (rate limit or free quota). Try again in a minute. ${why}`.trim());
   }
   if (res.status === 413) throw new AiError(413, 'AI_TOO_LONG', `This note is too large for ${who}'s limit. Use a shorter note, or open the AI Assistant from one section.`);

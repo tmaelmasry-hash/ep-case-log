@@ -10,6 +10,7 @@ import { api, ApiError } from '../lib/api';
 import { useStore } from '../store';
 import { Sheet } from '../components/ui';
 import { Icon } from '../components/Icon';
+import { fmtDate } from '../lib/util';
 import { plainWaiting, type AiPending, type AiServerItem, type PendingItem } from '../lib/aiPending';
 import type { CaseEditor } from '../caseEditor';
 
@@ -51,6 +52,7 @@ const fieldLabel = (entity: string, field: string) => dict.entities[entity]?.fie
 
 function show(entity: string, field: string, stored: unknown): string {
   const f = fieldOf(entity, field);
+  if (f?.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(String(stored ?? ''))) return fmtDate(String(stored).slice(0, 10));
   return f ? displayValue(f, decodeValue(f, stored)) || '—' : String(stored ?? '—');
 }
 
@@ -218,7 +220,8 @@ function PendingList({ ed, procs, pending }: { ed: CaseEditor; procs: { id: stri
                       {i.kind === 'conflict' && <span className="ai-tag conflict">Differs</span>}
                       {i.flag && <span className="ai-tag conflict" data-testid="ai-flag">Procedure cancelled: check</span>}
                     </span>
-                    {i.kind === 'conflict' ? <span className="sub">{place(i)} · Saved now: {i.saved === null || i.saved === undefined ? '—' : text(i, i.saved)}</span> : <span className="sub">{place(i)} · Now empty</span>}
+                    {i.kind === 'conflict' && <span className="sub">{place(i)} · Saved now: {i.saved === null || i.saved === undefined ? '—' : text(i, i.saved)}</span>}
+                    {i.kind === 'value' && <span className="sub">{place(i)} · Now empty</span>}
                     {(i.kind === 'conflict' ? (i.evidences ?? []) : i.evidence ? [i.evidence] : []).map((q, n) => (
                       <span key={n} className="sub ai-quote">
                         Note: “{q}”
@@ -403,7 +406,7 @@ export function AiSheet({ ed, procs, scope, note, setNote, pending, onClose }: {
         <div className="banner info" data-testid="ai-run">
           <span className="grow">
             {run.recognised ? '' : 'Test AI knows only its sample notes; nothing was found in this one. '}
-            {run.summary.filled} to review · {run.summary.conflicts} differ{run.summary.conflicts === 1 ? 's' : ''} from saved · {run.summary.same} already the same · {run.summary.additional} additional · {run.summary.dropped} skipped
+            {[`${run.summary.filled} to review`, run.summary.conflicts ? `${run.summary.conflicts} differ${run.summary.conflicts === 1 ? 's' : ''} from saved` : '', run.summary.same ? `${run.summary.same} already the same` : '', run.summary.additional ? `${run.summary.additional} additional` : '', run.summary.dropped ? `${run.summary.dropped} skipped` : ''].filter(Boolean).join(' · ')}
             {removedAgain ? `. Also removed from your edits before sending: ${removedAgain}` : ''}
           </span>
         </div>

@@ -121,6 +121,13 @@ export function aiRoutes(app: Router) {
     const known = aiSections(config.dict).map((s) => s.id);
     const only = Array.isArray(b.sections) ? (b.sections as unknown[]).map(String) : [];
     if (only.some((s) => !known.includes(s))) throw badRequest('Unknown section.', { field: 'sections' });
+    // Which procedure tables to ask about: the screen's choice, else the procedure's own components, else the type planned in Bulk Add. None known: all of them.
+    const typeCodes = (config.dict.entities.PROCEDURE_COMPONENTS.fields.find((f) => f.name === 'component_type')?.codes ?? []).map((c) => c.code);
+    const chosen = Array.isArray(b.component_types) ? (b.component_types as unknown[]).map(String) : [];
+    if (chosen.some((t) => !typeCodes.includes(t))) throw badRequest('Unknown procedure type.', { field: 'component_types' });
+    const own = target && target !== 'new' ? liveRows(rec, 'PROCEDURE_COMPONENTS').filter((c) => c.procedure_id === target).map((c) => String(c.component_type)) : [];
+    const planned = target === 'new' && rec.meta.planned_type ? [rec.meta.planned_type] : [];
+    const types = chosen.length ? chosen : own.length ? own : planned;
 
     // De-identified again here, whatever came back from the browser: this text is what the provider sees and what the quotes are checked against.
     const red = redact(sentText, { mrn: rec.meta.mrn, fullName: savedName(rec) });
@@ -131,10 +138,10 @@ export function aiRoutes(app: Router) {
       const fx = fixtureExtract(config, red.text);
       recognised = !!fx;
       raw = fx?.raw ?? { proposals: [], conflicts: [], additional_info: [] };
-      if (only.length) raw = onlySections(config, raw, only);
+      if (only.length) raw = onlySections(config, raw, only, types);
     } else {
       try {
-        const r = await llmExtract(config, llm(config, env, choice), red.text, only);
+        const r = await llmExtract(config, llm(config, env, choice), red.text, only, types);
         raw = r.raw;
         tokens = { input: r.inputTokens, output: r.outputTokens };
       } catch (e) {

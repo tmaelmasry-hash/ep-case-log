@@ -11,7 +11,7 @@ import { FieldError, encodeValue } from '../../shared/validate.ts';
 import type { AiFixture, AppConfig } from '../appconfig.ts';
 import { addHistory, addNewRow, afterChange, ensureSingleRow, findLive, liveRows, placeOf, removeRow, whereText, type Actor } from '../domain/cases.ts';
 import { newId } from '../util.ts';
-import { aiFields, aiSections, catalogueText, type AiField } from './catalogue.ts';
+import { aiFields, aiSections, catalogueText, entityFitsTypes, type AiField } from './catalogue.ts';
 import type { LlmProvider } from './providers.ts';
 import { normalizeForQuote, redact } from './redact.ts';
 
@@ -127,29 +127,29 @@ export function fixtureExtract(config: AppConfig, redactedNote: string): { raw: 
 
 /** Live model. passes = 1 (default): one request with every section's fields. passes = 2: pass 1 picks the
  *  sections, pass 2 extracts against those sections' fields only. The checks after are the same. */
-export async function llmExtract(config: AppConfig, p: LlmProvider, redactedNote: string, only?: string[]): Promise<{ raw: RawExtraction; inputTokens: number; outputTokens: number; requests: number }> {
+export async function llmExtract(config: AppConfig, p: LlmProvider, redactedNote: string, only?: string[], types?: string[]): Promise<{ raw: RawExtraction; inputTokens: number; outputTokens: number; requests: number }> {
   // Opened from one section: that section's fields only, in one request.
   if (only?.length) {
-    const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, only), user: redactedNote, schema: EXTRACT_SCHEMA });
-    return { raw: onlySections(config, rawOf(ex.json), only), inputTokens: ex.inputTokens, outputTokens: ex.outputTokens, requests: 1 };
+    const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, only, types), user: redactedNote, schema: EXTRACT_SCHEMA });
+    return { raw: onlySections(config, rawOf(ex.json), only, types), inputTokens: ex.inputTokens, outputTokens: ex.outputTokens, requests: 1 };
   }
   const all = aiSections(config.dict);
   const passes = p.passes ?? config.site.ai.passes ?? 1;
   if (passes === 1) {
-    const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, all.map((s) => s.id)), user: redactedNote, schema: EXTRACT_SCHEMA });
+    const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, all.map((s) => s.id), types), user: redactedNote, schema: EXTRACT_SCHEMA });
     return { raw: rawOf(ex.json), inputTokens: ex.inputTokens, outputTokens: ex.outputTokens, requests: 1 };
   }
   const seg = await p.json({ name: 'sections', system: SEGMENT_SYSTEM, cacheable: all.map((s) => `${s.id}: ${s.label}`).join('\n'), user: redactedNote, schema: SEGMENT_SCHEMA(all.map((s) => s.id)) });
   const sections = [...new Set<string>(((seg.json?.sections ?? []) as string[]).filter((s) => all.some((x) => x.id === s)))];
   if (!sections.length) return { raw: { proposals: [], conflicts: [], additional_info: [] }, inputTokens: seg.inputTokens, outputTokens: seg.outputTokens, requests: 1 };
-  const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, sections), user: redactedNote, schema: EXTRACT_SCHEMA });
+  const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, sections, types), user: redactedNote, schema: EXTRACT_SCHEMA });
   return { raw: rawOf(ex.json), inputTokens: seg.inputTokens + ex.inputTokens, outputTokens: seg.outputTokens + ex.outputTokens, requests: 2 };
 }
 
-/** Keeps only values of the given sections, whatever the provider answered. Facts that fit no field stay. */
-export function onlySections(config: AppConfig, raw: RawExtraction, only: string[]): RawExtraction {
+/** Keeps only values of the given sections and procedure types, whatever the provider answered. Facts that fit no field stay. */
+export function onlySections(config: AppConfig, raw: RawExtraction, only: string[], types?: string[]): RawExtraction {
   const fields = aiFields(config.dict);
-  const inside = (entity: string, field: string) => only.includes(fields.get(`${entity}.${field}`)?.section ?? '');
+  const inside = (entity: string, field: string) => only.includes(fields.get(`${entity}.${field}`)?.section ?? '') && entityFitsTypes(config.dict, entity, types);
   return { proposals: raw.proposals.filter((x) => inside(x.entity, x.field)), conflicts: raw.conflicts.filter((x) => inside(x.entity, x.field)), additional_info: raw.additional_info };
 }
 

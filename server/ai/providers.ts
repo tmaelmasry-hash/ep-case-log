@@ -132,8 +132,8 @@ async function workersAiJson(ai: AiBinding, model: string, timeout: number, c: J
 }
 
 // ── Groq (chat completions, strict JSON schema) ──
-/** Kept small: Groq's free limit is 8,000 tokens a minute. To be checked against a real key. */
-const GROQ_MAX_TOKENS = 3000;
+/** Measured 6 Nov: at 3,000 the answer to a long `procedure` was cut off (400 json_validate_failed), since the model's reasoning counts too. */
+const GROQ_MAX_TOKENS = 5000;
 /** How long to wait before one more try after 413. Measured 5 Nov: `procedure` got 413 during a busy minute and passed after a quiet one. Tests set 0. */
 export const TOO_LARGE_WAIT_MS = [60_000];
 
@@ -259,6 +259,11 @@ async function http(f: typeof fetch, url: string, timeout: number, who: string, 
   }
   if (res.status === 413) throw new AiError(413, 'AI_TOO_LONG', `This note is too large for ${who}'s limit. Use a shorter note, or open the AI Assistant from one section.`);
   if (res.status === 404) throw new AiError(502, 'AI_MODEL_NOT_FOUND', `${who} does not know this model id. The Admin checks the model in Settings → AI Assistant.`);
-  if (!res.ok) throw new AiError(502, 'AI_ERROR', `${who} could not process the note (${res.status}). Try again.`);
+  if (!res.ok) {
+    // The code only: the provider's message can quote the note.
+    let code = '';
+    try { code = String((await res.json())?.error?.code ?? '').replace(/[^\w.-]/g, '').slice(0, 40); } catch { /* no body */ }
+    throw new AiError(502, 'AI_ERROR', `${who} could not process the note (${res.status}${code ? ` ${code}` : ''}). Try again.`);
+  }
   return res.json();
 }

@@ -1,7 +1,9 @@
 // Accuracy trial for Groq's free plan, where a whole note is over the limit: one request per section, as from a section's AI icon.
 // Each note is asked only about the sections its written answer touches, and compared with that section's written values.
 // So "extra" counts less here than in eval.mjs, which asks about every section at once. In-memory store, made-up notes only.
+// The procedure section is asked with the note's procedure type, as from a procedure's AI icon.
 //   node scripts/ai-trial/eval-sections.mjs N02,N12                  (no list = every note; needs GROQ_API_KEY in .env)
+//   node scripts/ai-trial/eval-sections.mjs N03,N12 procedure 3000   (only that section; made-up text added up to about 3,000 characters, as a long real note)
 // Results: test-results/ai-trial-groq-sections.json
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -13,7 +15,25 @@ const { loadDotEnv } = await load('server/dotenv.ts');
 const { aiFields } = await load('server/ai/catalogue.ts');
 loadDotEnv();
 
-const only = process.argv[2] ? process.argv[2].split(',') : null;
+const only = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : null;
+const onlySection = process.argv[3] && process.argv[3] !== 'all' ? process.argv[3] : null;
+const padTo = Number(process.argv[4] ?? 0);
+// Routine wording with no name, number or registry value of its own.
+const FILLER = [
+  'The risks, benefits and alternatives were explained and consent was on the chart.',
+  'The patient was brought to the laboratory in the fasting state and prepared and draped in the usual sterile fashion.',
+  'Monitoring was applied and a time out was done with the whole team.',
+  'Local anaesthetic was given at the access site and the sheaths were flushed through the case.',
+  'Catheters were moved under fluoroscopic guidance and their positions were reviewed.',
+  'Haemodynamics were stable throughout and the patient was comfortable.',
+  'At the end of the case the catheters and sheaths were removed and haemostasis was obtained with manual pressure.',
+  'The patient was moved to the recovery area in stable condition and the plan was discussed with the family.',
+];
+const pad = (t) => {
+  let out = t;
+  for (let i = 0; out.length < padTo; i++) out += `\n${FILLER[i % FILLER.length]}`;
+  return out;
+};
 const OUT = 'test-results/ai-trial-groq-sections.json';
 mkdirSync('test-results', { recursive: true });
 
@@ -48,7 +68,8 @@ for (const fx of config.aiFixtures) {
   const goldCase = await newCase(admin, goldMrn);
   const gold = await admin.call('POST', `/api/cases/${goldCase.case_id}/ai/extract`, { note: text(goldMrn), procedure_id: 'new' });
   const goldFilled = gold.data.items.filter((i) => i.status === 'FILLED');
-  const sections = [...new Set(goldFilled.map(sectionOf))];
+  const sections = [...new Set(goldFilled.map(sectionOf))].filter((s) => !onlySection || s === onlySection);
+  const types = [...new Set(goldFilled.map((i) => config.dict.entities[i.entity]?.module?.[0]).filter(Boolean))];
 
   await admin.call('POST', '/api/settings/ai', { provider: 'groq' });
   for (const section of sections) {
@@ -57,16 +78,17 @@ for (const fx of config.aiFixtures) {
     const c = await newCase(admin, mrn);
     const before = await used();
     const t0 = Date.now();
-    let r = await admin.call('POST', `/api/cases/${c.case_id}/ai/extract`, { note: text(mrn), procedure_id: 'new', sections: [section] });
+    const ask = () => admin.call('POST', `/api/cases/${c.case_id}/ai/extract`, { note: pad(text(mrn)), procedure_id: 'new', sections: [section], ...(section === 'procedure' && types.length ? { component_types: types } : {}) });
+    let r = await ask();
     if (r.status === 429 && r.data?.error?.code === 'AI_BUSY') {
       await sleep(60_000);
-      r = await admin.call('POST', `/api/cases/${c.case_id}/ai/extract`, { note: text(mrn), procedure_id: 'new', sections: [section] });
+      r = await ask();
     }
     const ms = Date.now() - t0;
     if (r.status !== 200) {
       const code = r.data?.error?.code;
       rows.push({ id: fx.id, section, gold: goldHere.length, status: r.status, code, ms });
-      console.log(fx.id, section, 'ERROR', r.status, code);
+      console.log(fx.id, section, 'ERROR', r.status, code, `${ms}ms`, String(r.data?.error?.message ?? '').slice(0, 90));
       writeFileSync(OUT, JSON.stringify(rows, null, 1));
       if (code === 'AI_QUOTA_DAY') { stop = true; break; }
       await sleep(60_000);

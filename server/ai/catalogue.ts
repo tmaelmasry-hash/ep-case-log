@@ -78,10 +78,16 @@ const TYPE_HINT: Record<string, string> = {
   lookup_array: 'one or more codes, comma-separated',
 };
 
-/** The field list for the given sections, as compact text for the model's instructions. */
-export function catalogueText(dict: Dictionary, sectionIds: string[]): string {
+/** Whether a procedure table applies to these procedure types. No types known, or a table for every type (no module): yes. */
+export function entityFitsTypes(dict: Dictionary, entity: string, types?: string[]): boolean {
+  const module = dict.entities[entity]?.module;
+  return !types?.length || !module?.length || module.some((m) => types.includes(m));
+}
+
+/** The field list for the given sections, as compact text for the model's instructions. With procedure types, only their tables: the full procedure list is over Groq's free limit. */
+export function catalogueText(dict: Dictionary, sectionIds: string[], types?: string[]): string {
   const c = build(dict);
-  const key = [...sectionIds].sort().join(',');
+  const key = `${[...sectionIds].sort().join(',')}|${[...(types ?? [])].sort().join(',')}`;
   const hit = c.text.get(key);
   if (hit) return hit;
   const out: string[] = [];
@@ -89,6 +95,7 @@ export function catalogueText(dict: Dictionary, sectionIds: string[]): string {
     if (!sectionIds.includes(s.id)) continue;
     out.push(`## Section ${s.id} — ${s.label}`);
     for (const e of s.entities) {
+      if (!entityFitsTypes(dict, e, types)) continue;
       const list = [...c.fields.values()].filter((x) => x.entity === e);
       if (!list.length) continue;
       const def = dict.entities[e];

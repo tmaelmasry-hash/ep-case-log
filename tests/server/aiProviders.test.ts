@@ -289,6 +289,50 @@ describe('Groq', () => {
     expect(reasons).toContain('day first');
   });
 
+  it('asks only about the procedure type: the procedure\'s own, or the screen\'s; none known means all', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    const empty = { proposals: [], conflicts: [], additional_info: [] };
+    const asked: string[] = [];
+    stubGroq((body) => {
+      asked.push(String(body.messages[0].content));
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(empty) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 });
+    });
+    const go = (extra: object) => admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: ['procedure'], ...extra });
+    expect((await go({ component_types: ['AF'] })).status).toBe(200);
+    expect(asked[0]).toContain('### AF_ABLATIONS');
+    expect(asked[0]).toContain('### EP_PROCEDURES');
+    expect(asked[0]).toContain('### COMPLICATIONS');
+    expect(asked[0]).not.toContain('### DEVICE_IMPLANTS');
+    expect(asked[0]).not.toContain('### SVT_ABLATIONS');
+    expect((await go({})).status).toBe(200);
+    expect(asked[1]).toContain('### DEVICE_IMPLANTS');
+    expect(asked[0].length).toBeLessThan(asked[1].length / 2);
+    expect((await go({ component_types: ['NOT_A_TYPE'] })).status).toBe(400);
+  });
+
+  it('a value from a table of another procedure type is not kept', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    const note = sample();
+    const quote = note.split('\n').find((l) => l.length > 10)!.slice(0, 10);
+    const model = { proposals: [{ entity: 'DEVICE_IMPLANTS', field: 'implant_side', value: 'LEFT', row: '', evidence: quote }], conflicts: [], additional_info: [] };
+    stubGroq(() => new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(model) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 }));
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note, procedure_id: 'new', sections: ['procedure'], component_types: ['AF'] });
+    expect(r.status).toBe(200);
+    expect(r.data.items).toEqual([]);
+  });
+
+  it('another error shows the provider\'s code and never its message, which can quote the note', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    stubGroq(() => new Response(JSON.stringify({ error: { code: 'json_validate_failed', message: 'failed_generation: Testname' } }), { status: 400 }));
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: [section()] });
+    expect(r.status).toBe(502);
+    expect(r.data.error.message).toContain('400 json_validate_failed');
+    expect(r.data.error.message).not.toContain('Testname');
+  });
+
   it('413 during a busy minute: one wait, one more try, and the answer is used', async () => {
     TOO_LARGE_WAIT_MS[0] = 0;
     const admin = await useGroq();

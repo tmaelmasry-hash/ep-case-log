@@ -13,7 +13,7 @@ import { addHistory, addNewRow, afterChange, ensureSingleRow, findLive, liveRows
 import { newId } from '../util.ts';
 import { aiFields, aiSections, catalogueText, entityFitsTypes, type AiField } from './catalogue.ts';
 import { AiError, type LlmProvider } from './providers.ts';
-import { normalizeForQuote, redact } from './redact.ts';
+import { normalizeForQuote, quoteInNote, redact } from './redact.ts';
 
 export interface RawProposal {
   entity: string;
@@ -382,7 +382,7 @@ export function applyExtraction(dict: Dictionary, rec: CaseRecord, raw: RawExtra
   const note = normalizeForQuote(redactedNote);
   const marks = (rec.ai ??= {});
   const items: ReviewItem[] = [];
-  const grounded = (ev: unknown) => typeof ev === 'string' && ev.trim().length >= 2 && ev.length <= 400 && note.includes(normalizeForQuote(ev));
+  const grounded = (ev: unknown) => typeof ev === 'string' && ev.trim().length >= 2 && ev.length <= 400 && quoteInNote(note, normalizeForQuote(ev));
   const mark = (m: Omit<AiMark, 'at' | 'by'>): AiMark => ({ ...m, at: a.now, by: a.userId });
 
   /** Field allowed + quote found + value valid for the dictionary (row-independent checks). */

@@ -142,18 +142,23 @@ const GROQ_MAX_TOKENS = 5000;
 /** How long to wait before one more try after 413. Measured 5 Nov: `procedure` got 413 during a busy minute and passed after a quiet one. Tests set 0. */
 export const TOO_LARGE_WAIT_MS = [60_000];
 
+/** Temperature for the one more try after 400 json_validate_failed (the model wrote broken JSON; seen live on N07, 7 Nov). 0 again could repeat the same slip. */
+const GROQ_RETRY_TEMPERATURE = 0.3;
+
 async function groqJson(f: typeof fetch, key: string, model: string, timeout: number, c: JsonCall): Promise<JsonResult> {
-  const ask = () => http(f, 'https://api.groq.com/openai/v1/chat/completions', timeout, 'Groq', { Authorization: `Bearer ${key}` }, {
+  const ask = (temperature = 0) => http(f, 'https://api.groq.com/openai/v1/chat/completions', timeout, 'Groq', { Authorization: `Bearer ${key}` }, {
     model,
     messages: [{ role: 'system', content: `${c.system}\n\n${c.cacheable}` }, { role: 'user', content: c.user }],
     response_format: { type: 'json_schema', json_schema: { name: c.name, strict: true, schema: c.schema } },
     max_completion_tokens: GROQ_MAX_TOKENS,
-    temperature: 0,
+    temperature,
   });
+  const brokenJson = (e: unknown) => e instanceof AiError && e.code === 'AI_ERROR' && /\b400 json_validate_failed\b/.test(e.message);
   const res = await ask().catch(async (e) => {
+    if (brokenJson(e)) return ask(GROQ_RETRY_TEMPERATURE);
     if (!(e instanceof AiError) || e.status !== 413 || c.waitOn413 === false) throw e;
     await new Promise((r) => setTimeout(r, TOO_LARGE_WAIT_MS[0]));
-    return ask();
+    return ask().catch((e2) => (brokenJson(e2) ? ask(GROQ_RETRY_TEMPERATURE) : Promise.reject(e2)));
   });
   const choice = res.choices?.[0];
   if (choice?.finish_reason === 'length') throw new AiError(502, 'AI_TOO_LONG', 'The answer was cut off. Try a shorter note.');

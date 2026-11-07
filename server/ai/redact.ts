@@ -259,3 +259,18 @@ export function redact(note: string, known: { mrn: string; fullName?: string | n
 export function normalizeForQuote(s: string): string {
   return s.replace(/[‘’`´]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 }
+
+/** True when the quote is in the note (both normalised). A quote shortened with "..." or "…" counts when every piece is in the note, in order (seen live on Groq, 7 Nov). */
+export function quoteInNote(note: string, quote: string): boolean {
+  if (note.includes(quote)) return true;
+  const pieces = quote.split(/\s*(?:\.{3,}|…)\s*/).map((s) => s.trim()).filter(Boolean);
+  if (pieces.length < 2 && !/\.{3,}|…/.test(quote)) return false;
+  if (!pieces.length || pieces.every((s) => s.length < 3)) return false;
+  let from = 0;
+  for (const s of pieces) {
+    const at = note.indexOf(s, from);
+    if (at < 0) return false;
+    from = at + s.length;
+  }
+  return true;
+}

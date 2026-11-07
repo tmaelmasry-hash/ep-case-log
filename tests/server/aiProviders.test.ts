@@ -348,11 +348,27 @@ describe('Groq', () => {
   it('another error shows the provider\'s code and never its message, which can quote the note', async () => {
     const admin = await useGroq();
     const { case_id } = await newCase(admin, MRN);
-    stubGroq(() => new Response(JSON.stringify({ error: { code: 'json_validate_failed', message: 'failed_generation: Testname' } }), { status: 400 }));
+    let asked = 0;
+    stubGroq(() => { asked++; return new Response(JSON.stringify({ error: { code: 'json_validate_failed', message: 'failed_generation: Testname' } }), { status: 400 }); });
     const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: [section()] });
     expect(r.status).toBe(502);
     expect(r.data.error.message).toContain('400 json_validate_failed');
     expect(r.data.error.message).not.toContain('Testname');
+    expect(asked).toBe(2); // one more try, then the error
+  });
+
+  it('broken JSON from the model (400 json_validate_failed): one more try with a little temperature, and the answer is used', async () => {
+    const admin = await useGroq();
+    const { case_id } = await newCase(admin, MRN);
+    const temps: number[] = [];
+    stubGroq((body) => {
+      temps.push(body.temperature);
+      if (temps.length === 1) return new Response(JSON.stringify({ error: { code: 'json_validate_failed', message: 'failed_generation: x' } }), { status: 400 });
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ proposals: [], conflicts: [], additional_info: [] }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }), { status: 200 });
+    });
+    const r = await admin.call('POST', `/api/cases/${case_id}/ai/extract`, { note: sample(), sections: [section()] });
+    expect(r.status).toBe(200);
+    expect(temps).toEqual([0, 0.3]);
   });
 
   it('413 during a busy minute: one wait, one more try, and the answer is used', async () => {

@@ -533,7 +533,10 @@ export function historyItems(dict: Dictionary, rec: CaseRecord, nameOf: (id: str
   const show = (entity: string | undefined, field: string | undefined, v: unknown): string => {
     if (v === null || v === undefined || v === '') return '—';
     const f = entity ? dict.entities[entity]?.fields.find((x) => x.name === field) : undefined;
-    return f ? displayValue(f, v) || '—' : String(v);
+    // A list of codes can be kept as its stored text '["A","B"]' (the AI's accepted values, 7 Nov): show the labels.
+    let val = v;
+    if (typeof v === 'string' && v.startsWith('[')) { try { const arr = JSON.parse(v); if (Array.isArray(arr)) val = arr; } catch { /* plain text */ } }
+    return f ? displayValue(f, val) || '—' : String(v);
   };
   return (rec.history ?? [])
     .slice()

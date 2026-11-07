@@ -4,7 +4,11 @@ Read this first, then `docs/MERGE_PLAN.md` (every owner decision: R2-* / R3-* / 
 `docs/DEPLOY.md` (restore points and rollback), `docs/SCREEN_REVIEW.md` (screen decisions) and `AGENTS.md`.
 Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**, code and technical terms in English.
 
-## NEXT CHAT (written 5 Nov): AI, OCR and platform work is in progress. Read this block, then `docs/AI_PLATFORM_PLAN.md`
+## NOW (7 Nov, afternoon): the owner is out and asked for these steps to run one after another, unattended
+His words, 7 Nov: try both fixes for the two whole notes that fail (another model, and splitting the request automatically); by default turn on Zero Data Retention in Groq; treat the institutional approval as his decision and go ahead; "Deploy now"; he reviews everything when he is back and says what needs changing. Keep the PC awake.
+Steps, in order: (1) keep awake; (2) split the whole-note request when it is too big, measure N07 and N13; (3) try another model on N07, N13 and a few others, record the numbers, keep Groq as default unless the split fails; (4) full test run; (5) Zero Data Retention in Groq's console; (6) record his approval decision; (7) deploy with `GROQ_API_KEY` as a Worker secret, check live, restore point, push; (8) update the review page and report. Details are in the session brief. State before these steps: `main` at `085fdf9`, 24 commits ahead of GitHub, live Worker `740df03c`, full run clean on `b51a344`, main Sheet count clean (3 cases, 0 AI values waiting, 0 dates with a time).
+
+## Earlier (written 5 Nov): AI, OCR and platform work. Read this block, then `docs/AI_PLATFORM_PLAN.md`
 Do not start anything on your own: tell him where things stand in Egyptian Arabic and wait for his word. **Nothing below is live.**
 
 **State.** Live Worker is still `740df03c`. Local `main` is ahead of GitHub (not pushed) and holds Phase 1, Phase 2 and the Phase 3 work so far.

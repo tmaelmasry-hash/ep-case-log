@@ -33,7 +33,12 @@ Bad photos are not separated cleanly by the measures tested: a dim usable photo 
 Median 2.9 s a page on usable photos, against 1.7 s with the old recipe. WebKit for Windows: 3.6 to 5.5 s, on the exam sheets clean and good only. **Memory with the 2 times enlargement was not measured.** Trial 1 peaked at about 457 MB before it, and this was already the main risk on iPhone.
 
 ## Not measured
-Real phones (speed, memory, iOS Safari), real photos of paper, real hospital printouts, handwriting. The live test page at https://ep-ocr-phone-trial.pages.dev/ still has the old recipe.
+Real phones (speed, memory, iOS Safari), real photos of paper, real hospital printouts, handwriting.
+
+## Live test page, recipe 2 (7 Nov, on the owner's yes)
+https://ep-ocr-phone-trial.pages.dev/ now runs this recipe, deployment `10298724`, previous `8bb2768f`. It enlarges up to 2 times but stays under 12 million pixels, since iPhone canvases stop at about 16.7 million; so a 12 MP photo was enlarged 1.96 times here. Its results say `ep-ocr-phone-v2`, with `enlarged` and `recipe` on each. Numbers starting with 0 are now marked too. Sources: branch `claude/ocr-trial-0e01bd`.
+
+Checked on the live page with emulated Pixel 7 and iPhone 13, on three of its sheets as simulated 12 MP photos: 125 of 125 numbers, 0 outside requests, 0 uploads, no page errors. These are sheets the recipe's parents were tuned on, in a gentle photo, so this shows the page works, not how accurate it is. Emulation runs on this PC: 9 to 18 s a page says nothing about a real phone's speed or memory. The app's Worker and Sheet were not touched.
 
 ## Run it
 `scripts/ai-trial` holds no OCR code. `scripts/ocr-trial/heldout.mjs` needs the `web/` folder from the branch above beside it and the packages from its README: `OCR_PKGS=<folder> OCR_OUT=<folder> OCR_RECIPE=new|old node heldout.mjs chromium`.

@@ -8,6 +8,33 @@ Owner: Dr. Tarek (EP consultant, not a developer). Reply in **Egyptian Arabic**,
 His words, 7 Nov: try both fixes for the two whole notes that fail (another model, and splitting the request automatically); by default turn on Zero Data Retention in Groq; treat the institutional approval as his decision and go ahead; "Deploy now"; he reviews everything when he is back and says what needs changing. Keep the PC awake.
 Steps, in order: (1) keep awake; (2) split the whole-note request when it is too big, measure N07 and N13; (3) try another model on N07, N13 and a few others, record the numbers, keep Groq as default unless the split fails; (4) full test run; (5) Zero Data Retention in Groq's console; (6) record his approval decision; (7) deploy with `GROQ_API_KEY` as a Worker secret, check live, restore point, push; (8) update the review page and report. Details are in the session brief. State before these steps: `main` at `085fdf9`, 24 commits ahead of GitHub, live Worker `740df03c`, full run clean on `b51a344`, main Sheet count clean (3 cases, 0 AI values waiting, 0 dates with a time).
 
+**Where the unattended run stopped (7 Nov evening).** Done: the whole-note split (`8f89809`, `f9d6344`), the model trial, the numbers and his approval decision in `docs/AI_PLATFORM_PLAN.md` (`1cb6b63`, `391bd7d`), the full test run on `391bd7d` (build OK; unit 629 passed, 14 skipped; Chromium 118/118; `e2e:worker` 118/118; WebKit 113 + 1 skipped on purpose), the review page. **Not done, waiting for him:** Zero Data Retention in Groq's console (Data Controls), the `GROQ_API_KEY` Worker secret, the deploy, the push. The app's safety check refused an unattended production deploy, so nothing below has been run. Groq `openai/gpt-oss-120b` with the split stays the default; `config/site.json` unchanged apart from the per-minute limit.
+
+**On his return, after his "Deploy now" (one after another, in the `EP LOG` folder, Git Bash):**
+1. Zero Data Retention: he turns it on himself in Groq's console → Settings → Data Controls (account setting; never done by a session).
+2. Read-only count on the main Sheet again if cases were added since 7 Nov (counts only, no MRN; on his yes).
+3. Check the Cloudflare sign-in is Tarek.kamc's:
+   ```bash
+   node scripts/wrangler.ts whoami
+   ```
+4. Put the Groq key as a Worker secret from `.env`, without printing it:
+   ```bash
+   grep '^GROQ_API_KEY=' .env | cut -d= -f2- | tr -d '\r\n"' | node scripts/wrangler.ts secret put GROQ_API_KEY
+   ```
+5. Deploy (build, config, Worker):
+   ```bash
+   npm run deploy
+   ```
+   Note the new Worker version id it prints.
+6. Check live: sign in, open a test case, AI Assistant shows "Groq (openai/gpt-oss-120b)" and configured; run one **made-up** note (for example N16 from `config/ai_fixtures.json`) on a test case, accept nothing, then delete that test case. Never a real note before Zero Data Retention is on.
+7. Restore point: add this row at the end of the table in `docs/DEPLOY.md` → Restore points, with the new id:
+   `| <commit> (AI Assistant on Groq: privacy, Fill From a Note, review before saving, dates only, whole notes in parts; 7 Nov) | <new Worker version id> | same Sheet, no Sheet change. GROQ_API_KEY secret added. Rollback: node scripts/wrangler.ts rollback 740df03c-955c-4677-9b42-255eb8cf1f2d |`
+8. If anything is wrong live, roll back:
+   ```bash
+   node scripts/wrangler.ts rollback 740df03c-955c-4677-9b42-255eb8cf1f2d
+   ```
+9. Commit the restore point, then push `main` to GitHub (about 30 commits ahead) on his word.
+
 ## Earlier (written 5 Nov): AI, OCR and platform work. Read this block, then `docs/AI_PLATFORM_PLAN.md`
 Do not start anything on your own: tell him where things stand in Egyptian Arabic and wait for his word. **Nothing below is live.**
 

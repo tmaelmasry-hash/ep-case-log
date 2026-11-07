@@ -12,7 +12,7 @@ import type { AiFixture, AppConfig } from '../appconfig.ts';
 import { addHistory, addNewRow, afterChange, ensureSingleRow, findLive, liveRows, placeOf, removeRow, whereText, type Actor } from '../domain/cases.ts';
 import { newId } from '../util.ts';
 import { aiFields, aiSections, catalogueText, entityFitsTypes, type AiField } from './catalogue.ts';
-import type { LlmProvider } from './providers.ts';
+import { AiError, type LlmProvider } from './providers.ts';
 import { normalizeForQuote, redact } from './redact.ts';
 
 export interface RawProposal {
@@ -178,11 +178,133 @@ export async function llmExtract(config: AppConfig, p: LlmProvider, redactedNote
     return { raw: rawOf(ex.json), inputTokens: ex.inputTokens, outputTokens: ex.outputTokens, requests: 1 };
   }
   // The first request also names the procedure type when the case does not know it yet, so the second stays small enough for a low limit.
+  // One bucket per model, shared by the notes this server sends, like the provider's own per-minute limit.
+  const pace = p.limit ? pacer(p.limit.tokensPerMinute, `${p.id}:${p.model}`) : null;
+  await pace?.wait(Math.ceil((SEGMENT_SYSTEM.length + 2500 + redactedNote.length) / (p.limit?.charsPerToken ?? 2.7)));
   const seg = await segment(config, p, redactedNote);
+  pace?.spend(seg.inputTokens + seg.outputTokens);
   const sections = seg.sections;
   if (!sections.length) return { raw: { proposals: [], conflicts: [], additional_info: [] }, inputTokens: seg.inputTokens, outputTokens: seg.outputTokens, requests: 1 };
-  const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, sections, types?.length ? types : seg.types), user: redactedNote, schema: EXTRACT_SCHEMA });
-  return { raw: rawOf(ex.json), inputTokens: seg.inputTokens + ex.inputTokens, outputTokens: seg.outputTokens + ex.outputTokens, requests: 2 };
+  const useTypes = types?.length ? types : seg.types;
+  if (!pace) {
+    const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable: catalogueText(config.dict, sections, useTypes), user: redactedNote, schema: EXTRACT_SCHEMA });
+    return { raw: rawOf(ex.json), inputTokens: seg.inputTokens + ex.inputTokens, outputTokens: seg.outputTokens + ex.outputTokens, requests: 2 };
+  }
+  const parts = await extractInParts(config, p, pace, redactedNote, sections, useTypes, true);
+  return { raw: parts.raw, inputTokens: seg.inputTokens + parts.inputTokens, outputTokens: seg.outputTokens + parts.outputTokens, requests: 1 + parts.requests };
+}
+
+// ── a whole note over a provider's per-minute limit (Groq free plan, 8,000 tokens a minute; 7 Nov) ──
+
+/** Share of the per-minute limit one request may be estimated at. The estimate (characters / 2.7) is rough. force: the trial tool sends every whole note in parts, to measure the split. */
+export const SPLIT = { share: 0.85, force: false };
+/** How the pacing waits. Tests replace `sleep` and `now`. */
+export const PACE_CLOCK = { now: () => Date.now(), sleep: (ms: number) => new Promise<void>((r) => setTimeout(r, ms)) };
+
+const ledgers = new Map<string, { at: number; tokens: number }[]>();
+/** Forgets what was spent (tests). */
+export function resetPacers() {
+  ledgers.clear();
+}
+/** The tokens of the last 60 seconds, per model. Measured on Groq, 7 Nov: a smooth refill was not enough (two 429s after
+ *  waiting for one), so a request waits until what was spent in the last minute leaves room for it. The same key shares
+ *  one ledger. A Worker runs several copies, so this lowers the chance of a 429 but cannot rule it out. */
+export function pacer(tokensPerMinute: number, key = '') {
+  const list = ledgers.get(key) ?? [];
+  ledgers.set(key, list);
+  const prune = () => {
+    const now = PACE_CLOCK.now();
+    while (list.length && list[0].at <= now - 60_000) list.shift();
+  };
+  return {
+    /** Waits until a request of this estimated size fits in the minute (or until the minute is empty, for a larger one). */
+    async wait(estimate: number) {
+      for (prune(); list.length && list.reduce((n, x) => n + x.tokens, 0) + estimate > tokensPerMinute; prune()) {
+        await PACE_CLOCK.sleep(Math.max(0, list[0].at + 60_000 - PACE_CLOCK.now()) + 250);
+      }
+    },
+    spend(tokens: number) {
+      list.push({ at: PACE_CLOCK.now(), tokens });
+    },
+    /** After a 429: waits until the last minute's requests have all left it (a full minute if none is known here). */
+    async empty() {
+      prune();
+      await PACE_CLOCK.sleep(list.length ? Math.max(0, list[list.length - 1].at + 60_000 - PACE_CLOCK.now()) + 250 : 60_000);
+      prune();
+    },
+  };
+}
+
+/** The request's estimated size in tokens: instructions, field list, note and schema, at the measured characters a token. */
+export function estimateTokens(p: LlmProvider, cacheable: string, note: string): number {
+  const chars = EXTRACT_SYSTEM.length + cacheable.length + note.length + JSON.stringify(EXTRACT_SCHEMA).length;
+  return Math.ceil(chars / (p.limit?.charsPerToken ?? 2.7));
+}
+
+/** Parts for a note too large for one request: `procedure` alone, the other sections packed into groups that fit. */
+export function splitSections(config: AppConfig, p: LlmProvider, note: string, sections: string[], types: string[]): string[][] {
+  const budget = (p.limit?.tokensPerMinute ?? Infinity) * SPLIT.share;
+  const parts: string[][] = sections.includes('procedure') ? [['procedure']] : [];
+  let group: string[] = [];
+  for (const s of sections) {
+    if (s === 'procedure') continue;
+    if (group.length && estimateTokens(p, catalogueText(config.dict, [...group, s], types), note) > budget) {
+      parts.push(group);
+      group = [];
+    }
+    group.push(s);
+  }
+  if (group.length) parts.push(group);
+  return parts;
+}
+
+/** Sends the sections in one request if it fits, else in parts; a part that still gets 413 is split again. Each answer
+ *  keeps only its own sections' values; the merged answer then goes through every usual check. */
+async function extractInParts(config: AppConfig, p: LlmProvider, pace: ReturnType<typeof pacer>, note: string, sections: string[], types: string[], first: boolean): Promise<{ raw: RawExtraction; inputTokens: number; outputTokens: number; requests: number }> {
+  const budget = p.limit!.tokensPerMinute * SPLIT.share;
+  const whole = catalogueText(config.dict, sections, types);
+  const est = estimateTokens(p, whole, note);
+  const parts = first && est <= budget && !SPLIT.force ? [sections] : first || sections.length > 1 ? splitSections(config, p, note, sections, types) : [sections];
+  // splitSections keeps a group of one section together: halve a group of several that got 413 although it was estimated to fit.
+  const plan = !first && parts.length === 1 && sections.length > 1 ? [sections.slice(0, Math.ceil(sections.length / 2)), sections.slice(Math.ceil(sections.length / 2))] : parts;
+  const out = { raw: { proposals: [], conflicts: [], additional_info: [] } as RawExtraction, inputTokens: 0, outputTokens: 0, requests: 0 };
+  for (const part of plan) {
+    const cacheable = catalogueText(config.dict, part, types);
+    await pace.wait(estimateTokens(p, cacheable, note));
+    let got: { raw: RawExtraction; inputTokens: number; outputTokens: number; requests: number } | null = null;
+    for (let busy = 0; !got; busy++) {
+      try {
+        // One section alone has no smaller form: it waits and tries once more on 413, as before.
+        const ex = await p.json({ name: 'extraction', system: EXTRACT_SYSTEM, cacheable, user: note, schema: EXTRACT_SCHEMA, waitOn413: part.length === 1 });
+        pace.spend(ex.inputTokens + ex.outputTokens);
+        got = { raw: plan.length > 1 ? onlySections(config, rawOf(ex.json), part, types) : rawOf(ex.json), inputTokens: ex.inputTokens, outputTokens: ex.outputTokens, requests: 1 };
+      } catch (e) {
+        // The minute is still full (429, not the daily quota): once, wait until this note's last minute has passed. Nothing was processed.
+        if (e instanceof AiError && e.code === 'AI_BUSY' && busy === 0) {
+          await pace.empty();
+          continue;
+        }
+        // A request refused as too large was not processed, so nothing is spent.
+        if (!(e instanceof AiError) || e.status !== 413 || part.length === 1) throw e;
+        got = await extractInParts(config, p, pace, note, part, types, false);
+      }
+    }
+    out.raw = mergeRaw(out.raw, got.raw);
+    out.inputTokens += got.inputTokens;
+    out.outputTokens += got.outputTokens;
+    out.requests += got.requests;
+  }
+  return out;
+}
+
+/** Answers of several parts as one. A fact that fits no field, given by two parts, is kept once. */
+export function mergeRaw(a: RawExtraction, b: RawExtraction): RawExtraction {
+  const seen = new Set(a.additional_info.map((x) => normalizeForQuote(String(x.text ?? ''))));
+  return {
+    proposals: [...a.proposals, ...b.proposals],
+    conflicts: [...a.conflicts, ...b.conflicts],
+    additional_info: [...a.additional_info, ...b.additional_info.filter((x) => !seen.has(normalizeForQuote(String(x.text ?? ''))))],
+  };
 }
 
 /** Keeps only values of the given sections and procedure types, whatever the provider answered. Facts that fit no field stay. */

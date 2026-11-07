@@ -8,11 +8,13 @@ import type { AiBinding, Env } from '../config.ts';
 
 export type ProviderId = 'workers_ai' | 'groq' | 'fixture' | 'anthropic' | 'gemini' | 'openai' | 'off';
 
-export interface JsonCall { name: string; system: string; cacheable: string; user: string; schema: Record<string, unknown> }
+/** waitOn413 = false: on 413 fail at once (the caller sends the request in smaller parts instead of waiting a minute). */
+export interface JsonCall { name: string; system: string; cacheable: string; user: string; schema: Record<string, unknown>; waitOn413?: boolean }
 export interface JsonResult { json: any; inputTokens: number; outputTokens: number }
 
 /** Two requests per whole note when the provider's limit is too small for every section at once (see extract.ts). */
-export interface LlmProvider { id: Exclude<ProviderId, 'fixture' | 'off'>; model: string; label: string; passes?: 1 | 2; json(call: JsonCall): Promise<JsonResult> }
+/** limit: the provider's per-minute token limit, so a whole note too large for it is sent in parts (extract.ts). */
+export interface LlmProvider { id: Exclude<ProviderId, 'fixture' | 'off'>; model: string; label: string; passes?: 1 | 2; limit?: { tokensPerMinute: number; charsPerToken: number }; json(call: JsonCall): Promise<JsonResult> }
 
 export class AiError extends Error {
   code: string; status: number;
@@ -64,7 +66,10 @@ export function llm(cfg: AppConfig, env: Env, choice: AiChoice, fetchFn: typeof 
     const client = new Anthropic({ apiKey: key, timeout, maxRetries: 1, fetch: fetchFn });
     return { ...base, id: 'anthropic', json: (c) => anthropicJson(client, model, c) };
   }
-  if (choice.provider === 'groq') return { ...base, id: 'groq', passes: cfg.site.ai.groq?.passes ?? 2, json: (c) => groqJson(fetchFn, key, model, timeout, c) };
+  if (choice.provider === 'groq') {
+    const g = cfg.site.ai.groq;
+    return { ...base, id: 'groq', passes: g?.passes ?? 2, limit: { tokensPerMinute: g?.tokens_per_minute ?? 8000, charsPerToken: g?.chars_per_token ?? 2.7 }, json: (c) => groqJson(fetchFn, key, model, timeout, c) };
+  }
   if (choice.provider === 'gemini') return { ...base, id: 'gemini', json: (c) => geminiJson(fetchFn, key, model, timeout, c) };
   return { ...base, id: 'openai', json: (c) => openaiJson(fetchFn, key, model, timeout, c) };
 }
@@ -146,7 +151,7 @@ async function groqJson(f: typeof fetch, key: string, model: string, timeout: nu
     temperature: 0,
   });
   const res = await ask().catch(async (e) => {
-    if (!(e instanceof AiError) || e.status !== 413) throw e;
+    if (!(e instanceof AiError) || e.status !== 413 || c.waitOn413 === false) throw e;
     await new Promise((r) => setTimeout(r, TOO_LARGE_WAIT_MS[0]));
     return ask();
   });

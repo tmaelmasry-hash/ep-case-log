@@ -7,6 +7,7 @@
 // Then, from the project folder:
 //   node scripts/ai-trial/eval.mjs N01,N02 "@cf/nvidia/nemotron-3-120b-a12b"     (no list = every note; no model = site.json's)
 //   node scripts/ai-trial/eval.mjs N12 groq echo                                  (needs GROQ_API_KEY in .env; last = sections)
+//   node scripts/ai-trial/eval.mjs N07,N13 groq:openai/gpt-oss-20b                (another Groq model, same key)
 // Results: test-results/ai-trial-<groq|model|default>.json
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -15,13 +16,17 @@ import { resolve } from 'node:path';
 const load = (path) => import(pathToFileURL(resolve(path)).href);
 const { as, config, harness, newCase } = await load('tests/server/harness.ts');
 const { loadDotEnv } = await load('server/dotenv.ts');
+const { SPLIT } = await load('server/ai/extract.ts');
+// AI_FORCE_SPLIT=1: every whole note in parts (procedure alone, the rest in groups), to measure the split itself.
+if (process.env.AI_FORCE_SPLIT === '1') SPLIT.force = true;
 loadDotEnv();
 
 const [listArg, modelArg, sectionsArg] = process.argv.slice(2);
-const GROQ = modelArg === 'groq';
+const GROQ = modelArg === 'groq' || !!modelArg?.startsWith('groq:');
+const groqModel = modelArg?.startsWith('groq:') ? modelArg.slice(5) : null;
 const only = listArg ? listArg.split(',') : null;
 mkdirSync('test-results', { recursive: true });
-const OUT = `test-results/ai-trial-${GROQ ? 'groq' : modelArg ? 'model' : 'default'}.json`;
+const OUT = `test-results/ai-trial-${process.env.AI_FORCE_SPLIT === '1' ? 'split-' : ''}${groqModel ? `groq-${groqModel.replace(/\W+/g, '-')}` : GROQ ? 'groq' : modelArg ? 'model' : 'default'}.json`;
 
 const h = await harness();
 const env = h.app.ctx.env;
@@ -34,6 +39,20 @@ env.aiBinding = {
     if (j?.error) throw new Error(j.error);
     return j;
   },
+};
+
+// Each Groq request of a note: what it was, its status and its token counts (never the request or the answer).
+let calls = [];
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  const res = await realFetch(url, init);
+  if (String(url).includes('api.groq.com')) {
+    const body = JSON.parse(String(init?.body ?? '{}'));
+    const sections = [...String(body.messages?.[0]?.content ?? '').matchAll(/## Section (\w+)/g)].map((m) => m[1]);
+    const u = res.ok ? (await res.clone().json().catch(() => ({})))?.usage : null;
+    calls.push({ kind: body.response_format?.json_schema?.name, sections: sections.join('+'), status: res.status, retryAfter: res.headers.get('retry-after'), in: u?.prompt_tokens, out: u?.completion_tokens, at: Date.now() });
+  }
+  return res;
 };
 
 const key = (i) => `${i.entity}|${i.field}|${String(i.value)}`;
@@ -53,15 +72,16 @@ for (const fx of config.aiFixtures) {
   const gold = await admin.call('POST', `/api/cases/${a.case_id}/ai/extract`, { note: text(mrn), procedure_id: 'new' });
   const goldFilled = gold.data.items.filter((i) => i.status === 'FILLED');
 
-  await admin.call('POST', '/api/settings/ai', { provider: GROQ ? 'groq' : 'workers_ai', ...(modelArg && !GROQ ? { model: modelArg } : {}) });
+  await admin.call('POST', '/api/settings/ai', { provider: GROQ ? 'groq' : 'workers_ai', ...(groqModel ? { model: groqModel } : modelArg && !GROQ ? { model: modelArg } : {}) });
   // Groq's free limit is 8,000 tokens a minute: leave a minute between notes.
   if (GROQ && n > 1) await new Promise((r) => setTimeout(r, 60_000));
   const b = await newCase(admin, mrn2);
+  calls = [];
   const t0 = Date.now();
   const r = await admin.call('POST', `/api/cases/${b.case_id}/ai/extract`, { note: text(mrn2), procedure_id: 'new', ...(sectionsArg ? { sections: sectionsArg.split(',') } : {}) });
   const ms = Date.now() - t0;
   if (r.status !== 200) {
-    rows.push({ id: fx.id, status: r.status, code: r.data?.error?.code, ms });
+    rows.push({ id: fx.id, status: r.status, code: r.data?.error?.code, message: r.data?.error?.message, ms, calls: calls.map((c) => ({ ...c, at: c.at - t0 })) });
     console.log(fx.id, 'ERROR', r.status, r.data?.error?.code);
     writeFileSync(OUT, JSON.stringify(rows, null, 1));
     if (r.data?.error?.code === 'AI_QUOTA_DAY') break;
@@ -89,8 +109,8 @@ for (const fx of config.aiFixtures) {
   }
   const usage = (await admin.call('GET', '/api/ai/status')).data.usage;
   const missed = goldFilled.length - right - wrongList.length;
-  rows.push({ id: fx.id, gold: goldFilled.length, right, wrong: wrongList.length, missed, extra: extraList.length, dropped: dropped.length, droppedReasons: dropped.slice(0, 6).map((d) => `${d.entity}.${d.field}: ${d.reason}`.slice(0, 90)), ms, totalInputTokens: usage.input_tokens, totalOutputTokens: usage.output_tokens, wrongList, extraList });
-  console.log(`${fx.id} written ${goldFilled.length} right ${right} wrong ${wrongList.length} missed ${missed} extra ${extraList.length} dropped ${dropped.length} ${ms}ms`);
+  rows.push({ id: fx.id, gold: goldFilled.length, right, wrong: wrongList.length, missed, extra: extraList.length, dropped: dropped.length, droppedReasons: dropped.slice(0, 6).map((d) => `${d.entity}.${d.field}: ${d.reason}`.slice(0, 90)), ms, calls: calls.map((c) => ({ ...c, at: c.at - t0 })), totalInputTokens: usage.input_tokens, totalOutputTokens: usage.output_tokens, wrongList, extraList });
+  console.log(`${fx.id} written ${goldFilled.length} right ${right} wrong ${wrongList.length} missed ${missed} extra ${extraList.length} dropped ${dropped.length} ${ms}ms requests ${calls.length}`);
   writeFileSync(OUT, JSON.stringify(rows, null, 1));
 }
 console.log('DONE', OUT);

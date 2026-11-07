@@ -23,6 +23,10 @@ export interface AiProviderConfig {
   price_usd_per_mtok: { input: number; output: number } | null;
   /** 2 = one request to pick the sections, one to extract (a provider with a small limit). */
   passes?: 1 | 2;
+  /** The provider's per-minute token limit (Groq free plan: 8,000). A whole note larger than this is sent in parts, paced to fit. */
+  tokens_per_minute?: number;
+  /** Characters a token, to estimate a request before it is sent (measured on Groq, 5 Nov: about 2.7). */
+  chars_per_token?: number;
 }
 export interface AiConfig {
   provider: string;

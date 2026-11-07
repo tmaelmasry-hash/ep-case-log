@@ -127,6 +127,7 @@ template, stored as the environment variable `CLOUDFLARE_API_TOKEN` (with `CLOUD
 | `d8b2b58` (imaging: type not asked again, CMR / CT / TEE ask their own questions, DR-IMG-*; 4 Nov) | `468b4750-73df-4737-9fc6-497421f4e1f0` | same Sheet, no Sheet change. Real data: 1 imaging row, 0 answers hidden. Rollback: `node scripts/wrangler.ts rollback 8e07ee32-3b10-42f2-8388-8d2898bbcad3` |
 | `64ab36d` (Title Case in every section, study rows named by type, fields keep focus, "N filled" counts answers only; 4 Nov) | `740df03c-955c-4677-9b42-255eb8cf1f2d` | same Sheet, no Sheet change. Rollback: `node scripts/wrangler.ts rollback 468b4750-73df-4737-9fc6-497421f4e1f0` |
 | `6c1ce89` (AI Assistant on Groq: privacy, Fill From a Note, review before saving, dates only, whole notes in parts; 7 Nov) | `4c70f2f3-9f18-48c3-a61e-3d48d2e15030` | same Sheet, no Sheet change. GROQ_API_KEY secret added. Rollback: `node scripts/wrangler.ts rollback 740df03c-955c-4677-9b42-255eb8cf1f2d` |
+| `623ec9d` (fixes from the live test: quotes with "...", one retry on broken JSON, code lists by label in History; 7 Nov) | `fc07a3eb-9423-4b89-a259-8e8a470723c8` | same Sheet, no Sheet change. Rollback: `node scripts/wrangler.ts rollback 4c70f2f3-9f18-48c3-a61e-3d48d2e15030` |
 
 To go back to before round 4: if the round 4 merges are on `main` but not deployed, `git revert` the merge commits
 (history kept) or, on the owner's yes, `git reset --hard checkpoint-2026-10-30-before-round4` + force-push; if round 4

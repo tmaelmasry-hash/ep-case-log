@@ -93,7 +93,10 @@
    "api_key_env": "GROQ_API_KEY",
    "model": "openai/gpt-oss-120b",
    "price_usd_per_mtok": null,
-   "passes": 2
+   "passes": 2,
+   "tokens_per_minute": 8000,
+   "chars_per_token": 2.7,
+   "_split": "A whole note whose second request is estimated over 85% of tokens_per_minute, or that gets 413, is sent in parts: procedure alone, the other sections in groups, paced by the last minute's tokens (7 Nov)."
   },
   "anthropic": {
    "api_key_env": "ANTHROPIC_API_KEY",
